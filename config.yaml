@@ -29,8 +29,7 @@ panel_icon: mdi:ip-network-outline
 panel_title: DHCP
 options:
   # see DOCS.md for documentation on each setting
-  interfaces:
-    - enp1s0
+  interfaces: []
   dhcp_server:
     default_lease: 1h
     address_reservation_lease: 1h

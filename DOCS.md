@@ -100,11 +100,19 @@ This is not impacted in any way by the DNS server functionality offered by this 
 The following YAML file shows all possible `Dnsmasq-DHCP` addon configurations and their default values:
 
 ```yaml
-# The interfaces on which the DHCP/DNS server will listen
-# DHCP requests are listened on port 67
-# DNS requests are listened on port 53 (DNS port is configurable via dns_server.port key)
-interfaces:
-  - enp1s0
+# The interfaces on which the DHCP/DNS server will listen.
+# Multiple interfaces can be provided as the server can listen simultaneously on multiple interfaces.
+# Typically each network interface is connected to a different network; you probably want to listen
+# only on networks that do not have already a DHCP/DNS server.
+#
+# The default value is the empty list which means the addon will try to autodetect the "main" network
+# interface; the "main" interface is defined as the next-hop interface selected by the underlying OS to 
+# reach the Google DNS server 8.8.8.8
+# 
+# Additional details: this addon will listed to 2 TCP/UDP ports for each network interface:
+# * DHCP requests are listened on port 67
+# * DNS requests are listened on port 53 (DNS port is configurable via dns_server.port key)
+interfaces: []
 
 # DHCP server configs that apply to all networks later defined in "dhcp_pools"
 dhcp_server:

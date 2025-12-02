@@ -2,7 +2,7 @@
 # for live debugging/development
 
 # air 1.62.0 (June 2025) supports golang 1.24
-FROM golang:1.24.4-alpine
+FROM golang:1.25.5-alpine
 
 # Add env
 ENV LANG=C.UTF-8

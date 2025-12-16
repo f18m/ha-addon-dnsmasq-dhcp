@@ -1,6 +1,9 @@
 package uibackend
 
 import (
+	"encoding/json"
+	"net"
+	"net/netip"
 	"testing"
 	"time"
 )
@@ -47,5 +50,98 @@ func TestParseDuration(t *testing.T) {
 				t.Errorf("parseDuration(%q) = %v, want %v", tc.input, got, tc.expected)
 			}
 		})
+	}
+}
+
+func TestAddonOptionsUnmarshalJSONWithWhitespace(t *testing.T) {
+	// Test that whitespace is properly stripped from IP and MAC address fields
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": " 192.168.1.50",
+				"end": "192.168.1.100 ",
+				"gateway": " 192.168.1.1 ",
+				"netmask": " 255.255.255.0 "
+			}
+		],
+		"dhcp_ip_address_reservations": [
+			{
+				"ip": " 192.168.1.10 ",
+				"mac": " aa:bb:cc:dd:ee:ff ",
+				"name": "test-host"
+			}
+		],
+		"dhcp_clients_friendly_names": [
+			{
+				"mac": " 11:22:33:44:55:66 ",
+				"name": "friendly-host"
+			}
+		],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": true
+		},
+		"dns_server": {
+			"enable": true,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	var opts AddonOptions
+	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
+	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
+	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal JSON with whitespace: %v", err)
+	}
+
+	// Verify that the DHCP pool was parsed correctly despite whitespace
+	if len(opts.dhcpRanges) != 1 {
+		t.Fatalf("Expected 1 DHCP range, got %d", len(opts.dhcpRanges))
+	}
+
+	dhcpRange := opts.dhcpRanges[0]
+
+	// Check that gateway was parsed correctly (whitespace trimmed)
+	expectedGateway := net.ParseIP("192.168.1.1")
+	if !dhcpRange.Gateway.Equal(expectedGateway) {
+		t.Errorf("Expected gateway %v, got %v", expectedGateway, dhcpRange.Gateway)
+	}
+
+	// Check that netmask was parsed correctly (whitespace trimmed)
+	expectedNetmask := net.IPMask(net.ParseIP("255.255.255.0").To4())
+	if !net.IP(dhcpRange.Netmask).Equal(net.IP(expectedNetmask)) {
+		t.Errorf("Expected netmask %v, got %v", expectedNetmask, dhcpRange.Netmask)
+	}
+
+	// Check that start/end IPs were parsed correctly (whitespace trimmed)
+	expectedStart := net.ParseIP("192.168.1.50")
+	expectedEnd := net.ParseIP("192.168.1.100")
+	if !dhcpRange.Start.Equal(expectedStart) {
+		t.Errorf("Expected start IP %v, got %v", expectedStart, dhcpRange.Start)
+	}
+	if !dhcpRange.End.Equal(expectedEnd) {
+		t.Errorf("Expected end IP %v, got %v", expectedEnd, dhcpRange.End)
+	}
+
+	// Verify IP address reservation was parsed correctly
+	if len(opts.ipAddressReservationsByIP) != 1 {
+		t.Fatalf("Expected 1 IP reservation, got %d", len(opts.ipAddressReservationsByIP))
+	}
+
+	// Verify friendly name was parsed correctly
+	if len(opts.friendlyNames) != 1 {
+		t.Fatalf("Expected 1 friendly name, got %d", len(opts.friendlyNames))
 	}
 }

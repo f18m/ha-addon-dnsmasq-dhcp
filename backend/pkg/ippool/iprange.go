@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net"
 	"net/netip"
+	"strings"
 )
 
 /* -------------------------------------------------------------------------- */
@@ -25,8 +26,8 @@ func NewRange(start, end net.IP) Range {
 
 func NewRangeFromString(start, end string) Range {
 	return Range{
-		Start: net.ParseIP(start),
-		End:   net.ParseIP(end),
+		Start: net.ParseIP(strings.TrimSpace(start)),
+		End:   net.ParseIP(strings.TrimSpace(end)),
 	}
 }
 

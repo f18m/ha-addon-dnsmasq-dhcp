@@ -165,10 +165,10 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Interface: r.Interface,
 			Start:     dhcpR.Start,
 			End:       dhcpR.End,
-			Gateway:   net.ParseIP(r.Gateway),
+			Gateway:   net.ParseIP(strings.TrimSpace(r.Gateway)),
 		}
 
-		m := net.ParseIP(r.Netmask)
+		m := net.ParseIP(strings.TrimSpace(r.Netmask))
 		if m.To4() != nil {
 			ipNetInfo.Netmask = net.IPMask(m.To4())
 		} else {
@@ -196,11 +196,11 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 
 	// convert IP address reservations to a map indexed by IP
 	for _, r := range cfg.DhcpIpAddressReservations {
-		ipAddr, err := netip.ParseAddr(r.IP)
+		ipAddr, err := netip.ParseAddr(strings.TrimSpace(r.IP))
 		if err != nil {
 			return fmt.Errorf("invalid IP address found inside 'ip_address_reservations': %s", r.IP)
 		}
-		macAddr, err := net.ParseMAC(r.Mac)
+		macAddr, err := net.ParseMAC(strings.TrimSpace(r.Mac))
 		if err != nil {
 			return fmt.Errorf("invalid MAC address found inside 'ip_address_reservations': %s", r.Mac)
 		}
@@ -230,7 +230,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 
 	// convert friendly names to a map of DhcpClientFriendlyName instances indexed by MAC address
 	for _, client := range cfg.DhcpClientsFriendlyNames {
-		macAddr, err := net.ParseMAC(client.Mac)
+		macAddr, err := net.ParseMAC(strings.TrimSpace(client.Mac))
 		if err != nil {
 			return fmt.Errorf("invalid MAC address found inside 'dhcp_clients_friendly_names': %s", client.Mac)
 		}

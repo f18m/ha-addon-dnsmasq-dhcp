@@ -1,8 +1,6 @@
 module dnsmasq-dhcp-backend
 
-go 1.24.0
-
-toolchain go1.25.3
+go 1.25.3
 
 require github.com/gorilla/websocket v1.5.3
 

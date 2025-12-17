@@ -41,7 +41,7 @@ jobs:
       - name: Run unit tests
         run: |
           cd backend
-          go test -v -cover ./...
+          go test -v ./...
 
   golangci:
     name: Linter
@@ -54,7 +54,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.1.0
+          version: v2.7.2
           working-directory: backend
         
   check_tag:

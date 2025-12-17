@@ -1,6 +1,7 @@
 package uibackend
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -11,7 +12,7 @@ import (
 
 func TestGetDnsStats_NoUpstreamServers(t *testing.T) {
 	// Start a temporary dnsmasq instance
-	dnsmasqCmd := exec.Command("dnsmasq", "--port=12345", "--cache-size=100", "--no-daemon", "--no-resolv") // Adjust arguments as needed
+	dnsmasqCmd := exec.CommandContext(context.Background(), "dnsmasq", "--port=12345", "--cache-size=100", "--no-daemon", "--no-resolv") // Adjust arguments as needed
 	if err := dnsmasqCmd.Start(); err != nil {
 		t.Fatalf("Failed to start dnsmasq: %v", err)
 	}
@@ -23,7 +24,7 @@ func TestGetDnsStats_NoUpstreamServers(t *testing.T) {
 
 	// Wait for dnsmasq to start listening
 	for i := 0; i < 10; i++ {
-		if conn, err := net.DialTimeout("tcp", "localhost:12345", 1*time.Second); err == nil {
+		if conn, err := net.DialTimeout("tcp", "localhost:12345", 1*time.Second); err == nil { //nolint:noctx
 			_ = conn.Close()
 			break
 		}
@@ -56,7 +57,7 @@ func TestGetDnsStats_WithUpstreamServers(t *testing.T) {
 	}
 
 	// Restart dnsmasq with the resolv file
-	dnsmasqCmd := exec.Command("dnsmasq", "--port=12346", "--cache-size=100", "--no-daemon", fmt.Sprintf("--resolv-file=%s", resolvFilePath)) //nolint:gosec
+	dnsmasqCmd := exec.CommandContext(context.Background(), "dnsmasq", "--port=12346", "--cache-size=100", "--no-daemon", fmt.Sprintf("--resolv-file=%s", resolvFilePath)) //nolint:gosec
 	if err := dnsmasqCmd.Start(); err != nil {
 		t.Fatalf("Failed to restart dnsmasq with resolv-file: %v", err)
 	}
@@ -66,7 +67,7 @@ func TestGetDnsStats_WithUpstreamServers(t *testing.T) {
 		}
 	}()
 	for i := 0; i < 10; i++ {
-		if conn, err := net.DialTimeout("tcp", "localhost:12346", 1*time.Second); err == nil {
+		if conn, err := net.DialTimeout("tcp", "localhost:12346", 1*time.Second); err == nil { //nolint:noctx
 			_ = conn.Close()
 			break
 		}

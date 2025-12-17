@@ -1,6 +1,7 @@
 package trackerdb
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -47,7 +48,7 @@ func NewTestDB() DhcpClientTrackerDB {
 		dhcp_server_start_counter INT
 	);
 	`
-	_, err = db.DB.Exec(createTableQuery)
+	_, err = db.DB.ExecContext(context.Background(), createTableQuery)
 	if err != nil {
 		log.Fatal("Failed to initialize test database")
 	}
@@ -81,7 +82,7 @@ func (d *DhcpClientTrackerDB) TrackNewDhcpClient(client DhcpClient) error {
 		dhcp_server_start_counter=excluded.dhcp_server_start_counter;
 	`
 
-	_, err := d.DB.Exec(insertQuery, client.MacAddr.String(), client.Hostname, client.LastSeen.Format(time.RFC3339), 0)
+	_, err := d.DB.ExecContext(context.Background(), insertQuery, client.MacAddr.String(), client.Hostname, client.LastSeen.Format(time.RFC3339), 0)
 	if err != nil {
 		return err
 	}
@@ -92,7 +93,7 @@ func (d *DhcpClientTrackerDB) TrackNewDhcpClient(client DhcpClient) error {
 // GetDhcpClient retrieves a DHCP client by its MAC address.
 func (d *DhcpClientTrackerDB) GetDhcpClient(macAddr net.HardwareAddr) (*DhcpClient, error) {
 	query := `SELECT mac_addr, hostname, last_seen FROM dhcp_clients WHERE mac_addr = ?`
-	row := d.DB.QueryRow(query, macAddr.String())
+	row := d.DB.QueryRowContext(context.Background(), query, macAddr.String())
 
 	var client DhcpClient
 	var lastSeen string
@@ -123,7 +124,7 @@ func (d *DhcpClientTrackerDB) GetDhcpClient(macAddr net.HardwareAddr) (*DhcpClie
 // which identifies the currently-alive DHCP clients.
 func (d *DhcpClientTrackerDB) GetDeadDhcpClients(aliveClients []net.HardwareAddr) ([]DhcpClient, error) {
 	// Step 1: Get all DHCP clients from the database
-	rows, err := d.DB.Query("SELECT mac_addr, hostname, last_seen, dhcp_server_start_counter FROM dhcp_clients")
+	rows, err := d.DB.QueryContext(context.Background(), "SELECT mac_addr, hostname, last_seen, dhcp_server_start_counter FROM dhcp_clients")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query dhcp_clients: %w", err)
 	}
@@ -192,7 +193,7 @@ func (d *DhcpClientTrackerDB) PurgeOldDeadClients(purgeThreshold time.Duration) 
 
 	// Step 3: Query to find clients that are older than the threshold
 	query := `SELECT mac_addr, hostname, last_seen FROM dhcp_clients WHERE last_seen < ?`
-	rows, err := d.DB.Query(query, thresholdTime.Format(time.RFC3339))
+	rows, err := d.DB.QueryContext(context.Background(), query, thresholdTime.Format(time.RFC3339))
 	if err != nil {
 		return nil, fmt.Errorf("failed to query dhcp_clients: %w", err)
 	}
@@ -235,7 +236,7 @@ func (d *DhcpClientTrackerDB) PurgeOldDeadClients(purgeThreshold time.Duration) 
 
 	// Step 5: Delete the old clients from the database
 	deleteQuery := `DELETE FROM dhcp_clients WHERE last_seen < ?`
-	if _, err := d.DB.Exec(deleteQuery, thresholdTime.Format(time.RFC3339)); err != nil {
+	if _, err := d.DB.ExecContext(context.Background(), deleteQuery, thresholdTime.Format(time.RFC3339)); err != nil {
 		return nil, fmt.Errorf("failed to delete old clients: %w", err)
 	}
 

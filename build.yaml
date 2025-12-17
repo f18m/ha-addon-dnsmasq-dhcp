@@ -1,10 +1,10 @@
 ---
+# this file is used by the Home Assistant ghcr.io/home-assistant/amd64-builder
+# to select the base image for the addon docker image
+# see https://developers.home-assistant.io/docs/add-ons/configuration/
 build_from:
-  aarch64: ghcr.io/home-assistant/aarch64-base:3.19
-  amd64: ghcr.io/home-assistant/amd64-base:3.19
-  armhf: ghcr.io/home-assistant/armhf-base:3.19
-  armv7: ghcr.io/home-assistant/armv7-base:3.19
-  i386: ghcr.io/home-assistant/i386-base:3.19
+  aarch64: ghcr.io/home-assistant/aarch64-base:3.23
+  amd64: ghcr.io/home-assistant/amd64-base:3.23
 codenotary:
   signer: notary@home-assistant.io
   base_image: notary@home-assistant.io

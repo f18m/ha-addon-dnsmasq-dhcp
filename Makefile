@@ -19,8 +19,10 @@ fmt-backend:
 	cd backend && \
 		go fmt ./...
 	# required by the gofumpt linter:
+	#cd backend && \
+	#	gofumpt -l -w -extra .
 	cd backend && \
-		gofumpt -l -w -extra .
+		golangci-lint run --fix
 
 build-frontend:
 	@echo "Assuming YARN is already installed -- see https://yarnpkg.com/getting-started/install if that's not the case"

@@ -55,7 +55,7 @@ build-css-live:
 #
 
 # NOTE: the architecture "armhf" (ARM v6) is excluded from the list because Go toolchain is not available there
-ARCH:=--armv7 --amd64 --aarch64 --i386
+ARCH:=--amd64 --aarch64
 ifeq ($(FAST),1)
 # pick just 1 arch instead of all, to speedup
 ARCH:=--amd64
@@ -65,7 +65,8 @@ IMAGETAG:=$(shell yq .image config.yaml  | sed 's@{arch}@amd64@g')
 BACKEND_SOURCE_CODE_FILES:=$(shell find backend/ -type f -name '*.go')
 ROOTFS_FILES:=$(shell find rootfs/ -type f)
 
-HOME_ASSISTANT_BUILDER_VERSION:=2025.03.0
+# go to ghcr.io/home-assistant/amd64-builder to see available versions
+HOME_ASSISTANT_BUILDER_VERSION:=2025.11.0
 
 build-docker-image: $(BACKEND_SOURCE_CODE_FILES) $(ROOTFS_FILES)
 	docker run \

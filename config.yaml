@@ -1,13 +1,30 @@
 ---
-# inside feature branches it's handy to change the 'version' field to match the branch name
-# as reported by the Github Action workflow 'publish.yaml', so that you can force HomeAssistant
-# to use the docker image of that feature branch instead of the docker image of 'main', by pointing
-# HomeAssistant to that feature branch
+#
+# This is the main addon configuration file for Home Assistant
+# It defines metadata, options, and schema
+# See https://developers.home-assistant.io/docs/add-ons/configuration/
+#
+
+description: A DHCP server based on dnsmasq
+url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
+
+
+# IMPORTANT: in the "main" branch you want these 3 fields to be set to:
+#
+#   version: 4.x.y
+#   slug: dnsmasq-dhcp
+#   name: Dnsmasq-DHCP
+#
+# instead on the 'beta' branch you want these 3 fields to be set to:
+#
+#   version: 4.x.y
+#   slug: dnsmasq-dhcp-beta
+#   name: Dnsmasq-DHCP BETA
+
 version: 4.0.0
 slug: dnsmasq-dhcp
 name: Dnsmasq-DHCP
-description: A DHCP server based on dnsmasq
-url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
+
 # advanced true means that the HA user can see this addon only if it's flagged as 'advanced' in the
 # Home Assistant UI
 advanced: true

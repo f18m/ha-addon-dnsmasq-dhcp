@@ -105,6 +105,7 @@ a[href*="http"]::after {
   margin: 0;
   position: relative;
   width: 30px;
+  vertical-align: middle;
 }
 
 .checkbox-wrapper .modernCheckbox::before {
@@ -169,12 +170,14 @@ a[href*="http"]::after {
   color: var(--btn-text-inactive);
   transition: 300ms all ease-in-out;
   cursor: pointer;
-  transform: scale(1);
 }
 @media only screen and (max-width: 576px) {
   .btn {
     padding: 10px 8px;
   }
+}
+.btn {
+  transform: scale(1);
 }
 .btn.active {
   color: var(--btn-text-active);

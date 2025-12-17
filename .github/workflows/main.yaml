@@ -41,7 +41,7 @@ jobs:
       - name: Run unit tests
         run: |
           cd backend
-          go test -v -cover ./...
+          go test -v ./...
 
   golangci:
     name: Linter

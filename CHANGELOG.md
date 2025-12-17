@@ -6,10 +6,12 @@ This file contains only migration instructions from a major version to the next 
 A new major version is released each time there is a backward-incompatible change in the config format.
 
 
-## Version 4.0
+## Version 4.0.0
 
-This release removes support for the armv7, i386, and armhf architectures which were previously 
-announced as deprecated in the Home Assistant architecture decisions.
+💥 Breaking Changes
+
+This release removes support for the `armv7`, `i386`, and `armhf` architectures which were
+announced as deprecated in the Home Assistant architecture decisions, back in April 2025.
 
 Please see [official thread about deprecations of these architectures](https://community.home-assistant.io/t/feedback-requested-deprecating-core-supervised-i386-armhf-armv7/880968) for further information.
 

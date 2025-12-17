@@ -24,7 +24,7 @@ RUN apk add yarn bash && \
 
 # NOTE: 
 # we don't transpile the SCSS->CSS in this docker build because this "builder" layer
-# needs to be compatible with all the architectures we support (armv7, aarch64, amd64, i386)
+# needs to be compatible with all the architectures we support (aarch64, amd64)
 # and I couldn't find the "dart-sass" binary for all these architectures...
 # we rather assume the transpiled version has been checked into git
 

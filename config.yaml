@@ -12,11 +12,8 @@ url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 # Home Assistant UI
 advanced: true
 arch:
-  - armhf
-  - armv7
   - aarch64
   - amd64
-  - i386
 # host network is required to allow dnsmasq to bind to (all) network interfaces specfied in the config
 host_network: true
 image: ghcr.io/f18m/{arch}-addon-dnsmasq-dhcp

@@ -4,9 +4,9 @@
   ],
   "packageRules": [
     {
-      "matchCategories": [
-        "golang"
-      ],
+      "matchCategories": ["golang"],
+      "groupName": "golang modules",
+      "groupSlug": "golang-modules",
       "enabled": true
     }
   ]

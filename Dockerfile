@@ -1,3 +1,10 @@
+#
+# Main addon dockerfile
+# Please note that this dockerfile is meant to be processed by the
+# by the Home Assistant ghcr.io/home-assistant/amd64-builder
+# see https://developers.home-assistant.io/docs/add-ons/configuration/
+#
+
 ARG BUILD_FROM
 
 # --- BACKEND BUILD

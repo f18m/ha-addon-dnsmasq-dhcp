@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"cmp"
 	"context"
-	"dnsmasq-dhcp-backend/pkg/logger"
-	"dnsmasq-dhcp-backend/pkg/trackerdb"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +20,9 @@ import (
 	"sync"
 	texttemplate "text/template"
 	"time"
+
+	"dnsmasq-dhcp-backend/pkg/logger"
+	"dnsmasq-dhcp-backend/pkg/trackerdb"
 
 	human_duration "github.com/davidbanham/human_duration/v3"
 

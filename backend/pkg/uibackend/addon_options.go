@@ -1,7 +1,6 @@
 package uibackend
 
 import (
-	"dnsmasq-dhcp-backend/pkg/ippool"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -10,6 +9,8 @@ import (
 	"strings"
 	texttemplate "text/template"
 	"time"
+
+	"dnsmasq-dhcp-backend/pkg/ippool"
 )
 
 // AddonOptions contains the configuration provided by the user to the Home Assistant addon

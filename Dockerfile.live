@@ -1,5 +1,9 @@
+#
 # Docker image mimicking the actual addon docker image
 # for live debugging/development
+#
+# !! This is not the Dockerfile used to build the actual addon,
+#    this is used just for local development and debugging !!
 
 # air 1.62.0 (June 2025) supports golang 1.24
 FROM golang:1.24.4-alpine

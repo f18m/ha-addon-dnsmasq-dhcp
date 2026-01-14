@@ -8,6 +8,12 @@
       "groupName": "golang modules",
       "groupSlug": "golang-modules",
       "enabled": true
+    },
+    {
+      "matchCategories": ["js"],
+      "groupName": "JS packages",
+      "groupSlug": "js-packages",
+      "enabled": true
     }
   ]
 }

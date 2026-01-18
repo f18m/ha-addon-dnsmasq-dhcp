@@ -15,7 +15,7 @@
     "datatables.net-plugins": "^2.3.0",
     "datatables.net-responsive-dt": "^3.0.4",
     "datatables.net-select-dt": "^3.0.0",
-    "jquery": "^3.7.1",
+    "jquery": "^4.0.0",
     "jszip": "^3.10.1"
   }
 }

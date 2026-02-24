@@ -1,14 +1,14 @@
-# Home Assistant Add-on: Dnsmasq-DHCP
+# Home Assistant App: Dnsmasq-DHCP
 
 ## Installation
 
-Follow these steps to get the add-on installed on your system:
+Follow these steps to get the `Dnsmasq-DHCP` App installed on your system:
 
-1. Add the HA addon store for this addon by clicking here: [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Ff18m%2Fha-addons-repo)
+1. Add the HomeAssistant app store for this app by clicking here: [![Open your Home Assistant instance and show the add App repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Ff18m%2Fha-addons-repo)
 
-By doing so you should get to your HomeAssistant configuration page for addon digital archives and you should be asked to add `https://github.com/f18m/ha-addons-repo` to the list. Click "Add".
+By doing so you should get to your HomeAssistant "Manage app repositories" dialog window and you should be asked to add `https://github.com/f18m/ha-addons-repo` to the list. Click "Add".
 
-2. In the list of add-ons, search for "Francesco Montorsi addons" and then the `Dnsmasq-DHCP` add-on and click on that. There is also a "BETA" version available, skip it unless you want to try the latest bugfixes and developments.
+2. In the list of Apps, search for "Francesco Montorsi addons" and then the `Dnsmasq-DHCP` App and click on that. There is also a "BETA" version available, skip it unless you want to try the latest bugfixes and developments.
 
 3. Click on the "INSTALL" button.
 
@@ -21,12 +21,12 @@ the details of the networks attached to your HomeAssistant server):
 
 * the network interface(s);
 * the netmask;
-* the gateway IP address (your Internet router typically; in most countries this is provided by the ISP);
+* the gateway IP address (your Internet router typically; in most countries this is provided by the [ISP](https://it.wikipedia.org/wiki/Internet_service_provider));
 * an IP address range free to be used to provision addresses to DHCP dynamic clients
 * optionally: the upstream DNS server IP addresses (e.g. you may use Google DNS servers or Cloudflare quad9 servers), if you want to enable the DNS functionality;
 * optionally: the upstream NTP servers;
 
-An example for all elements above could be:
+An example for above elements could be:
 
 * the network interface(s): `eth0`
 * the netmask: `255.255.255.0`
@@ -37,14 +37,13 @@ An example for all elements above could be:
 
 Another important requirement is that the server which is running HomeAssistant must
 be configured to use a **STATIC IP address** in your network.
-In other words, you cannot use DHCP to configure the device where the DHCP server will be running (!!).
-You can setup a static IP address from your HomeAssistant through the `Settings->Network` menu:
+In other words, **you cannot use DHCP to configure the device where the DHCP server will be running !!**
+See next sections for more details.
 
-<img src="docs/ha-network-settings.png" alt="HA screenshot"/>
+Once you have collected all elements above you can start editing the `Dnsmasq-DHCP` addon configuration. 
+However, before getting there, the [Concepts section](#concepts) below provides the meaning for some terms that will appear in the [Configuration section](#configuration).
+Take a few minutes to go over it.
 
-Once you have collected all these info and verified that you're using a static IP address, you can start editing the `Dnsmasq-DHCP` addon configuration. 
-Before getting there, the [Concepts section](#concepts) below provides the meaning for some terms that 
-will appear in the [Configuration section](#configuration).
 
 
 ## Concepts
@@ -92,12 +91,14 @@ to block ADs in your LAN.
 ### HomeAssistant mDNS
 
 HomeAssistant runs an [mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) server on port 5353.
-This is not impacted in any way by the DNS server functionality offered by this addon.
+This is not impacted in any way by the DNS server functionality offered by this app.
 
 
-## Configuration
 
-The following YAML file shows all possible `Dnsmasq-DHCP` addon configurations and their default values:
+## App Configuration
+
+The following YAML file shows all possible `Dnsmasq-DHCP` app configurations and their default values.
+All configuration settings mentioned in the [Requirements](#requirements) section should go into this YAML document:
 
 ```yaml
 # The interfaces on which the DHCP/DNS server will listen
@@ -118,14 +119,14 @@ dhcp_server:
   # to some frequent check-in, since that becomes a basic heartbeat / client health check.
   address_reservation_lease: 1h
 
-  # The addon can detect whether the server which is running the addon has just rebooted;
+  # The app can detect whether the server which is running the app has just rebooted;
   # if that's the case and the following flag is set to "true", then the DHCP lease database
   # is reset before starting the DHCP server; this is useful in case a loss of power of the
   # HomeAssistant server means also a loss of power of several/all DHCP clients. In such a case
   # the old DHCP lease database is not useful and actually misleading.
   reset_dhcp_lease_database_on_reboot: false
 
-  # The addon keeps track of all "past DHCP clients", i.e. clients that connected in the past
+  # The app keeps track of all "past DHCP clients", i.e. clients that connected in the past
   # but missed to renew their DHCP lease. These are shown in the "Past DHCP Clients" tab in the web UI.
   # This setting allows to cleanup that view after a certain amount of time. 
   # The default value of 30 days means that you will see DHCP clients that connected up to 30days back,
@@ -170,7 +171,7 @@ dhcp_server:
       # See https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html as reference for this section.
       # This option allows you to add ANY custom dnsmasq option that you want.
       # With such power comes great responsibility, so please be careful, as you might generate
-      # invalid dnsmasq configurations preventing the addon from starting.
+      # invalid dnsmasq configurations preventing the app from starting.
       # Remember that all dnsmasq options written here must _not_ start with the leading "--" dash:
       # e.g. the --dhcp-option mentioned in dnsmasq manpage needs to be written here as "dhcp-option".
       # In this section you typically want to provide a YAML multiline string so make sure you use
@@ -232,7 +233,7 @@ dhcp_clients_friendly_names:
 
 # DNS server configuration
 dns_server:
-  # Should this addon provide also a DNS server?
+  # Should this app provide also a DNS server?
   enable: true
   # On which port the dnsmasq DNS server must listen to?
   port: 53
@@ -251,7 +252,7 @@ dns_server:
 # All settings related to the web UI
 web_ui:
   log_activity: false
-  # this addon uses "host_network: true" so the internal HTTP server will bind on the interface
+  # this app uses "host_network: true" so the internal HTTP server will bind on the interface
   # provided as network.interface and will occupy a port there; the following parameter makes
   # that port configurable to avoid conflicts with other services
   port: 8976
@@ -270,7 +271,77 @@ configured `home` as your DNS domain, then you can use `shelly1-abcd.home` to re
 instead of its actual IP address.
 
 
-## Using the Beta version
+
+
+## HomeAssistant Configurations
+
+As mentioned in the [Requirements](#requirements) section you must setup a static IP address for your HomeAssistant.
+This can be achieved via the `Settings->System->Network` menu:
+
+<img src="docs/ha-network-settings.png" alt="HomeAssistant screenshot"/>
+
+So far so good.
+The rest of this section deals instead with the DNS configuration for HomeAssistant
+(you can skip it if you're using the `Dnsmasq-DHCP` app only for DHCP).
+
+HomeAssistant has 2 distinct DNS configurations:
+
+1. The DNS servers you can set for each network interface in the `Settings->System->Network` menu and that change the DNS servers bound to the OS network interfaces.
+
+2. The [hassio_dns](https://github.com/home-assistant/plugin-dns) configurations; `hassio_dns` is a Docker container running an instance of CoreDNS that is used as DNS server for all HomeAssistant-controlled docker containers (e.g. all Apps run as Docker containers).
+Its configuration is changed only via the CLI utility [ha CLI utility](https://github.com/home-assistant/cli), there is no UI for that.
+
+Say that you want to create an automation inside HomeAssistant and you want to reference a DHCP client (e.g. `raspberry-abc`) by its DNS entry (e.g. `raspberry-abc.lan`). Your HomeAssistant Docker container  will contact the `hassio_dns` container to resolve the DNS entry `raspberry-abc.lan` and `hassio_dns` should fallback to `Dnsmasq-DHCP` to resolve it.
+
+You can achieve this using the [ha CLI utility](https://github.com/home-assistant/cli): log on your HomeAssistant via SSH (you can use the `Terminal & SSH` app) and run:
+
+```sh
+ha dns options --servers dns://<IP-of-your-home-assistant>
+```
+
+This will tell your HomeAssistant to look for DNS resolutions to... itself (!!), or more specifically
+to the IP where `Dnsmasq-DHCP` is listening on.
+
+You can validate this new configuration by:
+
+1. Opening the `Dnsmasq-DHCP` app UI, and copy-pasting any "Hostname" of any DHCP client from the table of current DHCP clients.
+
+2. Logging on your HomeAssistant via SSH (you can use the `Terminal & SSH` app) and running:
+
+```sh
+ping <hostname>.<DNS domain configured>
+```
+
+According to previous example you can try pinging `raspberry-abc.lan`.
+If the configuration is correct, you should see that the ping is resolving it to the same IP address shown in the `Dnsmasq-DHCP` app UI.
+
+The `ha dns options` command allows you to link the `Dnsmasq-DHCP` app to the Docker network used by HomeAssistant. However it's not enough to resolve DHCP clients from the OS layer of your HomeAssistant instance.
+
+If you want to resolve DHCP clients from there, you can SSH on your HomeAssistant server (in this case you should NOT be using the `Terminal & SSH` app because that presents you a terminal inside a Docker container!) and then:
+
+```sh
+mkdir /etc/systemd/resolved.conf.d
+vi /etc/systemd/resolved.conf.d/dnsmasq-dhcp.conf
+```
+
+Finally copy-paste the following:
+
+```
+[Resolve]
+DNS=127.0.0.1:53
+FallbackDNS=8.8.8.8
+Domains=lan
+```
+
+You can validate correctness of such configuration again by trying to ping a DHCP client:
+
+```sh
+ping <hostname>.<DNS domain configured>
+```
+
+
+
+## Using the App Beta version
 
 The _beta_ version of `Dnsmasq-DHCP` is where most bugfixes are first deployed and tested.
 Only if they are working fine, they will be merged in the _stable_ version.
@@ -299,7 +370,7 @@ Then stop the _stable_ version of the addon from HomeAssistant UI and start the 
 
 ## Development
 
-To test changes to `Dnsmasq-DHCP` locally, before deployment of the new addon, you can use:
+To test changes to `Dnsmasq-DHCP` locally, before deployment of the new app, you can use:
 
 ```sh
 make test-docker-image

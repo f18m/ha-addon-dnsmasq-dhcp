@@ -10,8 +10,8 @@ import (
 
 func TestIsValidRFC1123Hostname(t *testing.T) {
 	testCases := []struct {
-		input   string
-		wantOK  bool
+		input  string
+		wantOK bool
 	}{
 		{"myhost", true},
 		{"my-host", true},

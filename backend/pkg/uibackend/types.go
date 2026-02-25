@@ -117,6 +117,15 @@ type DnsServerStats struct {
 	UpstreamServers []DnsUpstreamStats `json:"upstream_servers_stats"`
 }
 
+// DnsmasqLogCounters holds counters for notable dnsmasq log messages detected since startup.
+type DnsmasqLogCounters struct {
+	// NotUsingConfiguredAddress counts occurrences of the dnsmasq message
+	// "not using configured address X because it is leased to Y".
+	// A non-zero value means some DHCP clients are not receiving their configured static IP
+	// because another device currently holds a lease for that address.
+	NotUsingConfiguredAddress int `json:"not_using_configured_address"`
+}
+
 // WebSocketMessage defines which contents get transmitted over the websocket in the
 // BACKEND -> UI direction.
 // Any structure contained here should have a sensible JSON marshalling helper.
@@ -134,6 +143,9 @@ type WebSocketMessage struct {
 
 	// DnsStats provides a live feed about DNS server basic metrics.
 	DnsStats DnsServerStats `json:"dns_stats"`
+
+	// LogCounters provides counters for notable dnsmasq log warning messages.
+	LogCounters DnsmasqLogCounters `json:"log_counters"`
 }
 
 // HtmlTemplateIpRange is used inside HtmlTemplate
@@ -162,6 +174,9 @@ type HtmlTemplate struct {
 	// DNS config info
 	DnsEnabled string
 	DnsDomain  string
+
+	// dnsmasq log counters (initial snapshot when the page is rendered)
+	LogCounters DnsmasqLogCounters
 
 	// embedded contents
 	CssFileContent        htmltemplate.CSS

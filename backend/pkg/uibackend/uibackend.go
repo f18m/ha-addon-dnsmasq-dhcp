@@ -65,6 +65,10 @@ type UIBackend struct {
 
 	// channel used to link a goroutine watching for DHCP lease file changes and the DHCP lease file processor
 	leasesCh chan []*dnsmasq.Lease
+
+	// counters for notable dnsmasq log messages, updated by the log-watcher goroutine
+	logCounters     DnsmasqLogCounters
+	logCountersLock sync.Mutex
 }
 
 // ReadFileAndParseInteger reads a file, parses the number, and returns it as an integer
@@ -248,10 +252,15 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 	}
 
 	// finally build the websocket message
+	b.logCountersLock.Lock()
+	logCounters := b.logCounters
+	b.logCountersLock.Unlock()
+
 	return WebSocketMessage{
 		CurrentClients: currentClients,
 		PastClients:    pastClients,
 		DnsStats:       dnsStats,
+		LogCounters:    logCounters,
 	}
 }
 
@@ -420,6 +429,13 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		// DNS config info
 		DnsEnabled: dnsEnableString,
 		DnsDomain:  b.options.dnsDomain,
+
+		// dnsmasq log counters (snapshot at page render time; updated live via WebSocket)
+		LogCounters: func() DnsmasqLogCounters {
+			b.logCountersLock.Lock()
+			defer b.logCountersLock.Unlock()
+			return b.logCounters
+		}(),
 
 		// misc
 		AddonVersion: b.config.Version,
@@ -734,6 +750,9 @@ func (b *UIBackend) ListenAndServe() error {
 	if b.options.forgetPastClientsAfter > 0 {
 		go b.forgetPastDhcpClients()
 	}
+
+	// Watch the dnsmasq log file for notable warning messages
+	go b.watchDnsmasqLog(defaultDnsmasqLogFile)
 
 	// Start server
 	b.logger.Infof("Starting server to listen on port %d\n", b.options.webUIPort)

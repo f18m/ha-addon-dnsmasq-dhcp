@@ -121,11 +121,16 @@ recreate-beta-branch:
 	  exit 1; \
 	fi
 	git checkout -B beta
-	git push -f origin beta
 	@echo
 	@echo "Editing the config.yaml to match BETA branch settings..."
+	yq -i '.version = "beta"' config.yaml
 	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
 	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
+	git add config.yaml
+	git commit -m "Update config.yaml for BETA branch"
+	@echo
+	@echo "Pushing to beta branch"
+	git push -f origin beta
 	@echo
 	@echo "Beta branch recreated from main and pushed to origin. "
 	@echo "Any new feature or bugfix can be committed to the beta branch."

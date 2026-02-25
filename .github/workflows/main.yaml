@@ -50,7 +50,11 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: stable
+          # we need to pin the go-version because we also pin the golangci-lint version 
+          # and we need to ensure compatibility between the two
+          # IMPORTANT: this should be kept in sync with the version of the "golang" image
+          # used in the build step of the Dockerfile 
+          go-version: '1.26.0'
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:

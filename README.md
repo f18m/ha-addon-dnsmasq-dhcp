@@ -1,4 +1,4 @@
-# Home Assistant Add-on: Dnsmasq as DNS and DHCP server
+# Home Assistant App: Dnsmasq as DNS and DHCP server
 
 *Take control of your network!*
 If you want to

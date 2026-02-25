@@ -7,8 +7,6 @@
 
 description: A DHCP server based on dnsmasq
 url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
-
-
 # IMPORTANT: in the "main" branch you want these 3 fields to be set to:
 #
 #   version: 4.x.y
@@ -20,11 +18,9 @@ url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 #   version: 4.x.y
 #   slug: dnsmasq-dhcp-beta
 #   name: Dnsmasq-DHCP BETA
-
 version: 4.0.0
-slug: dnsmasq-dhcp
-name: Dnsmasq-DHCP
-
+slug: dnsmasq-dhcp-beta
+name: Dnsmasq-DHCP BETA
 # advanced true means that the HA user can see this addon only if it's flagged as 'advanced' in the
 # Home Assistant UI
 advanced: true
@@ -141,10 +137,8 @@ schema:
     log_activity: bool
     port: int
     refresh_interval_sec: int
-
 # categorize this addon as a "system" addon
 startup: system
-
 privileged:
   # NET_ADMIN is required to allow dnsmasq to bind to (all) network interfaces specified in the config
   # and bind to the DNS port 53 and the DHCP port 67

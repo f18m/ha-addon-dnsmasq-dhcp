@@ -1,8 +1,9 @@
 all: build-docker-image
 
-#
+
+#####################################################################################
 # BUILD targets
-#
+#####################################################################################
 
 # non-containerized build of the backend -- requires you to have go installed:
 build-backend:
@@ -52,9 +53,9 @@ build-css-live:
 	docker run -v $(INPUT_SCSS):/sass/ -v $(OUTPUT_CSS):/css/ -it michalklempa/dart-sass:latest
 
 
-#
+#####################################################################################
 # DOCKER targets
-#
+#####################################################################################
 
 # NOTE: the architecture "armhf" (ARM v6) is excluded from the list because Go toolchain is not available there
 ARCH:=--amd64 --aarch64
@@ -108,6 +109,33 @@ DOCKER_RUN_OPTIONS:= \
 	--cap-add NET_ADMIN \
 	--network host
 
+#####################################################################################
+# Beta branch targets
+#####################################################################################
+
+
+recreate-beta-branch:
+	@branch=$(shell git rev-parse --abbrev-ref HEAD); \
+	if [ "$$branch" != "main" ]; then \
+	  echo "Error: You must be on the 'main' branch to recreate beta."; \
+	  exit 1; \
+	fi
+	git checkout -B beta
+	git push -f origin beta
+	@echo
+	@echo "Editing the config.yaml to match BETA branch settings..."
+	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
+	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
+	@echo
+	@echo "Beta branch recreated from main and pushed to origin. "
+	@echo "Any new feature or bugfix can be committed to the beta branch."
+	@echo "Please check https://github.com/f18m/ha-addon-dnsmasq-dhcp/wiki/release-process"
+	@echo
+
+#####################################################################################
+# Manual test targets
+#####################################################################################
+
 # when using the 'test-docker-image' target it's normal to see messages like
 #    "Something went wrong contacting the API"
 # at startup of the docker container... the reason is that the startup scripts
@@ -139,9 +167,9 @@ test-docker-image-live:
 		debug-image-live
 
 
-#
-# More testing targts
-#
+#####################################################################################
+# More (manual) testing targts
+#####################################################################################
 
 test-database-show:
 	sqlite3 test-db.sqlite3 'select * from dhcp_clients;' | column -t -s'|'

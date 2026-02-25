@@ -68,8 +68,8 @@ IMAGETAG:=$(shell yq .image config.yaml  | sed 's@{arch}@amd64@g')
 BACKEND_SOURCE_CODE_FILES:=$(shell find backend/ -type f -name '*.go')
 ROOTFS_FILES:=$(shell find rootfs/ -type f)
 
-# go to ghcr.io/home-assistant/amd64-builder to see available versions
-HOME_ASSISTANT_BUILDER_VERSION:=2025.11.0
+# go to https://github.com/home-assistant/builder/pkgs/container/amd64-builder to see available versions
+HOME_ASSISTANT_BUILDER_VERSION:=2026.02.1
 
 build-docker-image: $(BACKEND_SOURCE_CODE_FILES) $(ROOTFS_FILES)
 	docker run \
@@ -89,7 +89,7 @@ build-docker-image-raw:
 	# do not use the HomeAssistant builder -- this helps debugging some docker build issues
 	# see https://github.com/home-assistant/builder/blob/master/build.yaml
 	sudo docker build \
-		--build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.20 \
+		--build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22 \
 		-t $(IMAGETAG):localtest \
 		.
 

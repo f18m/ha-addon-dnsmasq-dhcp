@@ -7,8 +7,7 @@ bashio::log.info "Starting dnsmasq..."
 # Set max open file limit to speed up startup
 ulimit -n 1024
 
-exec dnsmasq -C "${CONFIG}" -z < /dev/null
+exec dnsmasq --conf-file="${CONFIG}" --bind-interfaces < /dev/null
 
 # useful for debug, to launch a container doing nothing to inspect templating results:
 #exec sleep 10000
-

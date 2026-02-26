@@ -238,6 +238,12 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Link: linkTemplate,
 		}
 
+		if _, exists := o.ipAddressReservationsByIP[ipAddr]; exists {
+			return fmt.Errorf("duplicate IP address found inside 'dhcp_ip_address_reservations': %s", ipAddr)
+		}
+		if _, exists := o.ipAddressReservationsByMAC[macAddr.String()]; exists {
+			return fmt.Errorf("duplicate MAC address found inside 'dhcp_ip_address_reservations': %s", macAddr)
+		}
 		o.ipAddressReservationsByIP[ipAddr] = ipReservation
 		o.ipAddressReservationsByMAC[macAddr.String()] = ipReservation
 	}

@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 # shellcheck shell=bash
-set -e
+set +e
 
 ##################
 # NGINX SETTINGS #
@@ -39,9 +39,13 @@ if [ -z "$ingress_interface" ]; then
     # means that the server will accept connections from ANY source
     ingress_interface=0.0.0.0
 fi
-if [ "$web_ui_port" = "null" ]; then
+if [ -z "$ingress_entry" ]; then
+    ingress_entry=/api/hassio_ingress/
+fi
+if [ -z "$web_ui_port" ]; then
     web_ui_port=8976
 fi
+
 
 log_info "Starting nginx ingress configuration..."
 log_info "Settings are: ingress_port=${ingress_port}, ingress_interface=${ingress_interface}, ingress_entry=${ingress_entry}, web_ui_port=${web_ui_port}"

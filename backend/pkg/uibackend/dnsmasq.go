@@ -1,17 +1,66 @@
 package uibackend
 
 import (
+	"bufio"
 	"context"
+	"dnsmasq-dhcp-backend/pkg/logger"
 	"fmt"
+	"io"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/miekg/dns"
 )
 
+// DnsmasqWrapper provides dnsmasq stats queries via CHAOS TXT records.
+type DnsmasqWrapper struct {
+	logger *logger.CustomLogger
+
+	// counters for notable dnsmasq log messages, updated by the log-watcher goroutine
+	logCounters     DnsmasqLogCounters
+	logCountersLock sync.Mutex
+}
+
+// DnsmasqLogCounters holds counters for notable dnsmasq log messages detected since startup.
+type DnsmasqLogCounters struct {
+	// NotUsingConfiguredAddress counts occurrences of the dnsmasq message
+	// "not using configured address X because it is leased to Y".
+	// A non-zero value means some DHCP clients are not receiving their configured static IP
+	// because another device currently holds a lease for that address.
+	NotUsingConfiguredAddress int `json:"not_using_configured_address"`
+}
+
+// dnsmasqLogWarning describes a warning pattern to search for in dnsmasq logs
+type dnsmasqLogWarning struct {
+	// counterField is the name of the corresponding field in DnsmasqLogCounters
+	counterField string
+	pattern      *regexp.Regexp
+}
+
+// dnsmasqLogWarnings is the list of log patterns to watch for in dnsmasq logs
+var dnsmasqLogWarnings = []dnsmasqLogWarning{
+	{
+		// dnsmasq emits this when it cannot use a configured static IP because another
+		// client currently holds a lease for it; e.g.:
+		//   "not using configured address 192.168.1.106 because it is leased to 1c:db:d4:13:89:f0"
+		counterField: "not_using_configured_address",
+		pattern:      regexp.MustCompile(`not using configured address`),
+	},
+}
+
+// NewDnsmasqWrapper returns an empty DnsmasqWrapper with the provided logger.
+func NewDnsmasqWrapper(logger *logger.CustomLogger) DnsmasqWrapper {
+	return DnsmasqWrapper{
+		logger: logger,
+	}
+}
+
 // chaosTXTQuery performs a DNS CHAOS TXT query against a specified DNS server.
-func chaosTXTQuery(server, query string, timeout time.Duration) ([]string, error) {
+func (w *DnsmasqWrapper) chaosTXTQuery(server, query string, timeout time.Duration) ([]string, error) {
 	// Create a new DNS client.
 	c := new(dns.Client)
 	c.Timeout = timeout
@@ -50,9 +99,9 @@ func chaosTXTQuery(server, query string, timeout time.Duration) ([]string, error
 	return txt, nil
 }
 
-func chaosTXTQueryInteger(server, query string, timeout time.Duration) (int, error) { //nolint:unparam
+func (w *DnsmasqWrapper) chaosTXTQueryInteger(server, query string, timeout time.Duration) (int, error) { //nolint:unparam
 	// Invoke chaosTXTQuery to get the string value.
-	strVal, err := chaosTXTQuery(server, query, timeout)
+	strVal, err := w.chaosTXTQuery(server, query, timeout)
 	if err != nil {
 		return 0, err
 	}
@@ -70,7 +119,9 @@ func chaosTXTQueryInteger(server, query string, timeout time.Duration) (int, err
 	return intVal, nil
 }
 
-func getDnsStats(serverHost string, serverPort int) (DnsServerStats, error) {
+// getDnsStats queries the external dnsmasq process for its internal DNS stats and
+// returns them in a structured format.
+func (w *DnsmasqWrapper) getDnsStats(serverHost string, serverPort int) (DnsServerStats, error) {
 	dnsServer := fmt.Sprintf("%s:%d", serverHost, serverPort)
 
 	// since the server is local, the max query duration is expected to be small
@@ -85,31 +136,31 @@ func getDnsStats(serverHost string, serverPort int) (DnsServerStats, error) {
 	// Start querying all cache-related stats
 	var intStat int
 	var err, lastErr error
-	intStat, err = chaosTXTQueryInteger(dnsServer, "cachesize.bind", dnsTimeout)
+	intStat, err = w.chaosTXTQueryInteger(dnsServer, "cachesize.bind", dnsTimeout)
 	if err == nil {
 		ret.CacheSize = intStat
 	} else {
 		lastErr = err
 	}
-	intStat, err = chaosTXTQueryInteger(dnsServer, "insertions.bind", dnsTimeout)
+	intStat, err = w.chaosTXTQueryInteger(dnsServer, "insertions.bind", dnsTimeout)
 	if err == nil {
 		ret.CacheInsertions = intStat
 	} else {
 		lastErr = err
 	}
-	intStat, err = chaosTXTQueryInteger(dnsServer, "evictions.bind", dnsTimeout)
+	intStat, err = w.chaosTXTQueryInteger(dnsServer, "evictions.bind", dnsTimeout)
 	if err == nil {
 		ret.CacheEvictions = intStat
 	} else {
 		lastErr = err
 	}
-	intStat, err = chaosTXTQueryInteger(dnsServer, "misses.bind", dnsTimeout)
+	intStat, err = w.chaosTXTQueryInteger(dnsServer, "misses.bind", dnsTimeout)
 	if err == nil {
 		ret.CacheMisses = intStat
 	} else {
 		lastErr = err
 	}
-	intStat, err = chaosTXTQueryInteger(dnsServer, "hits.bind", dnsTimeout)
+	intStat, err = w.chaosTXTQueryInteger(dnsServer, "hits.bind", dnsTimeout)
 	if err == nil {
 		ret.CacheHits = intStat
 	} else {
@@ -118,7 +169,7 @@ func getDnsStats(serverHost string, serverPort int) (DnsServerStats, error) {
 
 	// Interpret the servers.bind output
 	var serversEncodedStr []string
-	serversEncodedStr, err = chaosTXTQuery(dnsServer, "servers.bind", dnsTimeout)
+	serversEncodedStr, err = w.chaosTXTQuery(dnsServer, "servers.bind", dnsTimeout)
 	if err != nil {
 		lastErr = err
 	}
@@ -144,4 +195,82 @@ func getDnsStats(serverHost string, serverPort int) (DnsServerStats, error) {
 	}
 
 	return ret, lastErr
+}
+
+// processLogLine checks a single log line against all warning patterns and increments
+// the matching counters.
+func (b *DnsmasqWrapper) processLogLine(line string) {
+	for _, w := range dnsmasqLogWarnings {
+		if w.pattern.MatchString(line) {
+			b.logCountersLock.Lock()
+			switch w.counterField { //nolint:gocritic
+			case "not_using_configured_address":
+				b.logCounters.NotUsingConfiguredAddress++
+			}
+			b.logCountersLock.Unlock()
+			b.logger.Warnf("dnsmasq log warning [%s] detected: %s", w.counterField, line)
+		}
+	}
+}
+
+// watchDnsmasqLog tails the dnsmasq log file and calls processLogLine for each new line.
+// It retries until the file becomes available, then follows it indefinitely.
+// Intended to run in a separate goroutine.
+func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
+	// Wait for the log file to appear (dnsmasq may not have started yet)
+	var file *os.File
+	var err error
+	for {
+		file, err = os.Open(logFilePath) //nolint:gosec
+		if err == nil {
+			break
+		}
+		b.logger.Warnf("dnsmasq log file %s not available yet, retrying in 1s: %s", logFilePath, err.Error())
+		time.Sleep(1 * time.Second)
+	}
+	defer func() { _ = file.Close() }()
+
+	// Seek to the end so we only process new lines written after startup
+	if _, err = file.Seek(0, io.SeekEnd); err != nil {
+		b.logger.Warnf("failed to seek dnsmasq log file: %s", err.Error())
+	}
+
+	const maxLinesBeforeTruncate = 10000
+	linesRead := 0
+
+	reader := bufio.NewReader(file)
+	for {
+		line, readErr := reader.ReadString('\n')
+		if readErr != nil {
+			if readErr == io.EOF {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			b.logger.Warnf("error reading dnsmasq log: %s", readErr.Error())
+			return
+		}
+		if line != "" {
+			b.processLogLine(line)
+			linesRead++
+
+			// Truncate the log file periodically to prevent unbounded growth
+			if linesRead >= maxLinesBeforeTruncate {
+				b.logger.Infof("truncating dnsmasq log file after %d lines", linesRead)
+				if err := file.Truncate(0); err != nil {
+					b.logger.Warnf("failed to truncate dnsmasq log file: %s", err.Error())
+				} else if _, err := file.Seek(0, io.SeekEnd); err != nil {
+					b.logger.Warnf("failed to seek to end after truncate: %s", err.Error())
+				} else {
+					reader.Reset(file)
+					linesRead = 0
+				}
+			}
+		}
+	}
+}
+
+func (w *DnsmasqWrapper) GetLogCounters() DnsmasqLogCounters {
+	w.logCountersLock.Lock()
+	defer w.logCountersLock.Unlock()
+	return w.logCounters
 }

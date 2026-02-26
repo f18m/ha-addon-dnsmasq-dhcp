@@ -113,7 +113,6 @@ DOCKER_RUN_OPTIONS:= \
 # Beta branch targets
 #####################################################################################
 
-
 recreate-beta-branch:
 	@branch=$(shell git rev-parse --abbrev-ref HEAD); \
 	if [ "$$branch" != "main" ]; then \
@@ -145,7 +144,7 @@ recreate-beta-branch:
 #    "Something went wrong contacting the API"
 # at startup of the docker container... the reason is that the startup scripts
 # will try to reach to HomeAssistant Supervisor which is not running...
-test-docker-image: 
+test-docker-image:
 	$(MAKE) FAST=1 build-docker-image
 	@echo
 	@echo "Starting container of image $(IMAGETAG):localtest" 

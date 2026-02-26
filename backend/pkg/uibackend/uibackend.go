@@ -53,6 +53,9 @@ type UIBackend struct {
 	clients     map[*websocket.Conn]bool
 	clientsLock sync.Mutex
 
+	// a wrapper that allows us to extract some stats from dnsmasq logs & via DNS
+	dnsmasq DnsmasqWrapper
+
 	// the most updated view on DHCP clients currently available
 	dhcpClientData     []DhcpClientData
 	dhcpClientDataLock sync.Mutex
@@ -117,6 +120,7 @@ func NewUIBackend(logger *logger.CustomLogger) UIBackend {
 		startTimestamp: time.Now(),
 		startEpoch:     startEpoch,
 		clients:        make(map[*websocket.Conn]bool),
+		dnsmasq:        NewDnsmasqWrapper(logger),
 		dhcpClientData: nil,
 		trackerDB:      *db,
 		broadcastCh:    make(chan struct{}),
@@ -241,7 +245,7 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 
 	// this code is meant to be executed on the same machine/container where dnsmasq is running, so
 	// that's why we pass "localhost" as DNS server host:
-	dnsStats, err := getDnsStats("localhost", b.options.dnsPort)
+	dnsStats, err := b.dnsmasq.getDnsStats("localhost", b.options.dnsPort)
 	if err != nil {
 		b.logger.Warnf("failed to get updated DNS stats: %s", err.Error())
 		// keep going
@@ -252,6 +256,7 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 		CurrentClients: currentClients,
 		PastClients:    pastClients,
 		DnsStats:       dnsStats,
+		LogCounters:    b.dnsmasq.GetLogCounters(),
 	}
 }
 
@@ -420,6 +425,9 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		// DNS config info
 		DnsEnabled: dnsEnableString,
 		DnsDomain:  b.options.dnsDomain,
+
+		// dnsmasq log counters
+		LogCounters: b.dnsmasq.GetLogCounters(),
 
 		// misc
 		AddonVersion: b.config.Version,
@@ -734,6 +742,9 @@ func (b *UIBackend) ListenAndServe() error {
 	if b.options.forgetPastClientsAfter > 0 {
 		go b.forgetPastDhcpClients()
 	}
+
+	// Watch the dnsmasq log file for notable warning messages
+	go b.dnsmasq.watchDnsmasqLog(defaultDnsmasqLogFile)
 
 	// Start server
 	b.logger.Infof("Starting server to listen on port %d\n", b.options.webUIPort)

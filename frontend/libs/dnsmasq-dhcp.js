@@ -394,12 +394,22 @@ function updateDHCPStatus(data, dhcp_static_ip, dhcp_addresses_used, messageElem
     // format server uptime
     uptime_str = formatTimeSince(config["dhcpServerStartTime"])
 
+    // build warning message if some clients are not using their configured address
+    var warning_str = ""
+    if (data.log_counters && data.log_counters.not_using_configured_address > 0) {
+        warning_str = "<br/><span class='boldText warningText'>⚠ Warning: " + 
+            data.log_counters.not_using_configured_address + 
+            " time(s) dnsmasq could not assign a configured static address because it was already leased to another device. " +
+            "Please wait for the conflicting leases to expire or restart the affected devices.</span>"
+    }
+
     // update the message
     messageElem.innerHTML = "<span class='boldText'>" + data.current_clients.length + " clients</span> currently hold a DHCP lease.<br/>" + 
                         dhcp_static_ip + " clients have a static IP address configuration.<br/>" +
                         dhcp_addresses_used + " clients are within the DHCP pool. DHCP pool contains " + config["dhcpPoolSize"] + " IP addresses and its usage is at " + usagePerc + "%.<br/>" +
                         "<span class='boldText'>" + data.past_clients.length + " past clients</span> contacted the server some time ago but failed to do so since last DHCP server restart, " + 
-                        uptime_str + " hh:mm:ss ago.<br/>";
+                        uptime_str + " hh:mm:ss ago.<br/>" +
+                        warning_str;
 }
 
 function updateDNSStatus(data, messageElem) {

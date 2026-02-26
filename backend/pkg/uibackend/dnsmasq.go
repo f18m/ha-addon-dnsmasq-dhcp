@@ -235,6 +235,9 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 		b.logger.Warnf("failed to seek dnsmasq log file: %s", err.Error())
 	}
 
+	const maxLinesBeforeTruncate = 10000
+	linesRead := 0
+
 	reader := bufio.NewReader(file)
 	for {
 		line, readErr := reader.ReadString('\n')
@@ -248,6 +251,20 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 		}
 		if line != "" {
 			b.processLogLine(line)
+			linesRead++
+
+			// Truncate the log file periodically to prevent unbounded growth
+			if linesRead >= maxLinesBeforeTruncate {
+				b.logger.Infof("truncating dnsmasq log file after %d lines", linesRead)
+				if err := file.Truncate(0); err != nil {
+					b.logger.Warnf("failed to truncate dnsmasq log file: %s", err.Error())
+				} else if _, err := file.Seek(0, io.SeekEnd); err != nil {
+					b.logger.Warnf("failed to seek to end after truncate: %s", err.Error())
+				} else {
+					reader.Reset(file)
+					linesRead = 0
+				}
+			}
 		}
 	}
 }

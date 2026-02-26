@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -354,10 +355,14 @@ func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
 			continue
 		}
 
-		// The cmdline file contains null-terminated arguments; convert to a searchable string
-		cmdlineStr := strings.ReplaceAll(string(cmdline), "\x00", " ")
-		if strings.Contains(cmdlineStr, "dnsmasq") {
-			pids = append(pids, pid)
+		// The cmdline file contains null-terminated arguments
+		// Truncate at the first null to get the executable name
+		cmdlineArgs := strings.Split(string(cmdline), "\x00")
+		if len(cmdlineArgs) > 0 && cmdlineArgs[0] != "" {
+			execName := filepath.Base(cmdlineArgs[0])
+			if execName == "dnsmasq" {
+				pids = append(pids, pid)
+			}
 		}
 	}
 
@@ -377,7 +382,21 @@ func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
 		return true
 
 	default:
-		w.logger.Warnf("found multiple dnsmasq processes with PIDs: %v; this is unexpected", pids)
+		// Multiple dnsmasq processes found; select the one with the lowest PID
+		minPID := pids[0]
+		for _, pid := range pids[1:] {
+			if pid < minPID {
+				minPID = pid
+			}
+		}
+
+		w.logger.Infof("found multiple dnsmasq processes with PIDs: %v; selecting lowest PID: %d", pids, minPID)
+
+		// Update the PID with the lowest value
+		w.dnsmasqPIDsLock.Lock()
+		w.dnsmasqPID = minPID
+		w.dnsmasqPIDsLock.Unlock()
+
 		return false
 	}
 }

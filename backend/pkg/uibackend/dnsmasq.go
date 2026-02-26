@@ -377,6 +377,12 @@ func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
 	switch len(pids) {
 	case 0:
 		w.logger.Warnf("no dnsmasq processes found")
+
+		// clear the PID since we found no running dnsmasq process
+		w.dnsmasqPIDsLock.Lock()
+		w.dnsmasqPID = 0
+		w.dnsmasqPIDsLock.Unlock()
+
 		return false
 
 	case 1:

@@ -117,15 +117,6 @@ type DnsServerStats struct {
 	UpstreamServers []DnsUpstreamStats `json:"upstream_servers_stats"`
 }
 
-// DnsmasqLogCounters holds counters for notable dnsmasq log messages detected since startup.
-type DnsmasqLogCounters struct {
-	// NotUsingConfiguredAddress counts occurrences of the dnsmasq message
-	// "not using configured address X because it is leased to Y".
-	// A non-zero value means some DHCP clients are not receiving their configured static IP
-	// because another device currently holds a lease for that address.
-	NotUsingConfiguredAddress int `json:"not_using_configured_address"`
-}
-
 // WebSocketMessage defines which contents get transmitted over the websocket in the
 // BACKEND -> UI direction.
 // Any structure contained here should have a sensible JSON marshalling helper.

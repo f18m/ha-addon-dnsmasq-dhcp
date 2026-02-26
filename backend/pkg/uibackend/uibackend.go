@@ -53,6 +53,9 @@ type UIBackend struct {
 	clients     map[*websocket.Conn]bool
 	clientsLock sync.Mutex
 
+	// a wrapper that allows us to extract some stats from dnsmasq logs & via DNS
+	dnsmasq DnsmasqWrapper
+
 	// the most updated view on DHCP clients currently available
 	dhcpClientData     []DhcpClientData
 	dhcpClientDataLock sync.Mutex
@@ -65,10 +68,6 @@ type UIBackend struct {
 
 	// channel used to link a goroutine watching for DHCP lease file changes and the DHCP lease file processor
 	leasesCh chan []*dnsmasq.Lease
-
-	// counters for notable dnsmasq log messages, updated by the log-watcher goroutine
-	logCounters     DnsmasqLogCounters
-	logCountersLock sync.Mutex
 }
 
 // ReadFileAndParseInteger reads a file, parses the number, and returns it as an integer
@@ -121,6 +120,7 @@ func NewUIBackend(logger *logger.CustomLogger) UIBackend {
 		startTimestamp: time.Now(),
 		startEpoch:     startEpoch,
 		clients:        make(map[*websocket.Conn]bool),
+		dnsmasq:        NewDnsmasqWrapper(logger),
 		dhcpClientData: nil,
 		trackerDB:      *db,
 		broadcastCh:    make(chan struct{}),
@@ -245,22 +245,18 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 
 	// this code is meant to be executed on the same machine/container where dnsmasq is running, so
 	// that's why we pass "localhost" as DNS server host:
-	dnsStats, err := getDnsStats("localhost", b.options.dnsPort)
+	dnsStats, err := b.dnsmasq.getDnsStats("localhost", b.options.dnsPort)
 	if err != nil {
 		b.logger.Warnf("failed to get updated DNS stats: %s", err.Error())
 		// keep going
 	}
 
 	// finally build the websocket message
-	b.logCountersLock.Lock()
-	logCounters := b.logCounters
-	b.logCountersLock.Unlock()
-
 	return WebSocketMessage{
 		CurrentClients: currentClients,
 		PastClients:    pastClients,
 		DnsStats:       dnsStats,
-		LogCounters:    logCounters,
+		LogCounters:    b.dnsmasq.GetLogCounters(),
 	}
 }
 
@@ -430,12 +426,8 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		DnsEnabled: dnsEnableString,
 		DnsDomain:  b.options.dnsDomain,
 
-		// dnsmasq log counters (snapshot at page render time; updated live via WebSocket)
-		LogCounters: func() DnsmasqLogCounters {
-			b.logCountersLock.Lock()
-			defer b.logCountersLock.Unlock()
-			return b.logCounters
-		}(),
+		// dnsmasq log counters
+		LogCounters: b.dnsmasq.GetLogCounters(),
 
 		// misc
 		AddonVersion: b.config.Version,
@@ -752,7 +744,7 @@ func (b *UIBackend) ListenAndServe() error {
 	}
 
 	// Watch the dnsmasq log file for notable warning messages
-	go b.watchDnsmasqLog(defaultDnsmasqLogFile)
+	go b.dnsmasq.watchDnsmasqLog(defaultDnsmasqLogFile)
 
 	// Start server
 	b.logger.Infof("Starting server to listen on port %d\n", b.options.webUIPort)

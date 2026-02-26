@@ -130,9 +130,9 @@ func (w *DnsmasqWrapper) chaosTXTQueryInteger(server, query string, timeout time
 	return intVal, nil
 }
 
-// getDnsStats queries the external dnsmasq process for its internal DNS stats and
+// GetDnsStats queries the external dnsmasq process for its internal DNS stats and
 // returns them in a structured format.
-func (w *DnsmasqWrapper) getDnsStats(serverHost string, serverPort int) (DnsServerStats, error) {
+func (w *DnsmasqWrapper) GetDnsStats(serverHost string, serverPort int) (DnsServerStats, error) {
 	dnsServer := fmt.Sprintf("%s:%d", serverHost, serverPort)
 
 	// since the server is local, the max query duration is expected to be small
@@ -210,16 +210,16 @@ func (w *DnsmasqWrapper) getDnsStats(serverHost string, serverPort int) (DnsServ
 
 // processLogLine checks a single log line against all warning patterns and increments
 // the matching counters.
-func (b *DnsmasqWrapper) processLogLine(line string) {
-	for _, w := range dnsmasqLogWarnings {
-		if w.pattern.MatchString(line) {
-			b.logCountersLock.Lock()
-			switch w.counterField { //nolint:gocritic
+func (w *DnsmasqWrapper) processLogLine(line string) {
+	for _, warning := range dnsmasqLogWarnings {
+		if warning.pattern.MatchString(line) {
+			w.logCountersLock.Lock()
+			switch warning.counterField { //nolint:gocritic
 			case "not_using_configured_address":
-				b.logCounters.NotUsingConfiguredAddress++
+				w.logCounters.NotUsingConfiguredAddress++
 			}
-			b.logCountersLock.Unlock()
-			b.logger.Warnf("dnsmasq log warning [%s] detected: %s", w.counterField, line)
+			w.logCountersLock.Unlock()
+			w.logger.Warnf("dnsmasq log warning [%s] detected: %s", warning.counterField, line)
 		}
 	}
 
@@ -231,7 +231,7 @@ func (b *DnsmasqWrapper) processLogLine(line string) {
 // watchDnsmasqLog tails the dnsmasq log file and calls processLogLine for each new line.
 // It retries until the file becomes available, then follows it indefinitely.
 // Intended to run in a separate goroutine.
-func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
+func (w *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 	// Wait for the log file to appear (dnsmasq may not have started yet)
 	var file *os.File
 	var err error
@@ -241,16 +241,11 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 		if err == nil {
 			break
 		}
-		b.logger.Warnf("dnsmasq log file %s not available yet, retrying in 1s: %s", logFilePath, err.Error())
+		w.logger.Warnf("dnsmasq log file %s not available yet, retrying in 1s: %s", logFilePath, err.Error())
 		time.Sleep(1 * time.Second)
 	}
 	defer func() { _ = file.Close() }()
-	/*
-		// Seek to the end so we only process new lines written after startup
-		if _, err = file.Seek(0, io.SeekEnd); err != nil {
-			b.logger.Warnf("failed to seek dnsmasq log file: %s", err.Error())
-		}
-	*/
+
 	const maxLinesBeforeTruncate = 500
 	linesRead := 0
 	linesNextTruncate := maxLinesBeforeTruncate
@@ -263,11 +258,11 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
-			b.logger.Warnf("error reading dnsmasq log: %s", readErr.Error())
+			w.logger.Warnf("error reading dnsmasq log: %s", readErr.Error())
 			return
 		}
 		if line != "" {
-			b.processLogLine(line)
+			w.processLogLine(line)
 			linesRead++
 
 			// Truncate the log file periodically to prevent unbounded growth
@@ -278,45 +273,30 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 				linesNextTruncate += maxLinesBeforeTruncate
 
 				// make sure we know the PID of the dnsmasq process before truncating the log
-				if !b.updateDnsmasqPIDs() {
+				if !w.updateDnsmasqPIDs() {
 					// failed somehow... skip any truncation
-					b.logger.Warnf("skipping log file truncation because dnsmasq PID is unknown")
+					w.logger.Warnf("skipping log file truncation because dnsmasq PID is unknown")
 					continue
 				}
 
+				// truncate & re-seek
 				if err := file.Truncate(0); err != nil {
-					b.logger.Warnf("failed to truncate dnsmasq log file: %s", err.Error())
+					w.logger.Warnf("failed to truncate dnsmasq log file: %s", err.Error())
+					continue
+				}
+				if _, err := file.Seek(0, io.SeekStart); err != nil {
+					w.logger.Warnf("failed to seek to the start of dnsmasq log file: %s", err.Error())
 					continue
 				}
 
-				_, err = file.Seek(0, io.SeekStart)
-				if err != nil {
-					b.logger.Warnf("failed to seek to the start of dnsmasq log file: %s", err.Error())
-					continue
-				}
-
-				/*
-						offset, err := file.Seek(0, io.SeekCurrent)
-						if err != nil {
-							b.logger.Warnf("failed to get current offset in dnsmasq log file: %s", err.Error())
-							continue
-						}
-
-						b.logger.Infof("truncating dnsmasq log file after %d lines, at offset %d", linesRead, offset)
-
-
-					/*
-						_ = file.Close()
-						if err := os.Remove(logFilePath, 0); err != nil {
-							b.logger.Warnf("failed to truncate dnsmasq log file: %s", err.Error())
-						}
-				*/
+				// successfully truncated the log file, reset the reader and counters
+				w.logger.Infof("Successfully truncated temporary dnsmasq log file")
 				reader.Reset(file)
 				linesRead = 0
 				linesNextTruncate = maxLinesBeforeTruncate
 
 				// send SIGUSR2 to dnsmasq to reopen the log file
-				_ = syscall.Kill(b.GetDnsmasqPID(), syscall.SIGUSR2)
+				_ = syscall.Kill(w.GetDnsmasqPID(), syscall.SIGUSR2)
 			}
 		}
 	}

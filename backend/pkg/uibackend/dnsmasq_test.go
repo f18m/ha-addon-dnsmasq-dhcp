@@ -34,9 +34,9 @@ func TestGetDnsStats_NoUpstreamServers(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	stats, err := dnsmasq.getDnsStats("localhost", 12345)
+	stats, err := dnsmasq.GetDnsStats("localhost", 12345)
 	if err != nil {
-		t.Fatalf("getDnsStats failed: %v", err)
+		t.Fatalf("GetDnsStats failed: %v", err)
 	}
 
 	// Assertions
@@ -79,7 +79,7 @@ func TestGetDnsStats_WithUpstreamServers(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	stats, err := dnsmasq.getDnsStats("localhost", 12346)
+	stats, err := dnsmasq.GetDnsStats("localhost", 12346)
 	if err != nil {
 		t.Fatalf("getDnsStats failed with resolv-file: %v", err)
 	}

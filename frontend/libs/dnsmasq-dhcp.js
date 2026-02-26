@@ -409,7 +409,7 @@ function updateDHCPStatus(data, dhcp_static_ip, dhcp_addresses_used, messageElem
             " time(s) a configured static address was not assigned to the configured MAC address because it was already leased to another device. " +
             "Please wait for the conflicting leases to expire or restart the affected devices.</span><br/>"
     } else {
-        counters_str = "<span class='boldText'>0</span> occurrences of DHCP lease conflict<br/>"
+        counters_str = "<span class='boldText'>0</span> occurrences of DHCP lease conflict.<br/>"
     }
 
     // update the message

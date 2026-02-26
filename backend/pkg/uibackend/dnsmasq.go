@@ -235,7 +235,7 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 		b.logger.Warnf("failed to seek dnsmasq log file: %s", err.Error())
 	}
 
-	const maxLinesBeforeTruncate = 10000
+	const maxLinesBeforeTruncate = 2000
 	linesRead := 0
 
 	reader := bufio.NewReader(file)

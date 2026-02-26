@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/miekg/dns"
@@ -23,6 +24,10 @@ type DnsmasqWrapper struct {
 	// counters for notable dnsmasq log messages, updated by the log-watcher goroutine
 	logCounters     DnsmasqLogCounters
 	logCountersLock sync.Mutex
+
+	// PIDs of running dnsmasq processes, updated by the PID-monitor goroutine
+	dnsmasqPID      int
+	dnsmasqPIDsLock sync.Mutex
 }
 
 // DnsmasqLogCounters holds counters for notable dnsmasq log messages detected since startup.
@@ -53,10 +58,15 @@ var dnsmasqLogWarnings = []dnsmasqLogWarning{
 }
 
 // NewDnsmasqWrapper returns an empty DnsmasqWrapper with the provided logger.
-func NewDnsmasqWrapper(logger *logger.CustomLogger) DnsmasqWrapper {
-	return DnsmasqWrapper{
+func NewDnsmasqWrapper(logger *logger.CustomLogger) *DnsmasqWrapper {
+	d := DnsmasqWrapper{
 		logger: logger,
 	}
+
+	// Initialize the PIDs list at startup
+	d.updateDnsmasqPIDs()
+
+	return &d
 }
 
 // chaosTXTQuery performs a DNS CHAOS TXT query against a specified DNS server.
@@ -211,6 +221,10 @@ func (b *DnsmasqWrapper) processLogLine(line string) {
 			b.logger.Warnf("dnsmasq log warning [%s] detected: %s", w.counterField, line)
 		}
 	}
+
+	// print the log line to stderr -- this is mimicking a "tee" instance
+	// running on the dnsmasq log file.
+	fmt.Fprint(os.Stderr, line)
 }
 
 // watchDnsmasqLog tails the dnsmasq log file and calls processLogLine for each new line.
@@ -221,7 +235,8 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 	var file *os.File
 	var err error
 	for {
-		file, err = os.Open(logFilePath) //nolint:gosec
+		// open in read-write so we can truncate it later
+		file, err = os.OpenFile(logFilePath, os.O_RDWR, 0) //nolint:gosec
 		if err == nil {
 			break
 		}
@@ -229,12 +244,12 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 		time.Sleep(1 * time.Second)
 	}
 	defer func() { _ = file.Close() }()
-
-	// Seek to the end so we only process new lines written after startup
-	if _, err = file.Seek(0, io.SeekEnd); err != nil {
-		b.logger.Warnf("failed to seek dnsmasq log file: %s", err.Error())
-	}
-
+	/*
+		// Seek to the end so we only process new lines written after startup
+		if _, err = file.Seek(0, io.SeekEnd); err != nil {
+			b.logger.Warnf("failed to seek dnsmasq log file: %s", err.Error())
+		}
+	*/
 	const maxLinesBeforeTruncate = 2000
 	linesRead := 0
 
@@ -255,15 +270,44 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 
 			// Truncate the log file periodically to prevent unbounded growth
 			if linesRead >= maxLinesBeforeTruncate {
-				b.logger.Infof("truncating dnsmasq log file after %d lines", linesRead)
+
+				// make sure we know the PID of the dnsmasq process before truncating the log
+				if !b.updateDnsmasqPIDs() {
+					// failed somehow... skip any truncation
+					continue
+				}
+
 				if err := file.Truncate(0); err != nil {
 					b.logger.Warnf("failed to truncate dnsmasq log file: %s", err.Error())
-				} else if _, err := file.Seek(0, io.SeekEnd); err != nil {
-					b.logger.Warnf("failed to seek to end after truncate: %s", err.Error())
-				} else {
-					reader.Reset(file)
-					linesRead = 0
 				}
+
+				_, err = file.Seek(0, io.SeekStart)
+				if err != nil {
+					b.logger.Warnf("failed to seek to the start of dnsmasq log file: %s", err.Error())
+					continue
+				}
+
+				/*
+						offset, err := file.Seek(0, io.SeekCurrent)
+						if err != nil {
+							b.logger.Warnf("failed to get current offset in dnsmasq log file: %s", err.Error())
+							continue
+						}
+
+						b.logger.Infof("truncating dnsmasq log file after %d lines, at offset %d", linesRead, offset)
+
+
+					/*
+						_ = file.Close()
+						if err := os.Remove(logFilePath, 0); err != nil {
+							b.logger.Warnf("failed to truncate dnsmasq log file: %s", err.Error())
+						}
+				*/
+				reader.Reset(file)
+				linesRead = 0
+
+				// send SIGUSR2 to dnsmasq to reopen the log file
+				_ = syscall.Kill(b.GetDnsmasqPID(), syscall.SIGUSR2)
 			}
 		}
 	}
@@ -273,4 +317,78 @@ func (w *DnsmasqWrapper) GetLogCounters() DnsmasqLogCounters {
 	w.logCountersLock.Lock()
 	defer w.logCountersLock.Unlock()
 	return w.logCounters
+}
+
+// updateDnsmasqPIDs searches for all running dnsmasq processes and updates the PIDs list.
+// It iterates through /proc to find processes with "dnsmasq" in their command line.
+// Intended to run in a separate goroutine and periodically poll for process changes.
+func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
+	procDir := "/proc"
+	entries, err := os.ReadDir(procDir)
+	if err != nil {
+		w.logger.Warnf("failed to read /proc directory: %s", err.Error())
+		return false
+	}
+
+	var pids []int
+
+	// Iterate through all entries in /proc
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		// Try to parse the directory name as a PID
+		pidStr := entry.Name()
+		pid, err := strconv.Atoi(pidStr)
+		if err != nil {
+			// Not a PID directory, skip
+			continue
+		}
+
+		// Read the cmdline file to check if this is a dnsmasq process
+		cmdlineFile := fmt.Sprintf("%s/%s/cmdline", procDir, pidStr)
+		cmdline, err := os.ReadFile(cmdlineFile) //nolint:gosec
+		if err != nil {
+			// Process may have exited or we don't have permission, skip
+			continue
+		}
+
+		// The cmdline file contains null-terminated arguments; convert to a searchable string
+		cmdlineStr := strings.ReplaceAll(string(cmdline), "\x00", " ")
+		if strings.Contains(cmdlineStr, "dnsmasq") {
+			pids = append(pids, pid)
+		}
+	}
+
+	switch len(pids) {
+	case 0:
+		w.logger.Warnf("no dnsmasq processes found")
+		return false
+
+	case 1:
+		w.logger.Infof("found the dnsmasq process having PID: %v", pids[0])
+
+		// Update the PIDs list with the new values
+		w.dnsmasqPIDsLock.Lock()
+		w.dnsmasqPID = pids[0]
+		w.dnsmasqPIDsLock.Unlock()
+
+		return true
+
+	default:
+		w.logger.Warnf("found multiple dnsmasq processes with PIDs: %v; this is unexpected", pids)
+		return false
+	}
+}
+
+// GetDnsmasqPID returns the PID of the current dnsmasq process.
+func (w *DnsmasqWrapper) GetDnsmasqPID() int {
+	w.dnsmasqPIDsLock.Lock()
+	defer w.dnsmasqPIDsLock.Unlock()
+	// Return a copy to prevent external modifications
+	if w.dnsmasqPID == 0 {
+		return 0
+	}
+	return w.dnsmasqPID
 }

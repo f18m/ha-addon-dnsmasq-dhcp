@@ -54,7 +54,7 @@ type UIBackend struct {
 	clientsLock sync.Mutex
 
 	// a wrapper that allows us to extract some stats from dnsmasq logs & via DNS
-	dnsmasq DnsmasqWrapper
+	dnsmasq *DnsmasqWrapper
 
 	// the most updated view on DHCP clients currently available
 	dhcpClientData     []DhcpClientData

@@ -134,6 +134,9 @@ type WebSocketMessage struct {
 
 	// DnsStats provides a live feed about DNS server basic metrics.
 	DnsStats DnsServerStats `json:"dns_stats"`
+
+	// LogCounters provides counters for notable dnsmasq log warning messages.
+	LogCounters DnsmasqLogCounters `json:"log_counters"`
 }
 
 // HtmlTemplateIpRange is used inside HtmlTemplate
@@ -162,6 +165,9 @@ type HtmlTemplate struct {
 	// DNS config info
 	DnsEnabled string
 	DnsDomain  string
+
+	// dnsmasq log counters (initial snapshot when the page is rendered)
+	LogCounters DnsmasqLogCounters
 
 	// embedded contents
 	CssFileContent        htmltemplate.CSS

@@ -28,6 +28,9 @@ var (
 	templatesDir      = "/opt/web/templates"
 )
 
+// path to the dnsmasq log file; this must match the log-facility setting in dnsmasq config
+var defaultDnsmasqLogFile = "/tmp/dnsmasq.log"
+
 // other constants
 var (
 	dnsmasqMarkerForMissingHostname = "*"

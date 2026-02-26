@@ -391,15 +391,33 @@ function updateDHCPStatus(data, dhcp_static_ip, dhcp_addresses_used, messageElem
         usagePerc = Math.round(usagePerc * 10) / 10
     }
 
-    // format server uptime
+    var usage_str = dhcp_addresses_used + " clients are within the DHCP pool. DHCP pool contains " + config["dhcpPoolSize"] + " IP addresses and its usage is at " + usagePerc + "%.<br/>"
+    if (usagePerc > 90) {
+        usage_str += "<span class='boldText warningText'>⚠ Warning: consider increasing the pool size in the configuration file if you are close to the limit. ⚠</span>";
+    }
+
+    // past clients string
     uptime_str = formatTimeSince(config["dhcpServerStartTime"])
+    past_client_str = "<span class='boldText'>" + data.past_clients.length + " past clients</span> contacted the server some time ago but failed to do so since last DHCP server restart, " + 
+                        uptime_str + " hh:mm:ss ago.<br/>"
+
+    // build warning message if some clients are not using their configured address
+    var counters_str = ""
+    if (data.log_counters.not_using_configured_address > 0) {
+        counters_str = "<span class='boldText warningText'>⚠ Warning: " + 
+            data.log_counters.not_using_configured_address + 
+            " time(s) a configured static address was not assigned to the configured MAC address because it was already leased to another device. " +
+            "Please wait for the conflicting leases to expire or restart the affected devices.</span><br/>"
+    } else {
+        counters_str = "<span class='boldText'>0</span> occurrences of DHCP lease conflict.<br/>"
+    }
 
     // update the message
     messageElem.innerHTML = "<span class='boldText'>" + data.current_clients.length + " clients</span> currently hold a DHCP lease.<br/>" + 
                         dhcp_static_ip + " clients have a static IP address configuration.<br/>" +
-                        dhcp_addresses_used + " clients are within the DHCP pool. DHCP pool contains " + config["dhcpPoolSize"] + " IP addresses and its usage is at " + usagePerc + "%.<br/>" +
-                        "<span class='boldText'>" + data.past_clients.length + " past clients</span> contacted the server some time ago but failed to do so since last DHCP server restart, " + 
-                        uptime_str + " hh:mm:ss ago.<br/>";
+                        usage_str +
+                        past_client_str +
+                        counters_str;
 }
 
 function updateDNSStatus(data, messageElem) {

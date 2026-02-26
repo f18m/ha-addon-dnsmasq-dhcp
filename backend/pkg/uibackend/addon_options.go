@@ -47,6 +47,17 @@ type AddonOptions struct {
 	dnsPort   int
 }
 
+// isValidRFC1123Hostname checks whether the given string is a valid hostname
+// label as per RFC 1123: 1–63 characters, consisting only of letters, digits,
+// and hyphens, and must not start or end with a hyphen.
+func isValidRFC1123Hostname(name string) bool {
+	if len(name) == 0 || len(name) > 63 {
+		return false
+	}
+	validHostname := regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$`)
+	return validHostname.MatchString(name)
+}
+
 // ParseDuration parses a duration string.
 // examples: "10d", "-1.5w" or "3Y4M5d".
 // Add time units are "d"="D", "w"="W", "M", "y"="Y".
@@ -196,6 +207,9 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 
 	// convert IP address reservations to a map indexed by IP
 	for _, r := range cfg.DhcpIpAddressReservations {
+		if !isValidRFC1123Hostname(r.Name) {
+			return fmt.Errorf("invalid hostname found inside 'dhcp_ip_address_reservations': %q (must be 1–63 chars, letters/digits/hyphens only, not starting or ending with a hyphen)", r.Name)
+		}
 		ipAddr, err := netip.ParseAddr(strings.TrimSpace(r.IP))
 		if err != nil {
 			return fmt.Errorf("invalid IP address found inside 'ip_address_reservations': %s", r.IP)

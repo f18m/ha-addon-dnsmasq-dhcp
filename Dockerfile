@@ -44,7 +44,15 @@ FROM $BUILD_FROM
 ENV LANG=C.UTF-8
 
 # Setup base
-RUN apk add --no-cache dnsmasq nginx-debug sqlite socat && mv /etc/nginx /etc/nginx-orig
+RUN apk add --no-cache nginx-debug sqlite socat && mv /etc/nginx /etc/nginx-orig
+
+# Install dnsmasq
+# A specific version is installed so it's clear what we ship in this HomeAssistant App.
+# Check which version is available using:
+#  docker run -ti --entrypoint=/bin/sh   ghcr.io/home-assistant/amd64-base:3.22
+#  apk search dnsmasq
+# See also https://thekelleys.org.uk/dnsmasq/CHANGELOG
+RUN apk add --no-cache dnsmasq=2.91-r0
 
 # Copy data
 COPY rootfs /

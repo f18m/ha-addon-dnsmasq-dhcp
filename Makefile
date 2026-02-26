@@ -68,8 +68,8 @@ IMAGETAG:=$(shell yq .image config.yaml  | sed 's@{arch}@amd64@g')
 BACKEND_SOURCE_CODE_FILES:=$(shell find backend/ -type f -name '*.go')
 ROOTFS_FILES:=$(shell find rootfs/ -type f)
 
-# go to ghcr.io/home-assistant/amd64-builder to see available versions
-HOME_ASSISTANT_BUILDER_VERSION:=2025.11.0
+# go to https://github.com/home-assistant/builder/pkgs/container/amd64-builder to see available versions
+HOME_ASSISTANT_BUILDER_VERSION:=2026.02.1
 
 build-docker-image: $(BACKEND_SOURCE_CODE_FILES) $(ROOTFS_FILES)
 	docker run \
@@ -89,7 +89,7 @@ build-docker-image-raw:
 	# do not use the HomeAssistant builder -- this helps debugging some docker build issues
 	# see https://github.com/home-assistant/builder/blob/master/build.yaml
 	sudo docker build \
-		--build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.20 \
+		--build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22 \
 		-t $(IMAGETAG):localtest \
 		.
 
@@ -113,7 +113,6 @@ DOCKER_RUN_OPTIONS:= \
 # Beta branch targets
 #####################################################################################
 
-
 recreate-beta-branch:
 	@branch=$(shell git rev-parse --abbrev-ref HEAD); \
 	if [ "$$branch" != "main" ]; then \
@@ -121,11 +120,16 @@ recreate-beta-branch:
 	  exit 1; \
 	fi
 	git checkout -B beta
-	git push -f origin beta
 	@echo
 	@echo "Editing the config.yaml to match BETA branch settings..."
+	yq -i '.version = "beta"' config.yaml
 	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
 	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
+	git add config.yaml
+	git commit -m "Update config.yaml for BETA branch"
+	@echo
+	@echo "Pushing to beta branch"
+	git push -f origin beta
 	@echo
 	@echo "Beta branch recreated from main and pushed to origin. "
 	@echo "Any new feature or bugfix can be committed to the beta branch."
@@ -140,7 +144,7 @@ recreate-beta-branch:
 #    "Something went wrong contacting the API"
 # at startup of the docker container... the reason is that the startup scripts
 # will try to reach to HomeAssistant Supervisor which is not running...
-test-docker-image: 
+test-docker-image:
 	$(MAKE) FAST=1 build-docker-image
 	@echo
 	@echo "Starting container of image $(IMAGETAG):localtest" 

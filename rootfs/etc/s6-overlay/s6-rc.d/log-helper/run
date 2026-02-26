@@ -8,5 +8,5 @@ LOG_SOCKET=/tmp/dnsmasq-script-log-socket
 # /opt/bin/dnsmasq-dhcp-script.sh 
 # to stdout
 
-bashio::log.info "Starting log-helper..."
+bashio::log.info "log-helper.sh: Starting log-helper..."
 socat -u UNIX-LISTEN:${LOG_SOCKET},fork STDOUT

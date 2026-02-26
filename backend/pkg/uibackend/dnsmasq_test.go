@@ -2,6 +2,7 @@ package uibackend
 
 import (
 	"context"
+	"dnsmasq-dhcp-backend/pkg/logger"
 	"fmt"
 	"net"
 	"os"
@@ -11,6 +12,8 @@ import (
 )
 
 func TestGetDnsStats_NoUpstreamServers(t *testing.T) {
+	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+
 	// Start a temporary dnsmasq instance
 	dnsmasqCmd := exec.CommandContext(context.Background(), "dnsmasq", "--port=12345", "--cache-size=100", "--no-daemon", "--no-resolv") // Adjust arguments as needed
 	if err := dnsmasqCmd.Start(); err != nil {
@@ -31,9 +34,9 @@ func TestGetDnsStats_NoUpstreamServers(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	stats, err := getDnsStats("localhost", 12345)
+	stats, err := dnsmasq.GetDnsStats("localhost", 12345)
 	if err != nil {
-		t.Fatalf("getDnsStats failed: %v", err)
+		t.Fatalf("GetDnsStats failed: %v", err)
 	}
 
 	// Assertions
@@ -48,6 +51,8 @@ func TestGetDnsStats_NoUpstreamServers(t *testing.T) {
 }
 
 func TestGetDnsStats_WithUpstreamServers(t *testing.T) {
+	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+
 	// Test with resolv-file, simulating an upstream server
 	resolvFileContent := "nameserver 8.8.4.4" // Example upstream server
 	resolvFilePath := "/tmp/resolv.conf"      // Choose a temporary file
@@ -74,7 +79,7 @@ func TestGetDnsStats_WithUpstreamServers(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	stats, err := getDnsStats("localhost", 12346)
+	stats, err := dnsmasq.GetDnsStats("localhost", 12346)
 	if err != nil {
 		t.Fatalf("getDnsStats failed with resolv-file: %v", err)
 	}
@@ -98,4 +103,55 @@ func writeTempFile(filePath, content string) error {
 
 	_, err = file.WriteString(content)
 	return err
+}
+
+func TestProcessLogLine_NotUsingConfiguredAddress(t *testing.T) {
+	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+
+	// Simulate a dnsmasq log line matching the "not using configured address" pattern
+	dnsmasq.processLogLine("dnsmasq-dhcp[1234]: not using configured address 192.168.1.106 because it is leased to 1c:db:d4:13:89:f0\n")
+
+	dnsmasq.logCountersLock.Lock()
+	count := dnsmasq.logCounters.NotUsingConfiguredAddress
+	dnsmasq.logCountersLock.Unlock()
+
+	if count != 1 {
+		t.Errorf("expected NotUsingConfiguredAddress=1, got %d", count)
+	}
+}
+
+func TestProcessLogLine_NoMatch(t *testing.T) {
+	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+
+	// A normal dnsmasq log line that should not match any warning pattern
+	dnsmasq.processLogLine("dnsmasq-dhcp[1234]: DHCPREQUEST(eth0) 192.168.1.50 aa:bb:cc:dd:ee:ff\n")
+
+	dnsmasq.logCountersLock.Lock()
+	count := dnsmasq.logCounters.NotUsingConfiguredAddress
+	dnsmasq.logCountersLock.Unlock()
+
+	if count != 0 {
+		t.Errorf("expected NotUsingConfiguredAddress=0, got %d", count)
+	}
+}
+
+func TestProcessLogLine_MultipleMatches(t *testing.T) {
+	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+
+	lines := []string{
+		"dnsmasq-dhcp[1234]: not using configured address 192.168.1.100 because it is leased to aa:bb:cc:dd:ee:ff\n",
+		"dnsmasq-dhcp[1234]: DHCPREQUEST(eth0) 192.168.1.50 11:22:33:44:55:66\n",
+		"dnsmasq-dhcp[1234]: not using configured address 192.168.1.200 because it is leased to 11:22:33:44:55:66\n",
+	}
+	for _, line := range lines {
+		dnsmasq.processLogLine(line)
+	}
+
+	dnsmasq.logCountersLock.Lock()
+	count := dnsmasq.logCounters.NotUsingConfiguredAddress
+	dnsmasq.logCountersLock.Unlock()
+
+	if count != 2 {
+		t.Errorf("expected NotUsingConfiguredAddress=2, got %d", count)
+	}
 }

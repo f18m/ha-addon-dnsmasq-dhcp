@@ -73,6 +73,16 @@ body {
   font-weight: bold;
 }
 
+.warningText {
+  color: #b35900;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  .warningText {
+    color: #ffaa55;
+  }
+}
+
 .container {
   width: 100%;
   margin: 0 auto;

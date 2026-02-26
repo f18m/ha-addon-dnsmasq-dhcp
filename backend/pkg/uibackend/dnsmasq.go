@@ -253,6 +253,7 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 	*/
 	const maxLinesBeforeTruncate = 500
 	linesRead := 0
+	linesNextTruncate := maxLinesBeforeTruncate
 
 	reader := bufio.NewReader(file)
 	for {
@@ -270,16 +271,22 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 			linesRead++
 
 			// Truncate the log file periodically to prevent unbounded growth
-			if linesRead >= maxLinesBeforeTruncate {
+			if linesRead >= linesNextTruncate {
+
+				// in case we fail truncation, do no retry _immediately_
+				// to avoid a tight loop of retries that can cause high CPU load
+				linesNextTruncate += maxLinesBeforeTruncate
 
 				// make sure we know the PID of the dnsmasq process before truncating the log
 				if !b.updateDnsmasqPIDs() {
 					// failed somehow... skip any truncation
+					b.logger.Warnf("skipping log file truncation because dnsmasq PID is unknown")
 					continue
 				}
 
 				if err := file.Truncate(0); err != nil {
 					b.logger.Warnf("failed to truncate dnsmasq log file: %s", err.Error())
+					continue
 				}
 
 				_, err = file.Seek(0, io.SeekStart)
@@ -306,6 +313,7 @@ func (b *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 				*/
 				reader.Reset(file)
 				linesRead = 0
+				linesNextTruncate = maxLinesBeforeTruncate
 
 				// send SIGUSR2 to dnsmasq to reopen the log file
 				_ = syscall.Kill(b.GetDnsmasqPID(), syscall.SIGUSR2)
@@ -397,7 +405,7 @@ func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
 		w.dnsmasqPID = minPID
 		w.dnsmasqPIDsLock.Unlock()
 
-		return false
+		return true
 	}
 }
 

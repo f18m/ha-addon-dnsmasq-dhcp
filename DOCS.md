@@ -1,5 +1,21 @@
 # Home Assistant App: Dnsmasq-DHCP
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Requirements](#requirements)
+- [Concepts](#concepts)
+- [DHCP Pool](#dhcp-pool)
+- [DHCP Static IP addresses](#dhcp-static-ip-addresses)
+- [DHCP Friendly Names](#dhcp-friendly-names)
+- [Upstream DNS servers](#upstream-dns-servers)
+- [HomeAssistant mDNS](#homeassistant-mdns)
+- [App Configuration](#app-configuration)
+- [HomeAssistant Configurations](#homeassistant-configurations)
+- [Using the App Beta version](#using-the-app-beta-version)
+- [Development](#development)
+- [Links](#links)
+
 ## Installation
 
 Follow these steps to get the `Dnsmasq-DHCP` App installed on your system:
@@ -220,6 +236,11 @@ dhcp_ip_address_reservations:
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page". It is used to render a link into the "current DHCP clients" tab of the UI.
     link: "http://{{ .ip }}/landing-page/for/this/host"
+    tags:
+      # tags allow you to easily categorize each device of your network and
+      # search them in the web UI
+      - printers
+      - critical
 
 # DHCP friendly names 
 # Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.
@@ -234,6 +255,11 @@ dhcp_clients_friendly_names:
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page/for/this/dynamic/host"
     link: "http://{{ .ip }}/landing-page/for/this/host"
+    tags:
+      # tags allow you to easily categorize each device of your network and
+      # search them in the web UI
+      - cellphone
+      - dynamic_ip
 
 # DNS server configuration
 dns_server:

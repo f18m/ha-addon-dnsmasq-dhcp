@@ -23,6 +23,10 @@ type AddonOptions struct {
 	// The key of this map is the MAC address formatted as string (since net.HardwareAddr is not a valid map key type)
 	friendlyNames map[string]DhcpClientFriendlyName
 
+	// DHCP MAC address blacklist, as read from the configuration
+	// The key of this map is the MAC address formatted as string
+	blacklistedMACs map[string]struct{}
+
 	// Multiple IP ranges all together form the DHCP pool
 	dhcpPool   ippool.Pool     // this type provide the Size() and Contains() methods
 	dhcpRanges []IpNetworkInfo // this type stores additional metadata for each network
@@ -133,6 +137,8 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Link string   `json:"link"`
 			Tags []string `json:"tags"`
 		} `json:"dhcp_clients_friendly_names"`
+
+		DhcpMacAddressBlacklist []string `json:"dhcp_mac_address_blacklist"`
 
 		DhcpServer struct {
 			LogDHCP                 bool   `json:"log_requests"`
@@ -283,6 +289,26 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Link:         linkTemplate,
 			Tags:         client.Tags,
 		}
+	}
+
+	// parse MAC address blacklist
+	for _, macStr := range cfg.DhcpMacAddressBlacklist {
+		macAddr, err := net.ParseMAC(strings.TrimSpace(macStr))
+		if err != nil {
+			return fmt.Errorf("invalid MAC address found inside 'dhcp_mac_address_blacklist': %s", macStr)
+		}
+
+		// check that this MAC address is not already used in IP address reservations
+		if _, exists := o.ipAddressReservationsByMAC[macAddr.String()]; exists {
+			return fmt.Errorf("MAC address %s appears in both 'dhcp_ip_address_reservations' and 'dhcp_mac_address_blacklist'; a MAC address can only be in one of the two lists", macAddr)
+		}
+
+		// check that this MAC address is not already used in friendly names
+		if _, exists := o.friendlyNames[macAddr.String()]; exists {
+			return fmt.Errorf("MAC address %s appears in both 'dhcp_clients_friendly_names' and 'dhcp_mac_address_blacklist'; a MAC address can only be in one of the two lists", macAddr)
+		}
+
+		o.blacklistedMACs[macAddr.String()] = struct{}{}
 	}
 
 	// parse time duration

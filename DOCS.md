@@ -84,6 +84,12 @@ Sometimes the hostname provided by the DHCP client to the DHCP server is really 
 non-informative, so `Dnsmasq-DHCP` allow users to override that by specifying a human-friendly
 name for a particular DHCP client (using its MAC address as identifier).
 
+### DHCP MAC Address Blacklist
+
+The DHCP server can be configured to ignore DHCP requests from specific MAC addresses.
+Any MAC address added to the `dhcp_mac_address_blacklist` will be silently ignored by the DHCP server,
+meaning those devices will not receive an IP address from this DHCP server.
+
 ### Upstream DNS servers
 
 If the DNS server of `Dnsmasq-DHCP` is enabled (by setting `dns_server.enable` to `true`),
@@ -255,6 +261,14 @@ dhcp_clients_friendly_names:
       # search them in the web UI
       - cellphone
       - dynamic_ip
+
+# DHCP MAC address blacklist
+# Any MAC address added to this list will be ignored by the DHCP server.
+# This means that devices with these MAC addresses will not receive an IP address from this DHCP server.
+# Please note that a MAC address cannot appear in both this list and either
+# "dhcp_ip_address_reservations" or "dhcp_clients_friendly_names".
+dhcp_mac_address_blacklist:
+  - 11:22:33:44:55:66
 
 # DNS server configuration
 dns_server:

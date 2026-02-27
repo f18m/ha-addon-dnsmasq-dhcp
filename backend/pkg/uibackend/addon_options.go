@@ -272,6 +272,11 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			}
 		}
 
+		// check that this MAC address is not already used in IP address reservations
+		if _, exists := o.ipAddressReservationsByMAC[macAddr.String()]; exists {
+			return fmt.Errorf("MAC address %s appears in both 'dhcp_ip_address_reservations' and 'dhcp_clients_friendly_names'; a MAC address can only be in one of the two lists", macAddr)
+		}
+
 		o.friendlyNames[macAddr.String()] = DhcpClientFriendlyName{
 			MacAddress:   macAddr,
 			FriendlyName: client.Name,

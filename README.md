@@ -1,4 +1,8 @@
-# Home Assistant App: Dnsmasq as DNS and DHCP server
+![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield]
+[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
+[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
+
+# Home Assistant App: flexible DNS and DHCP servers for your LAN
 
 *Take control of your network!*
 If you want to
@@ -23,14 +27,16 @@ Dnsmasq is on many aspects more feature-complete than the ISC DHCP server. Moreo
 This app also implements an **handy UI to view the list of both current and past DHCP clients**, showing for each client all relevant information that can be obtained through DHCP.
 Some basic DNS statistic is available from the UI as well.
 
-![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield]
 
 ## About
 
 This app setups and manages a `dnsmasq` instance configured to run both as a DNS and DHCP server (despite the name '`dnsmasq`' also provides DHCP server functionalities, not only DNS).
+This allows you to:
+* remove static IP address configurations from end devices, to centralize IP address control;
+* get fine-grained control over which devices connect to your network and when;
+* establish a basic heartbeat (DHCP lease renewal) to check which devices are still up and running;
+* use human-friendly DNS names to connect to your devices;
 
-[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
-[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
 
 ## Features
 

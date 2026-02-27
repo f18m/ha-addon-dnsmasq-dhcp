@@ -93,6 +93,10 @@ options:
     upstream_servers:
       - 8.8.8.8
       - 8.8.4.4
+  dns_hosts:
+    - name: "my-custom-host"
+      ipv4_address: "192.168.1.99"
+      ipv6_address: ""
   web_ui:
     log_activity: false
     port: 8976
@@ -151,6 +155,10 @@ schema:
     dns_domain: str
     upstream_servers:
       - str
+  dns_hosts:
+    - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$)
+      ipv4_address: "str?"
+      ipv6_address: "str?"
   web_ui:
     log_activity: bool
     port: int

@@ -1,8 +1,16 @@
-![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield]
-[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
-[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
+![Supports aarch64 Architecture][aarch64-shield]
+![Supports amd64 Architecture][amd64-shield]
 
 # Home Assistant App: flexible DNS and DHCP servers for your LAN
+
+- [About](#about)
+- [Features](#features)
+- [Web UI](#web-ui)
+- [How to Install and How to Configure](#how-to-install-and-how-to-configure)
+- [Similar Apps](#similar-apps)
+- [Other Noteworthy Projects](#other-noteworthy-projects)
+- [Future Developments](#future-developments)
+- [Development](#development)
 
 *Take control of your network!*
 If you want to
@@ -20,22 +28,22 @@ If you want to
 that are meant to be used in your HomeAssistant Local Area Network (LAN), to make HomeAssistant the central point of 
 your home network configuration: IP address allocations (via DHCP), hostname resolutions (via DNS), etc.
 
-Under the hood, the DNS/DHCP server is the well-known [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) server. 
-This is in contrast to several similar solutions that employ instead the [ISC dhcpd](https://www.isc.org/dhcp/) utility.
-Dnsmasq is on many aspects more feature-complete than the ISC DHCP server. Moreover ISC DHCP is discontinued since 2022.
-
 This app also implements an **handy UI to view the list of both current and past DHCP clients**, showing for each client all relevant information that can be obtained through DHCP.
 Some basic DNS statistic is available from the UI as well.
 
 
 ## About
 
-This app setups and manages a `dnsmasq` instance configured to run both as a DNS and DHCP server (despite the name '`dnsmasq`' also provides DHCP server functionalities, not only DNS).
+This app setups and manages a DNS and DHCP server.
 This allows you to:
 * remove static IP address configurations from end devices, to centralize IP address control;
 * get fine-grained control over which devices connect to your network and when;
 * establish a basic heartbeat (DHCP lease renewal) to check which devices are still up and running;
 * use human-friendly DNS names to connect to your devices;
+
+Under the hood, the DNS/DHCP server is the well-known [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) server. 
+Please note that despite the name '`dnsmasq`' also provides DHCP server functionalities, not only DNS.
+Several similar solutions employ instead the [ISC dhcpd](https://www.isc.org/dhcp/) utility, however dnsmasq is on many aspects more feature-complete than the ISC DHCP server. Moreover ISC DHCP is discontinued since 2022.
 
 
 ## Features
@@ -117,3 +125,6 @@ For the init system used by HA apps, see:
 
 For the templating language used in e.g. [dnsmasq config](./rootfs/usr/share/tempio/dnsmasq.config)
 * https://github.com/home-assistant/tempio
+
+[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
+[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg

@@ -224,6 +224,10 @@ dhcp_ip_address_reservations:
 # DHCP friendly names 
 # Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.
 # This option can be used to remap the hostnames to human-friendly names, via the DHCP protocol.
+# E.g. my Macbook Pro reports itself just as "Mac" to the DHCP server; with this feature you can 
+# remap it to appear as e.g. "My Work Macbook Pro".
+# Please note that a MAC address cannot appear in both the "dhcp_ip_address_reservations" list and 
+# in the "dhcp_clients_friendly_names" list
 dhcp_clients_friendly_names:
   - mac: dd:ee:aa:dd:bb:ee
     name: "This is a friendly name to label this host, even if it gets a dynamic IP"

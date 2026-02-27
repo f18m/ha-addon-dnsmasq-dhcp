@@ -6,6 +6,15 @@ This file contains only migration instructions from a major version to the next 
 A new major version is released each time there is a backward-incompatible change in the config format.
 
 
+## Version 4.1.0
+
+This release adds support for "tags": each DHCP IP address reservation can now be 
+enriched with a list of tags. Same thing for each DHCP Friendly Name mapping.
+This change does not require you to do any change on your configuration and is 
+backward compatible. But you might want to spend some time to better organize 
+your DHCP mappings with tags now :)
+
+
 ## Version 4.0.0
 
 > :warning: 💥 Breaking Changes

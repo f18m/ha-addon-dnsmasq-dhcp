@@ -161,8 +161,8 @@ function initPastTable() {
                 { title: 'Hostname', type: 'string' },
                 { title: 'MAC Address', type: 'string' },
                 { title: 'Static IP?', type: 'string' },
-                { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order' },
-                { title: 'Notes', type: 'string' },
+                { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order', width: '10%' },
+                { title: 'Notes', type: 'string', width: '25%' },
                 { title: 'Tags', type: 'string' }
             ],
             data: [],
@@ -316,7 +316,7 @@ function processWebSocketDHCPCurrentClients(data) {
 
         // append new row
         time_left_str = formatTimeLeft(item.lease.expires)
-        tags_str = (item.tags && item.tags.length > 0) ? item.tags.join(', ') : ''
+        tags_str = (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'none'
         newData.push([index + 1,
             item.friendly_name, item.lease.hostname, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
@@ -359,7 +359,7 @@ function processWebSocketDHCPPastClients(data) {
 
         // append new row
         last_seen_str = formatTimeSince(item.past_info.last_seen)
-        tags_str = (item.tags && item.tags.length > 0) ? item.tags.join(', ') : ''
+        tags_str = (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'none'
         newData.push([index + 1,
             item.friendly_name, item.past_info.hostname, 
             item.past_info.mac_addr, static_ip_str, 

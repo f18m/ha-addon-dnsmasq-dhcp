@@ -75,7 +75,7 @@ options:
     - mac: dd:ee:aa:dd:bb:ee
       name: "This is a friendly name to label this host, even if it gets a dynamic IP"
       link: "http://{{ .ip }}/landing-page/for/this/host"
-  dhcp_mac_address_blacklist: []
+  dhcp_mac_address_blocklist: []
   dns_server:
     enable: true
     port: 53
@@ -130,7 +130,7 @@ schema:
       link: "str?"
       tags:
         - "str?"
-  dhcp_mac_address_blacklist:
+  dhcp_mac_address_blocklist:
     - match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
   dns_server:
     enable: bool

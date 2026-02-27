@@ -150,6 +150,7 @@ type HtmlTemplate struct {
 	AddressReservationLease    string
 	DHCPServerStartTime        int64
 	DHCPForgetPastClientsAfter string
+	BlockedMACCount            int
 
 	// DNS config info
 	DnsEnabled string

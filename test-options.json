@@ -21,7 +21,7 @@
       "link": "https://{{ .ip }}/page-{{ .hostname }}"
     }
   ],
-  "dhcp_mac_address_blacklist": [
+  "dhcp_mac_address_blocklist": [
     "11:22:33:44:55:66",
     "de:ad:be:ef:ca:fe"
   ],

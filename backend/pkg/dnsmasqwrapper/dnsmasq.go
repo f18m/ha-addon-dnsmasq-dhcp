@@ -1,4 +1,4 @@
-package uibackend
+package dnsmasqwrapper
 
 import (
 	"bufio"
@@ -29,6 +29,26 @@ type DnsmasqWrapper struct {
 	// PIDs of running dnsmasq processes, updated by the PID-monitor goroutine
 	dnsmasqPID      int
 	dnsmasqPIDsLock sync.Mutex
+}
+
+type DnsUpstreamStats struct {
+	// ServerURL typical content (as reported by dnsmasq) looks like "8.8.8.8#53", i.e. IP#PORT
+	ServerURL string `json:"server_url"`
+
+	QueriesSent   int `json:"queries_sent"`
+	QueriesFailed int `json:"queries_failed"`
+}
+
+// DnsServerStats contains all the available dnsmasq DNS server metrics
+type DnsServerStats struct {
+	// The domain names are cachesize.bind, insertions.bind, evictions.bind, misses.bind, hits.bind, auth.bind and servers.bind unless disabled at compile-time. An example command to query this, using the dig utility would be
+	// dig +short chaos txt cachesize.bind
+	CacheSize       int                `json:"cache_size"`
+	CacheInsertions int                `json:"cache_insertions"`
+	CacheEvictions  int                `json:"cache_evictions"`
+	CacheMisses     int                `json:"cache_misses"`
+	CacheHits       int                `json:"cache_hits"`
+	UpstreamServers []DnsUpstreamStats `json:"upstream_servers_stats"`
 }
 
 // DnsmasqLogCounters holds counters for notable dnsmasq log messages detected since startup.
@@ -110,6 +130,7 @@ func (w *DnsmasqWrapper) chaosTXTQuery(server, query string, timeout time.Durati
 	return txt, nil
 }
 
+// chaosTXTQueryInteger is like chaosTXTQuery but expects the TXT record to contain a single integer value and returns it as int.
 func (w *DnsmasqWrapper) chaosTXTQueryInteger(server, query string, timeout time.Duration) (int, error) { //nolint:unparam
 	// Invoke chaosTXTQuery to get the string value.
 	strVal, err := w.chaosTXTQuery(server, query, timeout)
@@ -225,13 +246,13 @@ func (w *DnsmasqWrapper) processLogLine(line string) {
 
 	// print the log line to stderr -- this is mimicking a "tee" instance
 	// running on the dnsmasq log file.
-	fmt.Fprint(os.Stderr, line)
+	_, _ = io.WriteString(os.Stderr, line)
 }
 
-// watchDnsmasqLog tails the dnsmasq log file and calls processLogLine for each new line.
+// WatchAndPrintDnsmasqLog tails the dnsmasq log file and calls processLogLine for each new line.
 // It retries until the file becomes available, then follows it indefinitely.
 // Intended to run in a separate goroutine.
-func (w *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
+func (w *DnsmasqWrapper) WatchAndPrintDnsmasqLog(logFilePath string) {
 	// Wait for the log file to appear (dnsmasq may not have started yet)
 	var file *os.File
 	var err error
@@ -302,6 +323,7 @@ func (w *DnsmasqWrapper) watchDnsmasqLog(logFilePath string) {
 	}
 }
 
+// GetLogCounters returns a copy of the current dnsmasq log counters.
 func (w *DnsmasqWrapper) GetLogCounters() DnsmasqLogCounters {
 	w.logCountersLock.Lock()
 	defer w.logCountersLock.Unlock()

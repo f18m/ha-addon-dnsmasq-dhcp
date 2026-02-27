@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"cmp"
 	"context"
+	"dnsmasq-dhcp-backend/pkg/dnsmasqwrapper"
 	"dnsmasq-dhcp-backend/pkg/logger"
 	"dnsmasq-dhcp-backend/pkg/trackerdb"
 	"encoding/json"
@@ -54,7 +55,7 @@ type UIBackend struct {
 	clientsLock sync.Mutex
 
 	// a wrapper that allows us to extract some stats from dnsmasq logs & via DNS
-	dnsmasq *DnsmasqWrapper
+	dnsmasq *dnsmasqwrapper.DnsmasqWrapper
 
 	// the most updated view on DHCP clients currently available
 	dhcpClientData     []DhcpClientData
@@ -120,7 +121,7 @@ func NewUIBackend(logger *logger.CustomLogger) UIBackend {
 		startTimestamp: time.Now(),
 		startEpoch:     startEpoch,
 		clients:        make(map[*websocket.Conn]bool),
-		dnsmasq:        NewDnsmasqWrapper(logger),
+		dnsmasq:        dnsmasqwrapper.NewDnsmasqWrapper(logger),
 		dhcpClientData: nil,
 		trackerDB:      *db,
 		broadcastCh:    make(chan struct{}),
@@ -744,7 +745,7 @@ func (b *UIBackend) ListenAndServe() error {
 	}
 
 	// Watch the dnsmasq log file for notable warning messages
-	go b.dnsmasq.watchDnsmasqLog(defaultDnsmasqLogFile)
+	go b.dnsmasq.WatchAndPrintDnsmasqLog(defaultDnsmasqLogFile)
 
 	// Start server
 	b.logger.Infof("Starting server to listen on port %d\n", b.options.webUIPort)

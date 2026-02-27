@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/netip"
+	"strings"
 	"testing"
 	"time"
 )
@@ -122,6 +123,63 @@ func TestAddonOptionsInvalidHostname(t *testing.T) {
 				t.Errorf("unexpected error for hostname %q: %v", name, err)
 			}
 		})
+	}
+}
+
+func TestAddonOptionsMACInBothLists(t *testing.T) {
+	// A MAC address that appears in both dhcp_ip_address_reservations and
+	// dhcp_clients_friendly_names must be rejected.
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_ip_address_reservations": [
+			{
+				"ip": "192.168.1.10",
+				"mac": "aa:bb:cc:dd:ee:ff",
+				"name": "reserved-host"
+			}
+		],
+		"dhcp_clients_friendly_names": [
+			{
+				"mac": "aa:bb:cc:dd:ee:ff",
+				"name": "friendly-host"
+			}
+		],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	var opts AddonOptions
+	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
+	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
+	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err == nil {
+		t.Error("expected error when the same MAC appears in both lists, but got none")
+	} else if !strings.Contains(err.Error(), "appears in both") {
+		t.Errorf("unexpected error message: %v", err)
 	}
 }
 

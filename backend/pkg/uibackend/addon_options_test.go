@@ -407,3 +407,179 @@ func TestAddonOptionsUnmarshalJSONWithTags(t *testing.T) {
 		}
 	}
 }
+
+func newTestAddonOptions() AddonOptions {
+	var opts AddonOptions
+	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
+	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
+	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+	opts.blacklistedMACs = make(map[string]struct{})
+	return opts
+}
+
+func baseTestConfig(extraFields string) string {
+	return `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_ip_address_reservations": [],
+		"dhcp_clients_friendly_names": [],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}` + extraFields + `
+	}`
+}
+
+func TestAddonOptionsMacBlacklistParsed(t *testing.T) {
+	jsonConfig := baseTestConfig(`,
+		"dhcp_mac_address_blacklist": [
+			"11:22:33:44:55:66",
+			"AA:BB:CC:DD:EE:FF"
+		]`)
+
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if len(opts.blacklistedMACs) != 2 {
+		t.Fatalf("Expected 2 blacklisted MACs, got %d", len(opts.blacklistedMACs))
+	}
+	// MAC addresses are normalized to lowercase by net.ParseMAC
+	if _, ok := opts.blacklistedMACs["11:22:33:44:55:66"]; !ok {
+		t.Errorf("Expected 11:22:33:44:55:66 to be blacklisted")
+	}
+	if _, ok := opts.blacklistedMACs["aa:bb:cc:dd:ee:ff"]; !ok {
+		t.Errorf("Expected aa:bb:cc:dd:ee:ff to be blacklisted")
+	}
+}
+
+func TestAddonOptionsMacBlacklistInvalidMAC(t *testing.T) {
+	jsonConfig := baseTestConfig(`,
+		"dhcp_mac_address_blacklist": [
+			"not-a-mac-address"
+		]`)
+
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err == nil {
+		t.Error("Expected error for invalid MAC address in blacklist, but got none")
+	}
+}
+
+func TestAddonOptionsMacBlacklistConflictsWithReservation(t *testing.T) {
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_ip_address_reservations": [
+			{
+				"ip": "192.168.1.10",
+				"mac": "aa:bb:cc:dd:ee:ff",
+				"name": "reserved-host"
+			}
+		],
+		"dhcp_clients_friendly_names": [],
+		"dhcp_mac_address_blacklist": [
+			"aa:bb:cc:dd:ee:ff"
+		],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err == nil {
+		t.Error("Expected error when a MAC appears in both blacklist and reservations, but got none")
+	} else if !strings.Contains(err.Error(), "dhcp_ip_address_reservations") || !strings.Contains(err.Error(), "dhcp_mac_address_blacklist") {
+		t.Errorf("Unexpected error message: %v", err)
+	}
+}
+
+func TestAddonOptionsMacBlacklistConflictsWithFriendlyNames(t *testing.T) {
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_ip_address_reservations": [],
+		"dhcp_clients_friendly_names": [
+			{
+				"mac": "11:22:33:44:55:66",
+				"name": "friendly-host"
+			}
+		],
+		"dhcp_mac_address_blacklist": [
+			"11:22:33:44:55:66"
+		],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err == nil {
+		t.Error("Expected error when a MAC appears in both blacklist and friendly names, but got none")
+	} else if !strings.Contains(err.Error(), "dhcp_clients_friendly_names") || !strings.Contains(err.Error(), "dhcp_mac_address_blacklist") {
+		t.Errorf("Unexpected error message: %v", err)
+	}
+}

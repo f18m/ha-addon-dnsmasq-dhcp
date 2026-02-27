@@ -413,7 +413,7 @@ func newTestAddonOptions() AddonOptions {
 	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
 	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
 	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
-	opts.blockedMACs = make(map[string]struct{})
+	opts.blockedMACs = make(map[string]BlockedDeviceInfo)
 	return opts
 }
 
@@ -452,8 +452,14 @@ func baseTestConfig(extraFields string) string {
 func TestAddonOptionsMacBlocklistParsed(t *testing.T) {
 	jsonConfig := baseTestConfig(`,
 		"dhcp_mac_address_blocklist": [
-			"11:22:33:44:55:66",
-			"AA:BB:CC:DD:EE:FF"
+			{ 
+				"mac": "11:22:33:44:55:66",
+				"description": "Blocked device"
+			},
+			{ 
+				"mac": "AA:BB:CC:DD:EE:FF",
+				"description": "Blocked device"
+			}
 		]`)
 
 	opts := newTestAddonOptions()
@@ -507,7 +513,10 @@ func TestAddonOptionsMacBlocklistConflictsWithReservation(t *testing.T) {
 		],
 		"dhcp_clients_friendly_names": [],
 		"dhcp_mac_address_blocklist": [
-			"aa:bb:cc:dd:ee:ff"
+			{ 
+				"mac": "aa:bb:cc:dd:ee:ff",
+				"description": "Blocked device"
+			}
 		],
 		"dhcp_server": {
 			"default_lease": "1h",
@@ -555,7 +564,10 @@ func TestAddonOptionsMacBlocklistConflictsWithFriendlyNames(t *testing.T) {
 			}
 		],
 		"dhcp_mac_address_blocklist": [
-			"11:22:33:44:55:66"
+			{ 
+				"mac": "11:22:33:44:55:66",
+				"description": "Blocked device"
+			}
 		],
 		"dhcp_server": {
 			"default_lease": "1h",

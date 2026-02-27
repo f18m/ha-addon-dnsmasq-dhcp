@@ -268,7 +268,8 @@ dhcp_clients_friendly_names:
 # Please note that a MAC address cannot appear in both this list and either
 # "dhcp_ip_address_reservations" or "dhcp_clients_friendly_names".
 dhcp_mac_address_blocklist:
-  - 11:22:33:44:55:66
+  - mac: 11:22:33:44:55:66
+    description: A reminder about why this device is in the blocklist
 
 # DNS server configuration
 dns_server:

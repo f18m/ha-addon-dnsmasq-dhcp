@@ -25,7 +25,7 @@ type AddonOptions struct {
 
 	// DHCP MAC address blocklist, as read from the configuration
 	// The key of this map is the MAC address formatted as string
-	blockedMACs map[string]struct{}
+	blockedMACs map[string]BlockedDeviceInfo
 
 	// Multiple IP ranges all together form the DHCP pool
 	dhcpPool   ippool.Pool     // this type provide the Size() and Contains() methods
@@ -138,7 +138,10 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Tags []string `json:"tags"`
 		} `json:"dhcp_clients_friendly_names"`
 
-		DhcpMacAddressBlocklist []string `json:"dhcp_mac_address_blocklist"`
+		DhcpMacAddressBlocklist []struct {
+			Mac         string `json:"mac"`
+			Description string `json:"description"`
+		} `json:"dhcp_mac_address_blocklist"`
 
 		DhcpServer struct {
 			LogDHCP                 bool   `json:"log_requests"`
@@ -292,10 +295,10 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 	}
 
 	// parse MAC address blocklist
-	for _, macStr := range cfg.DhcpMacAddressBlocklist {
-		macAddr, err := net.ParseMAC(strings.TrimSpace(macStr))
+	for _, devInfo := range cfg.DhcpMacAddressBlocklist {
+		macAddr, err := net.ParseMAC(strings.TrimSpace(devInfo.Mac))
 		if err != nil {
-			return fmt.Errorf("invalid MAC address found inside 'dhcp_mac_address_blocklist': %s", macStr)
+			return fmt.Errorf("invalid MAC address found inside 'dhcp_mac_address_blocklist': %s", devInfo.Mac)
 		}
 
 		// check that this MAC address is not already used in IP address reservations
@@ -308,7 +311,10 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("MAC address %s appears in both 'dhcp_clients_friendly_names' and 'dhcp_mac_address_blocklist'; a MAC address can only be in one of the two lists", macAddr)
 		}
 
-		o.blockedMACs[macAddr.String()] = struct{}{}
+		o.blockedMACs[macAddr.String()] = BlockedDeviceInfo{
+			Mac:         macAddr,
+			Description: devInfo.Description,
+		}
 	}
 
 	// parse time duration

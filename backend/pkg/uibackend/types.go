@@ -29,6 +29,12 @@ type IpAddressReservation struct {
 	Tags []string
 }
 
+// BlockedDeviceInfo represents a blocked MAC address loaded from the addon configuration file
+type BlockedDeviceInfo struct {
+	Mac         net.HardwareAddr
+	Description string
+}
+
 // DhcpClientData holds all the information the backend has about a particular DHCP client,
 // currently "connected" to the dnsmasq server.
 // In this context "connected" means: that sent DHCP traffic since the dnsmasq server was started.

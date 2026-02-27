@@ -117,7 +117,7 @@ func NewUIBackend(logger *logger.CustomLogger) UIBackend {
 			ipAddressReservationsByIP:  make(map[netip.Addr]IpAddressReservation),
 			ipAddressReservationsByMAC: make(map[string]IpAddressReservation),
 			friendlyNames:              make(map[string]DhcpClientFriendlyName),
-			blockedMACs:                make(map[string]struct{}),
+			blockedMACs:                make(map[string]BlockedDeviceInfo),
 		},
 		startTimestamp: time.Now(),
 		startEpoch:     startEpoch,

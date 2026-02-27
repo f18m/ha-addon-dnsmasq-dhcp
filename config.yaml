@@ -68,13 +68,13 @@ options:
       netmask: 255.255.255.0
   dhcp_ip_address_reservations:
     - mac: aa:bb:cc:dd:ee:ff
-      name: "An-important-host-with-reserved-IP"
+      name: "hostname-for-this-device"
       ip: 192.168.1.15
       description: "My important server"
       link: "http://{{ .ip }}/landing-page/for/this/host"
   dhcp_clients_friendly_names:
     - mac: dd:ee:aa:dd:bb:ee
-      name: "This is a friendly name to label this host, even if it gets a dynamic IP"
+      name: "friendly-name-for-this-device"
       description: "My laptop"
       link: "http://{{ .ip }}/landing-page/for/this/host"
   dhcp_mac_address_blocklist:

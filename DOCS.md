@@ -231,8 +231,13 @@ dhcp_pools:
 
 # DHCP IP address reservations for special/important devices (identified by MAC address)
 dhcp_ip_address_reservations:
+    # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
+    # which uniquely identifies a particular network interface
   - mac: aa:bb:cc:dd:ee:ff
-    name: "An-important-host-with-reserved-IP"
+    # the "name" of each DHCP IP address reservation must be a valid hostname as per RFC 1123 since 
+    # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
+    name: "important-server"
+    # the IP address to provide whenever the DHCP lease request comes from a matching MAC address
     ip: 192.168.1.15
     # the 'description' property is a free-form string to describe the device (e.g. product model, location)
     description: "My important server - rack 3"
@@ -242,10 +247,11 @@ dhcp_ip_address_reservations:
     tags:
       # tags allow you to easily categorize each device of your network and
       # search them in the web UI
-      - printers
+      - server
       - critical
+      - fixed_ip
 
-# DHCP friendly names 
+# DHCP friendly name mappings
 # Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.
 # This option can be used to remap the hostnames to human-friendly names, via the DHCP protocol.
 # E.g. my Macbook Pro reports itself just as "Mac" to the DHCP server; with this feature you can 
@@ -254,7 +260,9 @@ dhcp_ip_address_reservations:
 # in the "dhcp_clients_friendly_names" list
 dhcp_clients_friendly_names:
   - mac: dd:ee:aa:dd:bb:ee
-    name: "This is a friendly name to label this host, even if it gets a dynamic IP"
+    # similarly to DHCP IP address reservations, the "name" of each DHCP friendly name mapping
+    # must be a valid hostname as per RFC 1123
+    name: "work-laptop"
     # the 'description' property is a free-form string to describe the device (e.g. product model, location)
     description: "My personal laptop - living room"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
@@ -263,7 +271,7 @@ dhcp_clients_friendly_names:
     tags:
       # tags allow you to easily categorize each device of your network and
       # search them in the web UI
-      - cellphone
+      - laptop
       - dynamic_ip
 
 # DHCP MAC address blocklist

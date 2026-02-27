@@ -1,8 +1,8 @@
 # Changelog
 
-For the changelog please check https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/releases.
+For the full changelog please check https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/releases.
 
-This file contains only migration instructions from a major version to the next major version.
+This file mainly contains only migration instructions from a major version to the next major version.
 A new major version is released each time there is a backward-incompatible change in the config format.
 
 
@@ -27,3 +27,8 @@ Please see [official thread about deprecations of these architectures](https://c
 
 Please note that beside such deprecation, there are no other breaking changes.
 The configuration you have for dnsmasq-dhcp version `3.x.x` remains valid in version `4.0.0`.
+
+
+## Star the project
+
+If you like this app, please give it a star on [Github](https://github.com/f18m/ha-addon-dnsmasq-dhcp). Thanks!

@@ -225,6 +225,7 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 		}
 
 		pastClients[i].Tags = b.getTagsFor(deadC.MacAddr)
+		pastClients[i].Description = b.getDescriptionFor(deadC.MacAddr)
 
 		// create note field
 		if deadC.DhcpServerStartEpoch < b.startEpoch { //nolint:gocritic
@@ -488,6 +489,17 @@ func (b *UIBackend) getTagsFor(mac net.HardwareAddr) []string {
 	return nil
 }
 
+func (b *UIBackend) getDescriptionFor(mac net.HardwareAddr) string {
+	// a MAC address will only be present in either friendlyNames or ipAddressReservationsByMAC, not both
+	if fn, ok := b.options.friendlyNames[mac.String()]; ok {
+		return fn.Description
+	}
+	if r, ok := b.options.ipAddressReservationsByMAC[mac.String()]; ok {
+		return r.Description
+	}
+	return ""
+}
+
 func (b *UIBackend) hasIpAddressReservationByIP(ip netip.Addr, macExpected net.HardwareAddr) bool {
 	_, hasReservation := b.options.ipAddressReservationsByIP[ip]
 	if hasReservation {
@@ -573,6 +585,7 @@ func (b *UIBackend) processLeaseUpdatesFromArray(updatedLeases []*dnsmasq.Lease)
 		d.IsInsideDHCPPool = b.options.dhcpPool.Contains(lease.IPAddr)
 		d.EvaluatedLink = b.evaluateLink(lease.Hostname, lease.IPAddr, lease.MacAddr)
 		d.Tags = b.getTagsFor(lease.MacAddr)
+		d.Description = b.getDescriptionFor(lease.MacAddr)
 
 		// processing complete:
 		b.dhcpClientData = append(b.dhcpClientData, d)

@@ -16,17 +16,19 @@ import (
 type DhcpClientFriendlyName struct {
 	MacAddress   net.HardwareAddr
 	FriendlyName string
+	Description  string
 	Link         *texttemplate.Template // maybe nil
 	Tags         []string
 }
 
 // IpAddressReservation represents a static IP configuration loaded from the addon configuration file
 type IpAddressReservation struct {
-	Name string
-	Mac  net.HardwareAddr
-	IP   netip.Addr
-	Link *texttemplate.Template // maybe nil
-	Tags []string
+	Name        string
+	Mac         net.HardwareAddr
+	IP          netip.Addr
+	Description string
+	Link        *texttemplate.Template // maybe nil
+	Tags        []string
 }
 
 // BlockedDeviceInfo represents a blocked MAC address loaded from the addon configuration file
@@ -67,6 +69,9 @@ type DhcpClientData struct {
 
 	// Tags is a list of user-defined labels associated with the DHCP client via configuration.
 	Tags []string
+
+	// Description is an optional free-form string provided in the configuration to describe the device.
+	Description string
 }
 
 // MarshalJSON customizes the JSON serialization for DhcpClientData
@@ -83,6 +88,7 @@ func (d DhcpClientData) MarshalJSON() ([]byte, error) {
 		FriendlyName     string   `json:"friendly_name"`
 		EvaluatedLink    string   `json:"evaluated_link"`
 		Tags             []string `json:"tags"`
+		Description      string   `json:"description"`
 	}{
 		Lease: struct {
 			Expires  int64  `json:"expires"`
@@ -100,6 +106,7 @@ func (d DhcpClientData) MarshalJSON() ([]byte, error) {
 		FriendlyName:     d.FriendlyName,
 		EvaluatedLink:    d.EvaluatedLink,
 		Tags:             d.Tags,
+		Description:      d.Description,
 	})
 }
 
@@ -110,6 +117,7 @@ type PastDhcpClientData struct {
 	FriendlyName string               `json:"friendly_name"`
 	Notes        string               `json:"notes"`
 	Tags         []string             `json:"tags"`
+	Description  string               `json:"description"`
 }
 
 // WebSocketMessage defines which contents get transmitted over the websocket in the

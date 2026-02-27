@@ -3,6 +3,9 @@
 
 # Home Assistant App: flexible DNS and DHCP servers for your LAN
 
+> :warning: **This project is looking for frontend developers to improve the aesthetics and UX of the web UI. If you are interested in collaborating please reach out with [an issue](https://github.com/f18m/ha-addon-dnsmasq-dhcp/issues) or by [email](francesco.montorsi@nospam@gmail.com). Thanks.**
+
+
 - [About](#about)
 - [Why should I use a DHCP/DNS server](#why-should-i-use-a-dhcpdns-server)
 - [Features](#features)

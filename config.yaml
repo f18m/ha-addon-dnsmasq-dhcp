@@ -119,12 +119,16 @@ schema:
       # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
       name: match(^[a-zA-Z0-9\-.]*$)
       link: "str?"
+      tags:
+        - "str?"
   dhcp_clients_friendly_names:
     - mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
       # the friendly "name" associated to a DHCP client can be any string, since it is just used
       # to label the client in the web UI, but it is not passed to dnsmasq or resolved over network
       name: str
       link: "str?"
+      tags:
+        - "str?"
   dns_server:
     enable: bool
     port: int

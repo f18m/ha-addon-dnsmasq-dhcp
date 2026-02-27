@@ -91,6 +91,77 @@ func getMockUIBackend() *UIBackend {
 	}
 }
 
+// TestGetTagsFor tests that getTagsFor() correctly returns tags for a MAC/IP pair.
+func TestGetTagsFor(t *testing.T) {
+	backendopts := AddonOptions{
+		friendlyNames: map[string]DhcpClientFriendlyName{
+			"00:11:22:33:44:55": {
+				MacAddress:   MustParseMAC("00:11:22:33:44:55"),
+				FriendlyName: "FriendlyClient1",
+				Tags:         []string{"server", "production"},
+			},
+		},
+		ipAddressReservationsByIP: map[netip.Addr]IpAddressReservation{
+			netip.MustParseAddr("192.168.0.3"): {
+				Name: "client2",
+				Mac:  MustParseMAC("00:11:22:33:44:56"),
+				IP:   netip.MustParseAddr("192.168.0.3"),
+				Tags: []string{"iot"},
+			},
+		},
+		ipAddressReservationsByMAC: map[string]IpAddressReservation{
+			"00:11:22:33:44:56": {
+				Name: "client2",
+				Mac:  MustParseMAC("00:11:22:33:44:56"),
+				IP:   netip.MustParseAddr("192.168.0.3"),
+				Tags: []string{"iot"},
+			},
+		},
+		dhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
+	}
+	backend := &UIBackend{
+		logger:    logger.NewCustomLogger("unit tests"),
+		options:   backendopts,
+		trackerDB: trackerdb.NewTestDB(),
+	}
+
+	tests := []struct {
+		name     string
+		mac      net.HardwareAddr
+		ip       netip.Addr
+		expected []string
+	}{
+		{
+			name:     "tags from friendly name",
+			mac:      MustParseMAC("00:11:22:33:44:55"),
+			ip:       netip.MustParseAddr("192.168.0.2"),
+			expected: []string{"server", "production"},
+		},
+		{
+			name:     "tags from IP reservation (by MAC)",
+			mac:      MustParseMAC("00:11:22:33:44:56"),
+			ip:       netip.MustParseAddr("192.168.0.3"),
+			expected: []string{"iot"},
+		},
+		{
+			name:     "no tags for unknown client",
+			mac:      MustParseMAC("aa:bb:cc:dd:ee:ff"),
+			ip:       netip.MustParseAddr("192.168.0.99"),
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := backend.getTagsFor(tt.mac, tt.ip)
+			if diff := cmp.Diff(tt.expected, result); diff != "" {
+				t.Errorf("getTagsFor() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+
 // TestEvaluateLink tests evaluateLink() helper with valid template data.
 func TestEvaluateLink(t *testing.T) {
 	tests := []struct {

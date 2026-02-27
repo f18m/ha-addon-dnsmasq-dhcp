@@ -120,16 +120,18 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 	// more settings than those listed here.
 	var cfg struct {
 		DhcpIpAddressReservations []struct {
-			Name string `json:"name"`
-			Mac  string `json:"mac"`
-			IP   string `json:"ip"`
-			Link string `json:"link"`
+			Name string   `json:"name"`
+			Mac  string   `json:"mac"`
+			IP   string   `json:"ip"`
+			Link string   `json:"link"`
+			Tags []string `json:"tags"`
 		} `json:"dhcp_ip_address_reservations"`
 
 		DhcpClientsFriendlyNames []struct {
-			Name string `json:"name"`
-			Mac  string `json:"mac"`
-			Link string `json:"link"`
+			Name string   `json:"name"`
+			Mac  string   `json:"mac"`
+			Link string   `json:"link"`
+			Tags []string `json:"tags"`
 		} `json:"dhcp_clients_friendly_names"`
 
 		DhcpServer struct {
@@ -236,6 +238,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Mac:  macAddr,
 			IP:   ipAddr,
 			Link: linkTemplate,
+			Tags: r.Tags,
 		}
 
 		o.ipAddressReservationsByIP[ipAddr] = ipReservation
@@ -261,6 +264,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			MacAddress:   macAddr,
 			FriendlyName: client.Name,
 			Link:         linkTemplate,
+			Tags:         client.Tags,
 		}
 	}
 

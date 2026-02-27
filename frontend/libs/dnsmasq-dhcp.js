@@ -124,7 +124,8 @@ function initCurrentTable() {
                 { title: 'IP Address', type: 'ip-address' },
                 { title: 'MAC Address', type: 'string' },
                 { title: 'Expires in', 'orderDataType': 'custom-date-order' },
-                { title: 'Static IP?', type: 'string' }
+                { title: 'Static IP?', type: 'string' },
+                { title: 'Tags', type: 'string' }
             ],
             data: [],
             pageLength: 20,
@@ -161,7 +162,8 @@ function initPastTable() {
                 { title: 'MAC Address', type: 'string' },
                 { title: 'Static IP?', type: 'string' },
                 { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order' },
-                { title: 'Notes', type: 'string' }
+                { title: 'Notes', type: 'string' },
+                { title: 'Tags', type: 'string' }
             ],
             data: [],
             pageLength: 20,
@@ -314,10 +316,11 @@ function processWebSocketDHCPCurrentClients(data) {
 
         // append new row
         time_left_str = formatTimeLeft(item.lease.expires)
+        tags_str = (item.tags && item.tags.length > 0) ? item.tags.join(', ') : ''
         newData.push([index + 1,
             item.friendly_name, item.lease.hostname, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
-            time_left_str, static_ip_str]);
+            time_left_str, static_ip_str, tags_str]);
         newTimeLeftColumn.push(time_left_str);
     });
 
@@ -356,10 +359,11 @@ function processWebSocketDHCPPastClients(data) {
 
         // append new row
         last_seen_str = formatTimeSince(item.past_info.last_seen)
+        tags_str = (item.tags && item.tags.length > 0) ? item.tags.join(', ') : ''
         newData.push([index + 1,
             item.friendly_name, item.past_info.hostname, 
             item.past_info.mac_addr, static_ip_str, 
-            last_seen_str, item.notes]);
+            last_seen_str, item.notes, tags_str]);
         newLastSeenColumn.push(last_seen_str);
     });
 

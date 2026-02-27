@@ -17,6 +17,7 @@ type DhcpClientFriendlyName struct {
 	MacAddress   net.HardwareAddr
 	FriendlyName string
 	Link         *texttemplate.Template // maybe nil
+	Tags         []string
 }
 
 // IpAddressReservation represents a static IP configuration loaded from the addon configuration file
@@ -25,6 +26,7 @@ type IpAddressReservation struct {
 	Mac  net.HardwareAddr
 	IP   netip.Addr
 	Link *texttemplate.Template // maybe nil
+	Tags []string
 }
 
 // DhcpClientData holds all the information the backend has about a particular DHCP client,
@@ -56,6 +58,9 @@ type DhcpClientData struct {
 	// produce a string which is intended to be an URL/URI to show for each DHCP client in the web UI.
 	// If such link template is available in config, this field gets populated.
 	EvaluatedLink string
+
+	// Tags is a list of user-defined labels associated with the DHCP client via configuration.
+	Tags []string
 }
 
 // MarshalJSON customizes the JSON serialization for DhcpClientData
@@ -67,10 +72,11 @@ func (d DhcpClientData) MarshalJSON() ([]byte, error) {
 			IPAddr   string `json:"ip_addr"`
 			Hostname string `json:"hostname"`
 		} `json:"lease"`
-		HasStaticIP      bool   `json:"has_static_ip"`
-		IsInsideDHCPPool bool   `json:"is_inside_dhcp_pool"`
-		FriendlyName     string `json:"friendly_name"`
-		EvaluatedLink    string `json:"evaluated_link"`
+		HasStaticIP      bool     `json:"has_static_ip"`
+		IsInsideDHCPPool bool     `json:"is_inside_dhcp_pool"`
+		FriendlyName     string   `json:"friendly_name"`
+		EvaluatedLink    string   `json:"evaluated_link"`
+		Tags             []string `json:"tags"`
 	}{
 		Lease: struct {
 			Expires  int64  `json:"expires"`
@@ -87,6 +93,7 @@ func (d DhcpClientData) MarshalJSON() ([]byte, error) {
 		IsInsideDHCPPool: d.IsInsideDHCPPool,
 		FriendlyName:     d.FriendlyName,
 		EvaluatedLink:    d.EvaluatedLink,
+		Tags:             d.Tags,
 	})
 }
 
@@ -96,6 +103,7 @@ type PastDhcpClientData struct {
 	HasStaticIP  bool                 `json:"has_static_ip"`
 	FriendlyName string               `json:"friendly_name"`
 	Notes        string               `json:"notes"`
+	Tags         []string             `json:"tags"`
 }
 
 // WebSocketMessage defines which contents get transmitted over the websocket in the

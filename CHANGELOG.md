@@ -18,14 +18,3 @@ Please see [official thread about deprecations of these architectures](https://c
 
 Please note that beside such deprecation, there are no other breaking changes.
 The configuration you have for dnsmasq-dhcp version `3.x.x` remains valid in version `4.0.0`.
-
-## Migrating from version 2.0.x to 3.0
-
-If you have a valid configuration for version 2.0.x, you need to adjust the YAML configuration when migrating
-to version 3.0.
-
-1. The top-level "interface" key has been renamed to "interfaces" (plural) and now expects a YAML list of network interface names.
-1. A new top-level "dhcp_pools" key has been created taking a list of IP ranges and the network interfaces on which these IP ranges should be served by the DHCP server. Additionally it also takes a "gateway" and "netmask" keys to specify critical aspects of each IP network.
-1. The top-level "dhcp_network" key does not exist anymore. Some of its contents ("gateway" and "netmask" keys) 
-have been moved in the new top-level "dhcp_pools" key. Some of its contents ("dns_domain", "dns_servers" and "ntp_servers") have been moved in the pre-existing top-level "dhcp_server" key.
-Finally the "broadcast" key has been removed.

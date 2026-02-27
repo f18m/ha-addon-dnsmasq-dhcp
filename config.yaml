@@ -5,7 +5,7 @@
 # See https://developers.home-assistant.io/docs/add-ons/configuration/
 #
 
-description: A DHCP server based on dnsmasq
+description: A DHCP/DNS server based on dnsmasq
 url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 # IMPORTANT: in the "main" branch you want these 3 fields to be set to:
 #

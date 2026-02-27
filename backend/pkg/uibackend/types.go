@@ -1,6 +1,7 @@
 package uibackend
 
 import (
+	"dnsmasq-dhcp-backend/pkg/dnsmasqwrapper"
 	"dnsmasq-dhcp-backend/pkg/trackerdb"
 	"encoding/json"
 	htmltemplate "html/template"
@@ -97,26 +98,6 @@ type PastDhcpClientData struct {
 	Notes        string               `json:"notes"`
 }
 
-type DnsUpstreamStats struct {
-	// ServerURL typical content (as reported by dnsmasq) looks like "8.8.8.8#53", i.e. IP#PORT
-	ServerURL string `json:"server_url"`
-
-	QueriesSent   int `json:"queries_sent"`
-	QueriesFailed int `json:"queries_failed"`
-}
-
-// DnsServerStats contains all the available dnsmasq DNS server metrics
-type DnsServerStats struct {
-	// The domain names are cachesize.bind, insertions.bind, evictions.bind, misses.bind, hits.bind, auth.bind and servers.bind unless disabled at compile-time. An example command to query this, using the dig utility would be
-	// dig +short chaos txt cachesize.bind
-	CacheSize       int                `json:"cache_size"`
-	CacheInsertions int                `json:"cache_insertions"`
-	CacheEvictions  int                `json:"cache_evictions"`
-	CacheMisses     int                `json:"cache_misses"`
-	CacheHits       int                `json:"cache_hits"`
-	UpstreamServers []DnsUpstreamStats `json:"upstream_servers_stats"`
-}
-
 // WebSocketMessage defines which contents get transmitted over the websocket in the
 // BACKEND -> UI direction.
 // Any structure contained here should have a sensible JSON marshalling helper.
@@ -133,10 +114,10 @@ type WebSocketMessage struct {
 	PastClients []PastDhcpClientData `json:"past_clients"`
 
 	// DnsStats provides a live feed about DNS server basic metrics.
-	DnsStats DnsServerStats `json:"dns_stats"`
+	DnsStats dnsmasqwrapper.DnsServerStats `json:"dns_stats"`
 
 	// LogCounters provides counters for notable dnsmasq log warning messages.
-	LogCounters DnsmasqLogCounters `json:"log_counters"`
+	LogCounters dnsmasqwrapper.DnsmasqLogCounters `json:"log_counters"`
 }
 
 // HtmlTemplateIpRange is used inside HtmlTemplate
@@ -167,7 +148,7 @@ type HtmlTemplate struct {
 	DnsDomain  string
 
 	// dnsmasq log counters (initial snapshot when the page is rendered)
-	LogCounters DnsmasqLogCounters
+	LogCounters dnsmasqwrapper.DnsmasqLogCounters
 
 	// embedded contents
 	CssFileContent        htmltemplate.CSS

@@ -150,8 +150,8 @@ function initCurrentTable() {
                 { title: 'IP Address', type: 'ip-address' },
                 { title: 'MAC Address', type: 'string' },
                 { title: 'Expires in', 'orderDataType': 'custom-date-order' },
-                { title: 'Static IP?', type: 'string' },
-                { title: 'Tags', type: 'string' }
+                { title: 'Static IP?', type: 'string', width: '8%' },
+                { title: 'Tags', type: 'string', width: '15%' }
             ],
             data: [],
             pageLength: 20,
@@ -186,10 +186,10 @@ function initPastTable() {
                 { title: 'Friendly Name', type: 'string' },
                 { title: 'Hostname', type: 'string' },
                 { title: 'MAC Address', type: 'string' },
-                { title: 'Static IP?', type: 'string' },
+                { title: 'Static IP?', type: 'string', width: '8%' },
                 { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order', width: '10%' },
                 { title: 'Notes', type: 'string', width: '25%' },
-                { title: 'Tags', type: 'string' }
+                { title: 'Tags', type: 'string', width: '20%' }
             ],
             data: [],
             pageLength: 20,

@@ -91,7 +91,7 @@ func getMockUIBackend() *UIBackend {
 	}
 }
 
-// TestGetTagsFor tests that getTagsFor() correctly returns tags for a MAC/IP pair.
+// TestGetTagsFor tests that getTagsFor() correctly returns tags for a given MAC address.
 func TestGetTagsFor(t *testing.T) {
 	backendopts := AddonOptions{
 		friendlyNames: map[string]DhcpClientFriendlyName{
@@ -128,32 +128,28 @@ func TestGetTagsFor(t *testing.T) {
 	tests := []struct {
 		name     string
 		mac      net.HardwareAddr
-		ip       netip.Addr
 		expected []string
 	}{
 		{
 			name:     "tags from friendly name",
 			mac:      MustParseMAC("00:11:22:33:44:55"),
-			ip:       netip.MustParseAddr("192.168.0.2"),
 			expected: []string{"server", "production"},
 		},
 		{
 			name:     "tags from IP reservation (by MAC)",
 			mac:      MustParseMAC("00:11:22:33:44:56"),
-			ip:       netip.MustParseAddr("192.168.0.3"),
 			expected: []string{"iot"},
 		},
 		{
 			name:     "no tags for unknown client",
 			mac:      MustParseMAC("aa:bb:cc:dd:ee:ff"),
-			ip:       netip.MustParseAddr("192.168.0.99"),
 			expected: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := backend.getTagsFor(tt.mac, tt.ip)
+			result := backend.getTagsFor(tt.mac)
 			if diff := cmp.Diff(tt.expected, result); diff != "" {
 				t.Errorf("getTagsFor() mismatch (-want +got):\n%s", diff)
 			}

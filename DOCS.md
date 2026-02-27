@@ -1,5 +1,16 @@
 # Home Assistant App: Dnsmasq-DHCP
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Requirements](#requirements)
+- [Concepts](#concepts)
+- [App Configuration](#app-configuration)
+- [HomeAssistant Configurations](#homeassistant-configurations)
+- [Using the App Beta version](#using-the-app-beta-version)
+- [Development](#development)
+- [Links](#links)
+
 ## Installation
 
 Follow these steps to get the `Dnsmasq-DHCP` App installed on your system:
@@ -72,6 +83,12 @@ static IP address reserved lies outside the DHCP range.
 Sometimes the hostname provided by the DHCP client to the DHCP server is really awkward and
 non-informative, so `Dnsmasq-DHCP` allow users to override that by specifying a human-friendly
 name for a particular DHCP client (using its MAC address as identifier).
+
+### DHCP MAC Address Blocklist
+
+The DHCP server can be configured to ignore DHCP requests from specific MAC addresses.
+Any MAC address added to the `dhcp_mac_address_blocklist` will be silently ignored by the DHCP server,
+meaning those devices will not receive an IP address from this DHCP server.
 
 ### Upstream DNS servers
 
@@ -214,22 +231,57 @@ dhcp_pools:
 
 # DHCP IP address reservations for special/important devices (identified by MAC address)
 dhcp_ip_address_reservations:
+    # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
+    # which uniquely identifies a particular network interface
   - mac: aa:bb:cc:dd:ee:ff
-    name: "An-important-host-with-reserved-IP"
+    # the "name" of each DHCP IP address reservation must be a valid hostname as per RFC 1123 since 
+    # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
+    name: "important-server"
+    # the IP address to provide whenever the DHCP lease request comes from a matching MAC address
     ip: 192.168.1.15
+    # the 'description' property is a free-form string to describe the device (e.g. product model, location)
+    description: "My important server - rack 3"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page". It is used to render a link into the "current DHCP clients" tab of the UI.
     link: "http://{{ .ip }}/landing-page/for/this/host"
+    tags:
+      # tags allow you to easily categorize each device of your network and
+      # search them in the web UI
+      - server
+      - critical
+      - fixed_ip
 
-# DHCP friendly names 
+# DHCP friendly name mappings
 # Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.
 # This option can be used to remap the hostnames to human-friendly names, via the DHCP protocol.
+# E.g. my Macbook Pro reports itself just as "Mac" to the DHCP server; with this feature you can 
+# remap it to appear as e.g. "My Work Macbook Pro".
+# Please note that a MAC address cannot appear in both the "dhcp_ip_address_reservations" list and 
+# in the "dhcp_clients_friendly_names" list
 dhcp_clients_friendly_names:
   - mac: dd:ee:aa:dd:bb:ee
-    name: "This is a friendly name to label this host, even if it gets a dynamic IP"
+    # similarly to DHCP IP address reservations, the "name" of each DHCP friendly name mapping
+    # must be a valid hostname as per RFC 1123
+    name: "work-laptop"
+    # the 'description' property is a free-form string to describe the device (e.g. product model, location)
+    description: "My personal laptop - living room"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page/for/this/dynamic/host"
     link: "http://{{ .ip }}/landing-page/for/this/host"
+    tags:
+      # tags allow you to easily categorize each device of your network and
+      # search them in the web UI
+      - laptop
+      - dynamic_ip
+
+# DHCP MAC address blocklist
+# Any MAC address added to this list will be ignored by the DHCP server.
+# This means that devices with these MAC addresses will not receive an IP address from this DHCP server.
+# Please note that a MAC address cannot appear in both this list and either
+# "dhcp_ip_address_reservations" or "dhcp_clients_friendly_names".
+dhcp_mac_address_blocklist:
+  - mac: 11:22:33:44:55:66
+    description: A reminder about why this device is in the blocklist
 
 # DNS server configuration
 dns_server:

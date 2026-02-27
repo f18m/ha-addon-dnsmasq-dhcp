@@ -1,4 +1,4 @@
-package uibackend
+package dnsmasqwrapper
 
 import (
 	"context"

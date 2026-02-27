@@ -291,3 +291,23 @@ a[href*="http"]::after {
         }
     }
 }
+
+
+/* Tag label styles */
+.tag-label {
+  display: inline-block;
+  padding: 3px 8px;
+  margin: 2px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+.tag-label.tag-none {
+  background-color: #999;
+  color: white;
+  font-style: italic;
+}

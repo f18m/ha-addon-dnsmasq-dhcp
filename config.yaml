@@ -18,9 +18,9 @@ url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 #   version: 4.x.y
 #   slug: dnsmasq-dhcp-beta
 #   name: Dnsmasq-DHCP BETA
-version: 4.0.1
-slug: dnsmasq-dhcp
-name: Dnsmasq-DHCP
+version: beta
+slug: dnsmasq-dhcp-beta
+name: Dnsmasq-DHCP BETA
 # advanced true means that the HA user can see this addon only if it's flagged as 'advanced' in the
 # Home Assistant UI
 advanced: true
@@ -68,13 +68,22 @@ options:
       netmask: 255.255.255.0
   dhcp_ip_address_reservations:
     - mac: aa:bb:cc:dd:ee:ff
-      name: "An-important-host-with-reserved-IP"
+      name: "hostname-for-this-device"
       ip: 192.168.1.15
+      description: "My important server"
       link: "http://{{ .ip }}/landing-page/for/this/host"
+      tags:
+        - server
   dhcp_clients_friendly_names:
     - mac: dd:ee:aa:dd:bb:ee
-      name: "This is a friendly name to label this host, even if it gets a dynamic IP"
+      name: "friendly-name-for-this-device"
+      description: "My laptop"
       link: "http://{{ .ip }}/landing-page/for/this/host"
+      tags:
+        - laptop
+  dhcp_mac_address_blocklist:
+    - mac: aa:bb:cc:dd:ee:ff
+      description: "This is a blocked MAC address"
   dns_server:
     enable: true
     port: 53
@@ -118,13 +127,22 @@ schema:
       # the "name" of each DHCP IP address reservation must be a valid hostname as per RFC 1123 since 
       # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
       name: match(^[a-zA-Z0-9\-.]*$)
+      description: "str?"
       link: "str?"
+      tags:
+        - "str?"
   dhcp_clients_friendly_names:
     - mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
       # the friendly "name" associated to a DHCP client can be any string, since it is just used
       # to label the client in the web UI, but it is not passed to dnsmasq or resolved over network
       name: str
+      description: "str?"
       link: "str?"
+      tags:
+        - "str?"
+  dhcp_mac_address_blocklist:
+    - mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
+      description: "str?"
   dns_server:
     enable: bool
     port: int

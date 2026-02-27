@@ -1,4 +1,18 @@
-# Home Assistant App: Dnsmasq as DNS and DHCP server
+![Supports aarch64 Architecture][aarch64-shield]
+![Supports amd64 Architecture][amd64-shield]
+
+# Home Assistant App: flexible DNS and DHCP servers for your LAN
+
+- [About](#about)
+- [Why should I use a DHCP/DNS server](#why-should-i-use-a-dhcpdns-server)
+- [Features](#features)
+- [Web UI](#web-ui-screenshots)
+- [How to Install and How to Configure](#how-to-install-and-how-to-configure)
+- [Similar Apps](#similar-apps)
+- [Other Noteworthy Projects](#other-noteworthy-projects)
+- [Development](#development)
+
+## About
 
 *Take control of your network!*
 If you want to
@@ -16,21 +30,21 @@ If you want to
 that are meant to be used in your HomeAssistant Local Area Network (LAN), to make HomeAssistant the central point of 
 your home network configuration: IP address allocations (via DHCP), hostname resolutions (via DNS), etc.
 
-Under the hood, the DNS/DHCP server is the well-known [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) server. 
-This is in contrast to several similar solutions that employ instead the [ISC dhcpd](https://www.isc.org/dhcp/) utility.
-Dnsmasq is on many aspects more feature-complete than the ISC DHCP server. Moreover ISC DHCP is discontinued since 2022.
-
 This app also implements an **handy UI to view the list of both current and past DHCP clients**, showing for each client all relevant information that can be obtained through DHCP.
 Some basic DNS statistic is available from the UI as well.
 
-![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield]
+Under the hood, the DNS/DHCP server is the well-known [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) server. 
+Please note that despite the name '`dnsmasq`' also provides DHCP server functionalities, not only DNS.
+Several similar solutions employ instead the [ISC dhcpd](https://www.isc.org/dhcp/) utility, however dnsmasq is on many aspects more feature-complete than the ISC DHCP server. Moreover ISC DHCP is discontinued since 2022.
 
-## About
 
-This app setups and manages a `dnsmasq` instance configured to run both as a DNS and DHCP server (despite the name '`dnsmasq`' also provides DHCP server functionalities, not only DNS).
+## Why should I use a DHCP/DNS server
 
-[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
-[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
+You will have many benefits like:
+* remove static IP address configurations from end devices, to centralize IP address control;
+* get fine-grained control over which devices connect to your network and when;
+* establish a basic heartbeat (DHCP lease renewal) to check which devices are still up and running;
+* use human-friendly DNS names to connect to your devices;
 
 ## Features
 
@@ -51,7 +65,7 @@ For technical savvy users, note that this app _should_ support IPv6 but so far h
 its author only on IPv4 networks.
 
 
-## Web UI
+## Web UI Screenshots
 
 These are screenshots from the app UI v3.0.0.
 
@@ -88,18 +102,10 @@ Please note that you can use this app in tandem with similar apps and e.g. confi
 
 * [pihole](https://pi-hole.net/): pi-hole embeds a modified `dnsmasq` variant (they named it "FTL", Faster Than Light) which provides a bunch of DNS metrics that are missing from the regular `dnsmasq` binary.
 
-## Future Developments
-
-* need to write more docs about the app configuration settings
-* would be nice to provide some indication about the DNS cache metrics, see e.g. the explanations at https://docs.pi-hole.net/ftldns/dns-cache/ 
-* would be nice to provide an HomeAssistant sensor about DHCP clients transitioning from "current" to "past"
-
 
 ## Development
 
-See [Home Assistant app guide](https://developers.home-assistant.io/docs/apps/)
-
-This app is based on other 2 apps maintained by Home Assistant team:
+See the [Home Assistant app guide](https://developers.home-assistant.io/docs/apps/). This app was originally inspired by other 2 apps maintained by Home Assistant team:
 * https://github.com/home-assistant/addons/tree/master/dnsmasq
 * https://github.com/home-assistant/addons/tree/master/dhcp_server
 
@@ -111,3 +117,6 @@ For the init system used by HA apps, see:
 
 For the templating language used in e.g. [dnsmasq config](./rootfs/usr/share/tempio/dnsmasq.config)
 * https://github.com/home-assistant/tempio
+
+[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
+[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg

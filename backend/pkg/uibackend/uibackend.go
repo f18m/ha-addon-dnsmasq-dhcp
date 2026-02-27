@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"cmp"
 	"context"
+	"dnsmasq-dhcp-backend/pkg/dnsmasqwrapper"
 	"dnsmasq-dhcp-backend/pkg/logger"
 	"dnsmasq-dhcp-backend/pkg/trackerdb"
 	"encoding/json"
@@ -54,7 +55,7 @@ type UIBackend struct {
 	clientsLock sync.Mutex
 
 	// a wrapper that allows us to extract some stats from dnsmasq logs & via DNS
-	dnsmasq *DnsmasqWrapper
+	dnsmasq *dnsmasqwrapper.DnsmasqWrapper
 
 	// the most updated view on DHCP clients currently available
 	dhcpClientData     []DhcpClientData
@@ -116,11 +117,12 @@ func NewUIBackend(logger *logger.CustomLogger) UIBackend {
 			ipAddressReservationsByIP:  make(map[netip.Addr]IpAddressReservation),
 			ipAddressReservationsByMAC: make(map[string]IpAddressReservation),
 			friendlyNames:              make(map[string]DhcpClientFriendlyName),
+			blockedMACs:                make(map[string]BlockedDeviceInfo),
 		},
 		startTimestamp: time.Now(),
 		startEpoch:     startEpoch,
 		clients:        make(map[*websocket.Conn]bool),
-		dnsmasq:        NewDnsmasqWrapper(logger),
+		dnsmasq:        dnsmasqwrapper.NewDnsmasqWrapper(logger),
 		dhcpClientData: nil,
 		trackerDB:      *db,
 		broadcastCh:    make(chan struct{}),
@@ -221,6 +223,9 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 		if pastClients[i].PastInfo.Hostname == "" {
 			pastClients[i].PastInfo.Hostname = unknownHostnameHtmlString
 		}
+
+		pastClients[i].Tags = b.getTagsFor(deadC.MacAddr)
+		pastClients[i].Description = b.getDescriptionFor(deadC.MacAddr)
 
 		// create note field
 		if deadC.DhcpServerStartEpoch < b.startEpoch { //nolint:gocritic
@@ -421,6 +426,7 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		// time of this app
 		DHCPServerStartTime:        b.startTimestamp.Unix(),
 		DHCPForgetPastClientsAfter: human_duration.ShortString(b.options.forgetPastClientsAfter, human_duration.Minute),
+		BlockedMACCount:            len(b.options.blockedMACs),
 
 		// DNS config info
 		DnsEnabled: dnsEnableString,
@@ -468,6 +474,28 @@ func (b *UIBackend) getFriendlyNameFor(mac net.HardwareAddr, hostname string) st
 		// has received (over DHCP protocol) an hostname... better than nothing:
 		// use that to create a "friendly name"
 		return hostname
+	}
+	return ""
+}
+
+func (b *UIBackend) getTagsFor(mac net.HardwareAddr) []string {
+	// a MAC address will only be present in either friendlyNames or ipAddressReservationsByMAC, not both
+	if fn, ok := b.options.friendlyNames[mac.String()]; ok {
+		return fn.Tags
+	}
+	if r, ok := b.options.ipAddressReservationsByMAC[mac.String()]; ok {
+		return r.Tags
+	}
+	return nil
+}
+
+func (b *UIBackend) getDescriptionFor(mac net.HardwareAddr) string {
+	// a MAC address will only be present in either friendlyNames or ipAddressReservationsByMAC, not both
+	if fn, ok := b.options.friendlyNames[mac.String()]; ok {
+		return fn.Description
+	}
+	if r, ok := b.options.ipAddressReservationsByMAC[mac.String()]; ok {
+		return r.Description
 	}
 	return ""
 }
@@ -556,6 +584,8 @@ func (b *UIBackend) processLeaseUpdatesFromArray(updatedLeases []*dnsmasq.Lease)
 		d.HasStaticIP = b.hasIpAddressReservationByIP(lease.IPAddr, lease.MacAddr)
 		d.IsInsideDHCPPool = b.options.dhcpPool.Contains(lease.IPAddr)
 		d.EvaluatedLink = b.evaluateLink(lease.Hostname, lease.IPAddr, lease.MacAddr)
+		d.Tags = b.getTagsFor(lease.MacAddr)
+		d.Description = b.getDescriptionFor(lease.MacAddr)
 
 		// processing complete:
 		b.dhcpClientData = append(b.dhcpClientData, d)
@@ -620,6 +650,7 @@ func (b *UIBackend) readAddonOptions() error {
 	b.logger.Infof("Acquired %d DHCP network/ranges\n", len(b.options.dhcpRanges))
 	b.logger.Infof("Acquired %d IP address reservations\n", len(b.options.ipAddressReservationsByIP))
 	b.logger.Infof("Acquired %d friendly name definitions\n", len(b.options.friendlyNames))
+	b.logger.Infof("Acquired %d blocked MAC addresses\n", len(b.options.blockedMACs))
 	b.logger.Infof("DHCP requests logging enabled=%t; cleanup threshold for past DHCP clients set to %s\n",
 		b.options.logDHCP, human_duration.ShortString(b.options.forgetPastClientsAfter, human_duration.Minute))
 	b.logger.Infof("Web server on port %d; Web UI logging enabled=%t; Web UI refresh interval=%s\n",
@@ -744,7 +775,7 @@ func (b *UIBackend) ListenAndServe() error {
 	}
 
 	// Watch the dnsmasq log file for notable warning messages
-	go b.dnsmasq.watchDnsmasqLog(defaultDnsmasqLogFile)
+	go b.dnsmasq.WatchAndPrintDnsmasqLog(defaultDnsmasqLogFile)
 
 	// Start server
 	b.logger.Infof("Starting server to listen on port %d\n", b.options.webUIPort)

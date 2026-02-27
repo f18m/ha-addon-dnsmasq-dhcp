@@ -1,6 +1,7 @@
 package uibackend
 
 import (
+	"dnsmasq-dhcp-backend/pkg/dnsmasqwrapper"
 	"dnsmasq-dhcp-backend/pkg/trackerdb"
 	"encoding/json"
 	htmltemplate "html/template"
@@ -15,15 +16,25 @@ import (
 type DhcpClientFriendlyName struct {
 	MacAddress   net.HardwareAddr
 	FriendlyName string
+	Description  string
 	Link         *texttemplate.Template // maybe nil
+	Tags         []string
 }
 
 // IpAddressReservation represents a static IP configuration loaded from the addon configuration file
 type IpAddressReservation struct {
-	Name string
-	Mac  net.HardwareAddr
-	IP   netip.Addr
-	Link *texttemplate.Template // maybe nil
+	Name        string
+	Mac         net.HardwareAddr
+	IP          netip.Addr
+	Description string
+	Link        *texttemplate.Template // maybe nil
+	Tags        []string
+}
+
+// BlockedDeviceInfo represents a blocked MAC address loaded from the addon configuration file
+type BlockedDeviceInfo struct {
+	Mac         net.HardwareAddr
+	Description string
 }
 
 // DhcpClientData holds all the information the backend has about a particular DHCP client,
@@ -55,6 +66,12 @@ type DhcpClientData struct {
 	// produce a string which is intended to be an URL/URI to show for each DHCP client in the web UI.
 	// If such link template is available in config, this field gets populated.
 	EvaluatedLink string
+
+	// Tags is a list of user-defined labels associated with the DHCP client via configuration.
+	Tags []string
+
+	// Description is an optional free-form string provided in the configuration to describe the device.
+	Description string
 }
 
 // MarshalJSON customizes the JSON serialization for DhcpClientData
@@ -66,10 +83,12 @@ func (d DhcpClientData) MarshalJSON() ([]byte, error) {
 			IPAddr   string `json:"ip_addr"`
 			Hostname string `json:"hostname"`
 		} `json:"lease"`
-		HasStaticIP      bool   `json:"has_static_ip"`
-		IsInsideDHCPPool bool   `json:"is_inside_dhcp_pool"`
-		FriendlyName     string `json:"friendly_name"`
-		EvaluatedLink    string `json:"evaluated_link"`
+		HasStaticIP      bool     `json:"has_static_ip"`
+		IsInsideDHCPPool bool     `json:"is_inside_dhcp_pool"`
+		FriendlyName     string   `json:"friendly_name"`
+		EvaluatedLink    string   `json:"evaluated_link"`
+		Tags             []string `json:"tags"`
+		Description      string   `json:"description"`
 	}{
 		Lease: struct {
 			Expires  int64  `json:"expires"`
@@ -86,6 +105,8 @@ func (d DhcpClientData) MarshalJSON() ([]byte, error) {
 		IsInsideDHCPPool: d.IsInsideDHCPPool,
 		FriendlyName:     d.FriendlyName,
 		EvaluatedLink:    d.EvaluatedLink,
+		Tags:             d.Tags,
+		Description:      d.Description,
 	})
 }
 
@@ -95,26 +116,8 @@ type PastDhcpClientData struct {
 	HasStaticIP  bool                 `json:"has_static_ip"`
 	FriendlyName string               `json:"friendly_name"`
 	Notes        string               `json:"notes"`
-}
-
-type DnsUpstreamStats struct {
-	// ServerURL typical content (as reported by dnsmasq) looks like "8.8.8.8#53", i.e. IP#PORT
-	ServerURL string `json:"server_url"`
-
-	QueriesSent   int `json:"queries_sent"`
-	QueriesFailed int `json:"queries_failed"`
-}
-
-// DnsServerStats contains all the available dnsmasq DNS server metrics
-type DnsServerStats struct {
-	// The domain names are cachesize.bind, insertions.bind, evictions.bind, misses.bind, hits.bind, auth.bind and servers.bind unless disabled at compile-time. An example command to query this, using the dig utility would be
-	// dig +short chaos txt cachesize.bind
-	CacheSize       int                `json:"cache_size"`
-	CacheInsertions int                `json:"cache_insertions"`
-	CacheEvictions  int                `json:"cache_evictions"`
-	CacheMisses     int                `json:"cache_misses"`
-	CacheHits       int                `json:"cache_hits"`
-	UpstreamServers []DnsUpstreamStats `json:"upstream_servers_stats"`
+	Tags         []string             `json:"tags"`
+	Description  string               `json:"description"`
 }
 
 // WebSocketMessage defines which contents get transmitted over the websocket in the
@@ -133,10 +136,10 @@ type WebSocketMessage struct {
 	PastClients []PastDhcpClientData `json:"past_clients"`
 
 	// DnsStats provides a live feed about DNS server basic metrics.
-	DnsStats DnsServerStats `json:"dns_stats"`
+	DnsStats dnsmasqwrapper.DnsServerStats `json:"dns_stats"`
 
 	// LogCounters provides counters for notable dnsmasq log warning messages.
-	LogCounters DnsmasqLogCounters `json:"log_counters"`
+	LogCounters dnsmasqwrapper.DnsmasqLogCounters `json:"log_counters"`
 }
 
 // HtmlTemplateIpRange is used inside HtmlTemplate
@@ -161,13 +164,14 @@ type HtmlTemplate struct {
 	AddressReservationLease    string
 	DHCPServerStartTime        int64
 	DHCPForgetPastClientsAfter string
+	BlockedMACCount            int
 
 	// DNS config info
 	DnsEnabled string
 	DnsDomain  string
 
 	// dnsmasq log counters (initial snapshot when the page is rendered)
-	LogCounters DnsmasqLogCounters
+	LogCounters dnsmasqwrapper.DnsmasqLogCounters
 
 	// embedded contents
 	CssFileContent        htmltemplate.CSS

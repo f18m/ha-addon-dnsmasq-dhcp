@@ -20,6 +20,32 @@ var num_updates = 0;
 
 
 /* FORMATTING FUNCTIONS */
+
+// Generate a consistent color for a tag based on its string
+function getTagColor(tagString) {
+    // Simple hash function to generate consistent colors for tags
+    let hash = 0;
+    for (let i = 0; i < tagString.length; i++) {
+        hash = tagString.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Generate HSL color with fixed saturation and lightness for better readability
+    const hue = Math.abs(hash % 360);
+    return `hsl(${hue}, 65%, 45%)`;
+}
+
+// Format tags as colored labels
+function formatTags(tags) {
+    if (!tags || tags.length === 0) {
+        return '<span class="tag-label tag-none">none</span>';
+    }
+    
+    return tags.map(tag => {
+        const color = getTagColor(tag);
+        return `<span class="tag-label" style="background-color: ${color};">${tag}</span>`;
+    }).join(' ');
+}
+
 function formatTimeLeft(unixFutureTimestamp) {
     if (unixFutureTimestamp == 0) {
         return "Never expires";
@@ -120,11 +146,13 @@ function initCurrentTable() {
                 { title: '#', type: 'num' },
                 { title: 'Friendly Name', type: 'string' },
                 { title: 'Hostname', type: 'string' },
+                { title: 'Description', type: 'string' },
                 { title: 'Link', type: 'string' },
                 { title: 'IP Address', type: 'ip-address' },
                 { title: 'MAC Address', type: 'string' },
                 { title: 'Expires in', 'orderDataType': 'custom-date-order' },
-                { title: 'Static IP?', type: 'string' }
+                { title: 'Static IP?', type: 'string', width: '8%' },
+                { title: 'Tags', type: 'string', width: '15%' }
             ],
             data: [],
             pageLength: 20,
@@ -158,10 +186,12 @@ function initPastTable() {
                 { title: '#', type: 'num' },
                 { title: 'Friendly Name', type: 'string' },
                 { title: 'Hostname', type: 'string' },
+                { title: 'Description', type: 'string' },
                 { title: 'MAC Address', type: 'string' },
-                { title: 'Static IP?', type: 'string' },
-                { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order' },
-                { title: 'Notes', type: 'string' }
+                { title: 'Static IP?', type: 'string', width: '8%' },
+                { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order', width: '10%' },
+                { title: 'Notes', type: 'string', width: '25%' },
+                { title: 'Tags', type: 'string', width: '20%' }
             ],
             data: [],
             pageLength: 20,
@@ -314,14 +344,16 @@ function processWebSocketDHCPCurrentClients(data) {
 
         // append new row
         time_left_str = formatTimeLeft(item.lease.expires)
+        tags_str = formatTags(item.tags)
+        description_str = (item.description && item.description.length > 0) ? item.description : 'N/A'
         newData.push([index + 1,
-            item.friendly_name, item.lease.hostname, link_str,
+            item.friendly_name, item.lease.hostname, description_str, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
-            time_left_str, static_ip_str]);
+            time_left_str, static_ip_str, tags_str]);
         newTimeLeftColumn.push(time_left_str);
     });
 
-    var index_of_time_left_column = 6;
+    var index_of_time_left_column = 7;
     var currentData = table_current.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_left_column])) {
         console.log("No change in current DHCP clients, updating only the time-left column");
@@ -356,14 +388,16 @@ function processWebSocketDHCPPastClients(data) {
 
         // append new row
         last_seen_str = formatTimeSince(item.past_info.last_seen)
+        tags_str = formatTags(item.tags)
+        description_str = (item.description && item.description.length > 0) ? item.description : 'N/A'
         newData.push([index + 1,
-            item.friendly_name, item.past_info.hostname, 
+            item.friendly_name, item.past_info.hostname, description_str,
             item.past_info.mac_addr, static_ip_str, 
-            last_seen_str, item.notes]);
+            last_seen_str, item.notes, tags_str]);
         newLastSeenColumn.push(last_seen_str);
     });
 
-    var index_of_time_last_seen_column = 5;
+    var index_of_time_last_seen_column = 6;
     var currentData = table_past.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_last_seen_column])) {
         console.log("No change in past DHCP clients, updating only the last-seen column");

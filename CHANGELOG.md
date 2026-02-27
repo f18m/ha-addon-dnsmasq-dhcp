@@ -8,12 +8,18 @@ A new major version is released each time there is a backward-incompatible chang
 
 ## Version 4.1.0
 
-This release adds support for "tags": each DHCP IP address reservation can now be 
-enriched with a list of tags. Same thing for each DHCP Friendly Name mapping.
+This release adds support for `tags`: each DHCP IP address reservation can now be 
+enriched with a list of tags. Same thing for each DHCP friendly name mapping.
+This helps to give categories to all your LAN devices and easily search them in the UI.
+
+This release also adds support for a `description` associated to each DHCP IP address reservation or DHCP friendly name mapping.
+
+Finally it adds support for a MAC address blocklist: a list of MAC addresses that
+will be completely ignored by the DHCP server, see `dhcp_mac_address_blocklist`
+
 This change does not require you to do any change on your configuration and is 
 backward compatible. But you might want to spend some time to better organize 
-your DHCP mappings with tags now :)
-
+your DHCP mappings with tags and descriptions now :)
 
 ## Version 4.0.0
 

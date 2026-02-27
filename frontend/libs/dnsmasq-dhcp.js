@@ -345,8 +345,9 @@ function processWebSocketDHCPCurrentClients(data) {
         // append new row
         time_left_str = formatTimeLeft(item.lease.expires)
         tags_str = formatTags(item.tags)
+        description_str = (item.description && item.description.length > 0) ? item.description : 'N/A'
         newData.push([index + 1,
-            item.friendly_name, item.lease.hostname, item.description, link_str,
+            item.friendly_name, item.lease.hostname, description_str, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
             time_left_str, static_ip_str, tags_str]);
         newTimeLeftColumn.push(time_left_str);
@@ -388,8 +389,9 @@ function processWebSocketDHCPPastClients(data) {
         // append new row
         last_seen_str = formatTimeSince(item.past_info.last_seen)
         tags_str = formatTags(item.tags)
+        description_str = (item.description && item.description.length > 0) ? item.description : 'N/A'
         newData.push([index + 1,
-            item.friendly_name, item.past_info.hostname, item.description,
+            item.friendly_name, item.past_info.hostname, description_str,
             item.past_info.mac_addr, static_ip_str, 
             last_seen_str, item.notes, tags_str]);
         newLastSeenColumn.push(last_seen_str);

@@ -72,11 +72,15 @@ options:
       ip: 192.168.1.15
       description: "My important server"
       link: "http://{{ .ip }}/landing-page/for/this/host"
+      tags:
+        - server
   dhcp_clients_friendly_names:
     - mac: dd:ee:aa:dd:bb:ee
       name: "friendly-name-for-this-device"
       description: "My laptop"
       link: "http://{{ .ip }}/landing-page/for/this/host"
+      tags:
+        - laptop
   dhcp_mac_address_blocklist:
     - mac: aa:bb:cc:dd:ee:ff
       description: "This is a blocked MAC address"

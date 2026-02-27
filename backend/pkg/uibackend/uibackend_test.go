@@ -157,7 +157,6 @@ func TestGetTagsFor(t *testing.T) {
 	}
 }
 
-
 // TestEvaluateLink tests evaluateLink() helper with valid template data.
 func TestEvaluateLink(t *testing.T) {
 	tests := []struct {

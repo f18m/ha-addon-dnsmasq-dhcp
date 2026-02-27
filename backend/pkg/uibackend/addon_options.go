@@ -124,18 +124,20 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 	// more settings than those listed here.
 	var cfg struct {
 		DhcpIpAddressReservations []struct {
-			Name string   `json:"name"`
-			Mac  string   `json:"mac"`
-			IP   string   `json:"ip"`
-			Link string   `json:"link"`
-			Tags []string `json:"tags"`
+			Name        string   `json:"name"`
+			Mac         string   `json:"mac"`
+			IP          string   `json:"ip"`
+			Description string   `json:"description"`
+			Link        string   `json:"link"`
+			Tags        []string `json:"tags"`
 		} `json:"dhcp_ip_address_reservations"`
 
 		DhcpClientsFriendlyNames []struct {
-			Name string   `json:"name"`
-			Mac  string   `json:"mac"`
-			Link string   `json:"link"`
-			Tags []string `json:"tags"`
+			Name        string   `json:"name"`
+			Mac         string   `json:"mac"`
+			Description string   `json:"description"`
+			Link        string   `json:"link"`
+			Tags        []string `json:"tags"`
 		} `json:"dhcp_clients_friendly_names"`
 
 		DhcpMacAddressBlocklist []struct {
@@ -247,11 +249,12 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 		r.Mac = macAddr.String()
 
 		ipReservation := IpAddressReservation{
-			Name: r.Name,
-			Mac:  macAddr,
-			IP:   ipAddr,
-			Link: linkTemplate,
-			Tags: r.Tags,
+			Name:        r.Name,
+			Mac:         macAddr,
+			IP:          ipAddr,
+			Description: r.Description,
+			Link:        linkTemplate,
+			Tags:        r.Tags,
 		}
 
 		// check for duplicates in IP/MAC address reservations
@@ -289,6 +292,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 		o.friendlyNames[macAddr.String()] = DhcpClientFriendlyName{
 			MacAddress:   macAddr,
 			FriendlyName: client.Name,
+			Description:  client.Description,
 			Link:         linkTemplate,
 			Tags:         client.Tags,
 		}

@@ -146,6 +146,7 @@ function initCurrentTable() {
                 { title: '#', type: 'num' },
                 { title: 'Friendly Name', type: 'string' },
                 { title: 'Hostname', type: 'string' },
+                { title: 'Description', type: 'string' },
                 { title: 'Link', type: 'string' },
                 { title: 'IP Address', type: 'ip-address' },
                 { title: 'MAC Address', type: 'string' },
@@ -185,6 +186,7 @@ function initPastTable() {
                 { title: '#', type: 'num' },
                 { title: 'Friendly Name', type: 'string' },
                 { title: 'Hostname', type: 'string' },
+                { title: 'Description', type: 'string' },
                 { title: 'MAC Address', type: 'string' },
                 { title: 'Static IP?', type: 'string', width: '8%' },
                 { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order', width: '10%' },
@@ -344,13 +346,13 @@ function processWebSocketDHCPCurrentClients(data) {
         time_left_str = formatTimeLeft(item.lease.expires)
         tags_str = formatTags(item.tags)
         newData.push([index + 1,
-            item.friendly_name, item.lease.hostname, link_str,
+            item.friendly_name, item.lease.hostname, item.description, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
             time_left_str, static_ip_str, tags_str]);
         newTimeLeftColumn.push(time_left_str);
     });
 
-    var index_of_time_left_column = 6;
+    var index_of_time_left_column = 7;
     var currentData = table_current.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_left_column])) {
         console.log("No change in current DHCP clients, updating only the time-left column");
@@ -387,13 +389,13 @@ function processWebSocketDHCPPastClients(data) {
         last_seen_str = formatTimeSince(item.past_info.last_seen)
         tags_str = formatTags(item.tags)
         newData.push([index + 1,
-            item.friendly_name, item.past_info.hostname, 
+            item.friendly_name, item.past_info.hostname, item.description,
             item.past_info.mac_addr, static_ip_str, 
             last_seen_str, item.notes, tags_str]);
         newLastSeenColumn.push(last_seen_str);
     });
 
-    var index_of_time_last_seen_column = 5;
+    var index_of_time_last_seen_column = 6;
     var currentData = table_past.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_last_seen_column])) {
         console.log("No change in past DHCP clients, updating only the last-seen column");

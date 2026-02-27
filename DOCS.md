@@ -234,6 +234,8 @@ dhcp_ip_address_reservations:
   - mac: aa:bb:cc:dd:ee:ff
     name: "An-important-host-with-reserved-IP"
     ip: 192.168.1.15
+    # the 'description' property is a free-form string to describe the device (e.g. product model, location)
+    description: "My important server - rack 3"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page". It is used to render a link into the "current DHCP clients" tab of the UI.
     link: "http://{{ .ip }}/landing-page/for/this/host"
@@ -253,6 +255,8 @@ dhcp_ip_address_reservations:
 dhcp_clients_friendly_names:
   - mac: dd:ee:aa:dd:bb:ee
     name: "This is a friendly name to label this host, even if it gets a dynamic IP"
+    # the 'description' property is a free-form string to describe the device (e.g. product model, location)
+    description: "My personal laptop - living room"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page/for/this/dynamic/host"
     link: "http://{{ .ip }}/landing-page/for/this/host"

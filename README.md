@@ -5,11 +5,10 @@
 
 - [About](#about)
 - [Features](#features)
-- [Web UI](#web-ui)
+- [Web UI](#web-ui-screenshots)
 - [How to Install and How to Configure](#how-to-install-and-how-to-configure)
 - [Similar Apps](#similar-apps)
 - [Other Noteworthy Projects](#other-noteworthy-projects)
-- [Future Developments](#future-developments)
 - [Development](#development)
 
 *Take control of your network!*
@@ -65,7 +64,7 @@ For technical savvy users, note that this app _should_ support IPv6 but so far h
 its author only on IPv4 networks.
 
 
-## Web UI
+## Web UI Screenshots
 
 These are screenshots from the app UI v3.0.0.
 
@@ -102,18 +101,10 @@ Please note that you can use this app in tandem with similar apps and e.g. confi
 
 * [pihole](https://pi-hole.net/): pi-hole embeds a modified `dnsmasq` variant (they named it "FTL", Faster Than Light) which provides a bunch of DNS metrics that are missing from the regular `dnsmasq` binary.
 
-## Future Developments
-
-* need to write more docs about the app configuration settings
-* would be nice to provide some indication about the DNS cache metrics, see e.g. the explanations at https://docs.pi-hole.net/ftldns/dns-cache/ 
-* would be nice to provide an HomeAssistant sensor about DHCP clients transitioning from "current" to "past"
-
 
 ## Development
 
-See [Home Assistant app guide](https://developers.home-assistant.io/docs/apps/)
-
-This app is based on other 2 apps maintained by Home Assistant team:
+See the [Home Assistant app guide](https://developers.home-assistant.io/docs/apps/). This app was originally inspired by other 2 apps maintained by Home Assistant team:
 * https://github.com/home-assistant/addons/tree/master/dnsmasq
 * https://github.com/home-assistant/addons/tree/master/dhcp_server
 

@@ -20,6 +20,32 @@ var num_updates = 0;
 
 
 /* FORMATTING FUNCTIONS */
+
+// Generate a consistent color for a tag based on its string
+function getTagColor(tagString) {
+    // Simple hash function to generate consistent colors for tags
+    let hash = 0;
+    for (let i = 0; i < tagString.length; i++) {
+        hash = tagString.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Generate HSL color with fixed saturation and lightness for better readability
+    const hue = Math.abs(hash % 360);
+    return `hsl(${hue}, 65%, 45%)`;
+}
+
+// Format tags as colored labels
+function formatTags(tags) {
+    if (!tags || tags.length === 0) {
+        return '<span class="tag-label tag-none">none</span>';
+    }
+    
+    return tags.map(tag => {
+        const color = getTagColor(tag);
+        return `<span class="tag-label" style="background-color: ${color};">${tag}</span>`;
+    }).join(' ');
+}
+
 function formatTimeLeft(unixFutureTimestamp) {
     if (unixFutureTimestamp == 0) {
         return "Never expires";
@@ -316,7 +342,7 @@ function processWebSocketDHCPCurrentClients(data) {
 
         // append new row
         time_left_str = formatTimeLeft(item.lease.expires)
-        tags_str = (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'none'
+        tags_str = formatTags(item.tags)
         newData.push([index + 1,
             item.friendly_name, item.lease.hostname, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
@@ -359,7 +385,7 @@ function processWebSocketDHCPPastClients(data) {
 
         // append new row
         last_seen_str = formatTimeSince(item.past_info.last_seen)
-        tags_str = (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'none'
+        tags_str = formatTags(item.tags)
         newData.push([index + 1,
             item.friendly_name, item.past_info.hostname, 
             item.past_info.mac_addr, static_ip_str, 

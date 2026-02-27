@@ -207,9 +207,12 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 
 	// convert IP address reservations to a map indexed by IP
 	for _, r := range cfg.DhcpIpAddressReservations {
+		// validate (host)name
 		if !isValidRFC1123Hostname(r.Name) {
 			return fmt.Errorf("invalid hostname found inside 'dhcp_ip_address_reservations': %q (must be 1–63 chars, letters/digits/hyphens only, not starting or ending with a hyphen)", r.Name)
 		}
+
+		// validate and normalize IP and MAC address
 		ipAddr, err := netip.ParseAddr(strings.TrimSpace(r.IP))
 		if err != nil {
 			return fmt.Errorf("invalid IP address found inside 'ip_address_reservations': %s", r.IP)
@@ -219,6 +222,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("invalid MAC address found inside 'ip_address_reservations': %s", r.Mac)
 		}
 
+		// validate the golang template provided in the "link" field, if any
 		var linkTemplate *texttemplate.Template
 		if r.Link != "" {
 			linkTemplate, err = texttemplate.New("linkTemplate").Parse(r.Link)
@@ -236,6 +240,14 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Mac:  macAddr,
 			IP:   ipAddr,
 			Link: linkTemplate,
+		}
+
+		// check for duplicates in IP/MAC address reservations
+		if _, exists := o.ipAddressReservationsByIP[ipAddr]; exists {
+			return fmt.Errorf("duplicate IP address found inside 'dhcp_ip_address_reservations': the IP %s is assigned to both %s and %s", ipAddr, o.ipAddressReservationsByIP[ipAddr].Name, r.Name)
+		}
+		if _, exists := o.ipAddressReservationsByMAC[macAddr.String()]; exists {
+			return fmt.Errorf("duplicate MAC address found inside 'dhcp_ip_address_reservations': the MAC %s is assigned to both %s and %s", macAddr, o.ipAddressReservationsByMAC[macAddr.String()].Name, r.Name)
 		}
 
 		o.ipAddressReservationsByIP[ipAddr] = ipReservation

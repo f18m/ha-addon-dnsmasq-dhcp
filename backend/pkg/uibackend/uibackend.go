@@ -117,7 +117,7 @@ func NewUIBackend(logger *logger.CustomLogger) UIBackend {
 			ipAddressReservationsByIP:  make(map[netip.Addr]IpAddressReservation),
 			ipAddressReservationsByMAC: make(map[string]IpAddressReservation),
 			friendlyNames:              make(map[string]DhcpClientFriendlyName),
-			blacklistedMACs:            make(map[string]struct{}),
+			blockedMACs:                make(map[string]struct{}),
 		},
 		startTimestamp: time.Now(),
 		startEpoch:     startEpoch,
@@ -425,6 +425,7 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		// time of this app
 		DHCPServerStartTime:        b.startTimestamp.Unix(),
 		DHCPForgetPastClientsAfter: human_duration.ShortString(b.options.forgetPastClientsAfter, human_duration.Minute),
+		BlockedMACCount:            len(b.options.blockedMACs),
 
 		// DNS config info
 		DnsEnabled: dnsEnableString,
@@ -636,7 +637,7 @@ func (b *UIBackend) readAddonOptions() error {
 	b.logger.Infof("Acquired %d DHCP network/ranges\n", len(b.options.dhcpRanges))
 	b.logger.Infof("Acquired %d IP address reservations\n", len(b.options.ipAddressReservationsByIP))
 	b.logger.Infof("Acquired %d friendly name definitions\n", len(b.options.friendlyNames))
-	b.logger.Infof("Acquired %d blacklisted MAC addresses\n", len(b.options.blacklistedMACs))
+	b.logger.Infof("Acquired %d blocked MAC addresses\n", len(b.options.blockedMACs))
 	b.logger.Infof("DHCP requests logging enabled=%t; cleanup threshold for past DHCP clients set to %s\n",
 		b.options.logDHCP, human_duration.ShortString(b.options.forgetPastClientsAfter, human_duration.Minute))
 	b.logger.Infof("Web server on port %d; Web UI logging enabled=%t; Web UI refresh interval=%s\n",

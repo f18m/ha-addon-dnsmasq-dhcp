@@ -240,7 +240,7 @@ func (w *DnsmasqWrapper) processLogLine(line string) {
 				w.logCounters.NotUsingConfiguredAddress++
 			}
 			w.logCountersLock.Unlock()
-			w.logger.Warnf("dnsmasq log warning [%s] detected: %s", warning.counterField, line)
+			w.logger.Warnf("Dnsmasq log warning [%s] detected: %s", warning.counterField, line)
 		}
 	}
 
@@ -262,7 +262,7 @@ func (w *DnsmasqWrapper) WatchAndPrintDnsmasqLog(logFilePath string) {
 		if err == nil {
 			break
 		}
-		w.logger.Warnf("dnsmasq log file %s not available yet, retrying in 1s: %s", logFilePath, err.Error())
+		w.logger.Warnf("Dnsmasq log file %s not available yet, retrying in 1s: %s", logFilePath, err.Error())
 		time.Sleep(1 * time.Second)
 	}
 	defer func() { _ = file.Close() }()
@@ -279,7 +279,7 @@ func (w *DnsmasqWrapper) WatchAndPrintDnsmasqLog(logFilePath string) {
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
-			w.logger.Warnf("error reading dnsmasq log: %s", readErr.Error())
+			w.logger.Warnf("Error reading dnsmasq log: %s", readErr.Error())
 			return
 		}
 		if line != "" {
@@ -337,7 +337,7 @@ func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
 	procDir := "/proc"
 	entries, err := os.ReadDir(procDir)
 	if err != nil {
-		w.logger.Warnf("failed to read /proc directory: %s", err.Error())
+		w.logger.Warnf("Failed to read /proc directory: %s", err.Error())
 		return false
 	}
 
@@ -378,7 +378,7 @@ func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
 
 	switch len(pids) {
 	case 0:
-		w.logger.Warnf("no dnsmasq processes found")
+		w.logger.Warnf("No dnsmasq processes found")
 
 		// clear the PID since we found no running dnsmasq process
 		w.dnsmasqPIDsLock.Lock()
@@ -388,7 +388,7 @@ func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
 		return false
 
 	case 1:
-		w.logger.Infof("found the dnsmasq process having PID: %v", pids[0])
+		w.logger.Infof("Found the dnsmasq process having PID: %v", pids[0])
 
 		// Update the PIDs list with the new values
 		w.dnsmasqPIDsLock.Lock()
@@ -406,7 +406,7 @@ func (w *DnsmasqWrapper) updateDnsmasqPIDs() bool {
 			}
 		}
 
-		w.logger.Infof("found multiple dnsmasq processes with PIDs: %v; selecting lowest PID: %d", pids, minPID)
+		w.logger.Infof("Found multiple dnsmasq processes with PIDs: %v; selecting lowest PID: %d", pids, minPID)
 
 		// Update the PID with the lowest value
 		w.dnsmasqPIDsLock.Lock()

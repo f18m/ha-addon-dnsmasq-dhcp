@@ -109,47 +109,6 @@ DOCKER_RUN_OPTIONS:= \
 	--cap-add NET_ADMIN \
 	--network host
 
-#####################################################################################
-# Beta branch targets
-#####################################################################################
-
-recreate-beta-branch:
-	@branch=$(shell git rev-parse --abbrev-ref HEAD); \
-	if [ "$$branch" != "main" ]; then \
-	  echo "Error: You must be on the 'main' branch to recreate beta."; \
-	  exit 1; \
-	fi
-	git checkout -B beta
-	@echo
-	@echo "Editing the config.yaml to match BETA branch settings..."
-	yq -i '.version = "beta"' config.yaml
-	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
-	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
-	git add config.yaml
-	git commit -m "Update config.yaml for BETA branch"
-	@echo
-	@echo "Pushing to beta branch"
-	git push -f origin beta
-	@echo
-	@echo "Beta branch recreated from main and pushed to origin. "
-	@echo "Any new feature or bugfix can be committed to the beta branch."
-	@echo "Please check https://github.com/f18m/ha-addon-dnsmasq-dhcp/wiki/release-process"
-	@echo
-
-adjust-config-for-beta-branch:
-	@echo
-	@echo "Editing the config.yaml to match BETA branch settings..."
-	yq -i '.version = "beta"' config.yaml
-	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
-	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
-	
-adjust-config-for-main-branch:
-	@echo
-	@echo "Editing the config.yaml to match MAIN branch settings..."
-	yq -i '.version = "4.0.1"' config.yaml
-	yq -i '.slug = "dnsmasq-dhcp"' config.yaml
-	yq -i '.name = "Dnsmasq-DHCP"' config.yaml
-	
 
 #####################################################################################
 # Manual test targets
@@ -221,3 +180,46 @@ test-database-del-entry:
 # because forget_past_clients_after=1w
 test-database-make-entry2-very-old:
 	sqlite3 test-db.sqlite3 "UPDATE dhcp_clients SET last_seen = strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-7 days') WHERE mac_addr = 'dd:ee:aa:dd:00:02';"
+
+
+#####################################################################################
+# Beta branch targets
+#####################################################################################
+
+recreate-beta-branch:
+	@branch=$(shell git rev-parse --abbrev-ref HEAD); \
+	if [ "$$branch" != "main" ]; then \
+	  echo "Error: You must be on the 'main' branch to recreate beta."; \
+	  exit 1; \
+	fi
+	git checkout -B beta
+	@echo
+	@echo "Editing the config.yaml to match BETA branch settings..."
+	yq -i '.version = "beta"' config.yaml
+	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
+	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
+	git add config.yaml
+	git commit -m "Update config.yaml for BETA branch"
+	@echo
+	@echo "Pushing to beta branch"
+	git push -f origin beta
+	@echo
+	@echo "Beta branch recreated from main and pushed to origin. "
+	@echo "Any new feature or bugfix can be committed to the beta branch."
+	@echo "Please check https://github.com/f18m/ha-addon-dnsmasq-dhcp/wiki/release-process"
+	@echo
+
+adjust-config-for-beta-branch:
+	@echo
+	@echo "Editing the config.yaml to match BETA branch settings..."
+	yq -i '.version = "beta"' config.yaml
+	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
+	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
+	
+adjust-config-for-main-branch:
+	@echo
+	@echo "Editing the config.yaml to match MAIN branch settings..."
+	yq -i '.version = "4.0.1"' config.yaml
+	yq -i '.slug = "dnsmasq-dhcp"' config.yaml
+	yq -i '.name = "Dnsmasq-DHCP"' config.yaml
+	

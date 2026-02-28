@@ -22,8 +22,14 @@
     }
   ],
   "dhcp_mac_address_blocklist": [
-    "11:22:33:44:55:66",
-    "de:ad:be:ef:ca:fe"
+    {
+      "description": "a bad guy",
+      "mac": "11:22:33:44:55:66"
+    },
+    {
+      "description": "a bad guy",
+      "mac": "de:ad:be:ef:ca:fe"
+    }
   ],
   "dhcp_server": {
     "default_lease": "12h",

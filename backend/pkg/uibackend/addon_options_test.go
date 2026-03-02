@@ -716,7 +716,7 @@ func TestIsValidRFC1123DNSName(t *testing.T) {
 
 func TestAddonOptionsDnsHostsParsed(t *testing.T) {
 	jsonConfig := baseTestConfig(`,
-		"dns_hosts": [
+		"dns_custom_hosts": [
 			{
 				"name": "tapo.lan",
 				"ipv4_address": "192.168.0.65",
@@ -762,7 +762,7 @@ func TestAddonOptionsDnsHostsInvalidName(t *testing.T) {
 	for _, name := range invalidNames {
 		t.Run("invalid:"+name, func(t *testing.T) {
 			jsonConfig := baseTestConfig(`,
-			"dns_hosts": [
+			"dns_custom_hosts": [
 				{
 					"name": "` + name + `",
 					"ipv4_address": "192.168.0.1",
@@ -780,7 +780,7 @@ func TestAddonOptionsDnsHostsInvalidName(t *testing.T) {
 
 func TestAddonOptionsDnsHostsMissingIPAddress(t *testing.T) {
 	jsonConfig := baseTestConfig(`,
-		"dns_hosts": [
+		"dns_custom_hosts": [
 			{
 				"name": "myhost",
 				"ipv4_address": "",
@@ -796,7 +796,7 @@ func TestAddonOptionsDnsHostsMissingIPAddress(t *testing.T) {
 
 func TestAddonOptionsDnsHostsInvalidIPv4(t *testing.T) {
 	jsonConfig := baseTestConfig(`,
-		"dns_hosts": [
+		"dns_custom_hosts": [
 			{
 				"name": "myhost",
 				"ipv4_address": "not-an-ip",
@@ -812,7 +812,7 @@ func TestAddonOptionsDnsHostsInvalidIPv4(t *testing.T) {
 
 func TestAddonOptionsDnsHostsInvalidIPv6(t *testing.T) {
 	jsonConfig := baseTestConfig(`,
-		"dns_hosts": [
+		"dns_custom_hosts": [
 			{
 				"name": "myhost",
 				"ipv4_address": "",
@@ -829,7 +829,7 @@ func TestAddonOptionsDnsHostsInvalidIPv6(t *testing.T) {
 func TestAddonOptionsDnsHostsIPv4AsIPv6Rejected(t *testing.T) {
 	// Providing an IPv4 address in the ipv6_address field should be rejected
 	jsonConfig := baseTestConfig(`,
-		"dns_hosts": [
+		"dns_custom_hosts": [
 			{
 				"name": "myhost",
 				"ipv4_address": "",

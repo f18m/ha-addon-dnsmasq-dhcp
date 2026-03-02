@@ -15,6 +15,7 @@ var config = { // this global variable is initialized via setConfig()
 var table_current = null;
 var table_past = null;
 var table_dns_upstreams = null;
+var table_dns_hosts = null;
 var backend_ws = null;
 var num_updates = 0;
 
@@ -209,6 +210,35 @@ function initPastTable() {
         });
 }
 
+function initDnsHostsTable(dnsHosts) {
+    console.log("Initializing table for custom DNS host records");
+
+    table_dns_hosts = new DataTable('#dns_hosts_table', {
+            columns: [
+                { title: '#', type: 'num' },
+                { title: 'DNS Name', type: 'string' },
+                { title: 'IPv4 Address', type: 'ip-address' },
+                { title: 'IPv6 Address', type: 'string' },
+            ],
+            data: [],
+            responsive: true,
+            className: 'data-table',
+            layout: {
+                topStart: null,
+                topEnd: null
+            }
+        });
+
+    var tableData = [];
+    dnsHosts.forEach(function (item, index) {
+        tableData.push([index + 1,
+            item.name,
+            item.ipv4_address || 'N/A',
+            item.ipv6_address || 'N/A']);
+    });
+    table_dns_hosts.clear().rows.add(tableData).draw(false);
+}
+
 function initDnsUpstreamServersTable() {
     console.log("Initializing table for DNS upstream servers");
 
@@ -243,6 +273,7 @@ function initTableDarkOrLightTheme() {
 function initAll() {
     initCurrentTable()
     initPastTable()
+    initDnsHostsTable(templated_dnsHosts)
     initDnsUpstreamServersTable()
     initTabs()
     initTableDarkOrLightTheme()

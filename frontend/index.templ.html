@@ -44,6 +44,7 @@
         var templated_dhcpPoolSize = {{ .DhcpPoolSize }}
         var templated_webSocketURI = {{ .WebSocketURI }}
         var templated_dhcpServerStartTime = {{ .DHCPServerStartTime }}
+        var templated_dnsHosts = {{ .DnsHostsJSON }};
 
         setConfig(templated_webSocketURI, templated_dhcpServerStartTime, templated_dhcpPoolSize);
     </script>
@@ -134,6 +135,9 @@
                     DNS domain: <span class="monoText">{{ .DnsDomain }}</span><br/>
                     Number of custom DNS host records: <span class="monoText">{{ .DnsHostCount }}</span>
                 </p>
+
+                <!-- the Datatables.net table will be attached to this TABLE element -->
+                <table id="dns_hosts_table" class="display" width="100%"></table>
 
                 <h2>DNS Status Summary</h2>
 

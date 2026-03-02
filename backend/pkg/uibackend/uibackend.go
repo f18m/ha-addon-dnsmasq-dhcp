@@ -432,6 +432,10 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		DnsEnabled:   dnsEnableString,
 		DnsDomain:    b.options.dnsDomain,
 		DnsHostCount: len(b.options.dnsHosts),
+		DnsHostsJSON: func() htmltemplate.JS {
+			encoded, _ := json.Marshal(b.options.dnsHosts)
+			return htmltemplate.JS(encoded) //nolint:gosec
+		}(),
 
 		// dnsmasq log counters
 		LogCounters: b.dnsmasq.GetLogCounters(),

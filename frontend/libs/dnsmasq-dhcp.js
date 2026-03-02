@@ -12,13 +12,14 @@ var config = { // this global variable is initialized via setConfig()
     "dhcpPoolSize": null,
     "dnsHosts": null,
 }
-// TODO create a "status" dictionary holding all these globals below
-var table_current = null;
-var table_past = null;
-var table_dns_upstreams = null;
-var table_dns_hosts = null;
-var backend_ws = null;
-var num_updates = 0;
+var global_objects = {
+    "table_current": null,
+    "table_past": null,
+    "table_dns_upstreams": null,
+    "table_dns_hosts": null,
+    "backend_ws": null,
+    "num_updates": 0
+}
 
 
 /* FORMATTING FUNCTIONS */
@@ -143,7 +144,7 @@ function initCurrentTable() {
             return (parseInt(time[0], 10) * 3600) + (parseInt(time[1], 10) * 60) + parseInt(time[2], 10);
         });
     };
-    table_current = new DataTable('#current_table', {
+    global_objects.table_current = new DataTable('#current_table', {
             columns: [
                 { title: '#', type: 'num' },
                 { title: 'Friendly Name', type: 'string' },
@@ -183,7 +184,7 @@ function initPastTable() {
             return (parseInt(time[0], 10) * 3600) + (parseInt(time[1], 10) * 60) + parseInt(time[2], 10);
         });
     };
-    table_past = new DataTable('#past_table', {
+    global_objects.table_past = new DataTable('#past_table', {
             columns: [
                 { title: '#', type: 'num' },
                 { title: 'Friendly Name', type: 'string' },
@@ -214,10 +215,10 @@ function initPastTable() {
 function initDnsHostsTable(dnsHosts) {
     console.log("Initializing table for custom DNS host records");
 
-    table_dns_hosts = new DataTable('#dns_hosts_table', {
+    global_objects.table_dns_hosts = new DataTable('#dns_hosts_table', {
             columns: [
                 { title: '#', type: 'num' },
-                { title: 'DNS Name', type: 'string' },
+                { title: 'Custom DNS Host', type: 'string' },
                 { title: 'IPv4 Address', type: 'ip-address' },
                 { title: 'IPv6 Address', type: 'string' },
             ],
@@ -230,20 +231,25 @@ function initDnsHostsTable(dnsHosts) {
             }
         });
 
-    var tableData = [];
-    dnsHosts.forEach(function (item, index) {
-        tableData.push([index + 1,
-            item.name,
-            item.ipv4_address || 'N/A',
-            item.ipv6_address || 'N/A']);
-    });
-    table_dns_hosts.clear().rows.add(tableData).draw(false);
+    if (dnsHosts == null || dnsHosts.length == 0) {
+        console.log("No custom DNS host records found in the configuration file");
+        global_objects.table_dns_hosts.clear().draw(false);
+    } else {
+        var tableData = [];
+        dnsHosts.forEach(function (item, index) {
+            tableData.push([index + 1,
+                item.name,
+                item.ipv4_address || 'N/A',
+                item.ipv6_address || 'N/A']);
+        });
+        global_objects.table_dns_hosts.clear().rows.add(tableData).draw(false);
+    }
 }
 
 function initDnsUpstreamServersTable() {
     console.log("Initializing table for DNS upstream servers");
 
-    table_dns_upstreams = new DataTable('#dns_upstream_servers', {
+    global_objects.table_dns_upstreams = new DataTable('#dns_upstream_servers', {
             columns: [
                 { title: '#', type: 'num' },
                 { title: 'Upstream DNS server', type: 'string' },
@@ -290,23 +296,23 @@ function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize, dnsHosts) {
     }
 
     // now that we have the URI of the websocket server, we can open the connection
-    backend_ws = new WebSocket(webSocketURI)
+    global_objects.backend_ws = new WebSocket(webSocketURI)
 
-    backend_ws.onopen = function (event) {
+    global_objects.backend_ws.onopen = function (event) {
         console.log("Websocket connection to " + config["webSocketURI"] + " was successfully opened");
     };
 
-    backend_ws.onclose = function (event) {
+    global_objects.backend_ws.onclose = function (event) {
         console.log("Websocket connection closed", event.code, event.reason, event.wasClean)
         updateLiveIndicator(false)
     }
 
-    backend_ws.onerror = function (event) {
+    global_objects.backend_ws.onerror = function (event) {
         console.log("Websocket connection closed due to error", event.code, event.reason, event.wasClean)
         updateLiveIndicator(false)
     }
 
-    backend_ws.onmessage = function (event) {
+    global_objects.backend_ws.onmessage = function (event) {
         console.log("Websocket received event", event.code, event.reason, event.wasClean)
         processWebSocketEvent(event)
     }
@@ -387,19 +393,19 @@ function processWebSocketDHCPCurrentClients(data) {
     });
 
     var index_of_time_left_column = 7;
-    var currentData = table_current.data().toArray();
+    var currentData = global_objects.table_current.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_left_column])) {
         console.log("No change in current DHCP clients, updating only the time-left column");
 
         // selective update to avoid unwanted resets of the current position (this is specially annoying
         // when using the responsive plugin and the user has expanded a collapsed row!!)
         for (var i = 0; i < currentData.length; i++) {
-            table_current.cell(i, index_of_time_left_column).data(newTimeLeftColumn[i]);
+            global_objects.table_current.cell(i, index_of_time_left_column).data(newTimeLeftColumn[i]);
         }
-        table_current.draw(false);
+        global_objects.table_current.draw(false);
     } else {
         console.log("There are changes for the current DHCP clients, refreshing the table");
-        table_current.clear().rows.add(newData).draw(false /* do not reset page position */);
+        global_objects.table_current.clear().rows.add(newData).draw(false /* do not reset page position */);
     }
 
     return [dhcp_static_ip, dhcp_addresses_used]
@@ -431,20 +437,20 @@ function processWebSocketDHCPPastClients(data) {
     });
 
     var index_of_time_last_seen_column = 6;
-    var currentData = table_past.data().toArray();
+    var currentData = global_objects.table_past.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_last_seen_column])) {
         console.log("No change in past DHCP clients, updating only the last-seen column");
 
         // selective update to avoid unwanted resets of the current position (this is specially annoying
         // when using the responsive plugin and the user has expanded a collapsed row!!)
         for (var i = 0; i < currentData.length; i++) {
-            table_past.cell(i, index_of_time_last_seen_column).data(newLastSeenColumn[i]);
+            global_objects.table_past.cell(i, index_of_time_last_seen_column).data(newLastSeenColumn[i]);
         }
-        table_past.draw(false);
+        global_objects.table_past.draw(false);
 
     } else {
         console.log("There are changes for the past DHCP clients, refreshing the table");
-        table_past.clear().rows.add(newData).draw(false /* do not reset page position */);
+        global_objects.table_past.clear().rows.add(newData).draw(false /* do not reset page position */);
     }
 }
 
@@ -502,7 +508,7 @@ function updateDNSStatus(data, messageElem) {
                 item.queries_sent, 
                 item.queries_failed]);
         });
-        table_dns_upstreams.clear().rows.add(tableData).draw(false /* do not reset page position */);
+        global_objects.table_dns_upstreams.clear().rows.add(tableData).draw(false /* do not reset page position */);
     }
 
     // update the message
@@ -538,8 +544,8 @@ function processWebSocketEvent(event) {
         console.log("Websocket connection: received an empty JSON");
 
         // clear the table
-        table_current.clear().draw();
-        table_past.clear().draw();
+        global_objects.table_current.clear().draw();
+        global_objects.table_past.clear().draw();
 
         dhcpMsgElem.innerText = "No DHCP clients so far.";
         dnsMsgElem.innerText = "No DNS stats so far.";
@@ -550,16 +556,16 @@ function processWebSocketEvent(event) {
         console.error("Websocket connection: expecting a JSON matching the golang WebSocketMessage type, received something else", data);
 
         // clear the table
-        table_current.clear().draw();
-        table_past.clear().draw();
+        global_objects.table_current.clear().draw();
+        global_objects.table_past.clear().draw();
 
         dhcpMsgElem.innerText = "Internal error. Please report upstream together with Javascript logs.";
         dnsMsgElem.innerText = "Internal error. Please report upstream together with Javascript logs.";
 
     } else {
         // console.log("DEBUG:" + JSON.stringify(data))
-        num_updates += 1
-        console.log("****** Update " + num_updates + " ******");
+        global_objects.num_updates += 1
+        console.log("****** Update " + global_objects.num_updates + " ******");
 
         // process DHCP 
         [dhcp_static_ip, dhcp_addresses_used] = processWebSocketDHCPCurrentClients(data)

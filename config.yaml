@@ -93,7 +93,7 @@ options:
     upstream_servers:
       - 8.8.8.8
       - 8.8.4.4
-  dns_hosts:
+  dns_custom_hosts:
     - name: "my-custom-host"
       ipv4_address: "192.168.1.99"
       ipv6_address: ""
@@ -155,7 +155,7 @@ schema:
     dns_domain: str
     upstream_servers:
       - str
-  dns_hosts:
+  dns_custom_hosts:
     - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$)
       ipv4_address: "str?"
       ipv6_address: "str?"

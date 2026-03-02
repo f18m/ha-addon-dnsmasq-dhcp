@@ -735,20 +735,20 @@ func TestAddonOptionsDnsHostsParsed(t *testing.T) {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	if len(opts.dnsHosts) != 2 {
-		t.Fatalf("Expected 2 dns_hosts, got %d", len(opts.dnsHosts))
+	if len(opts.dnsCustomHosts) != 2 {
+		t.Fatalf("Expected 2 dns_custom_hosts, got %d", len(opts.dnsCustomHosts))
 	}
-	if opts.dnsHosts[0].Name != "tapo.lan" {
-		t.Errorf("Expected dnsHosts[0].Name = \"tapo.lan\", got %q", opts.dnsHosts[0].Name)
+	if opts.dnsCustomHosts[0].Name != "tapo.lan" {
+		t.Errorf("Expected dnsCustomHosts[0].Name = \"tapo.lan\", got %q", opts.dnsCustomHosts[0].Name)
 	}
-	if opts.dnsHosts[0].IPv4Address != "192.168.0.65" {
-		t.Errorf("Expected dnsHosts[0].IPv4Address = \"192.168.0.65\", got %q", opts.dnsHosts[0].IPv4Address)
+	if opts.dnsCustomHosts[0].IPv4Address != "192.168.0.65" {
+		t.Errorf("Expected dnsCustomHosts[0].IPv4Address = \"192.168.0.65\", got %q", opts.dnsCustomHosts[0].IPv4Address)
 	}
-	if opts.dnsHosts[1].Name != "myserver" {
-		t.Errorf("Expected dnsHosts[1].Name = \"myserver\", got %q", opts.dnsHosts[1].Name)
+	if opts.dnsCustomHosts[1].Name != "myserver" {
+		t.Errorf("Expected dnsCustomHosts[1].Name = \"myserver\", got %q", opts.dnsCustomHosts[1].Name)
 	}
-	if opts.dnsHosts[1].IPv6Address != "2001:db8::1" {
-		t.Errorf("Expected dnsHosts[1].IPv6Address = \"2001:db8::1\", got %q", opts.dnsHosts[1].IPv6Address)
+	if opts.dnsCustomHosts[1].IPv6Address != "2001:db8::1" {
+		t.Errorf("Expected dnsCustomHosts[1].IPv6Address = \"2001:db8::1\", got %q", opts.dnsCustomHosts[1].IPv6Address)
 	}
 }
 

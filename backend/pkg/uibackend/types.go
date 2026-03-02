@@ -37,8 +37,8 @@ type BlockedDeviceInfo struct {
 	Description string
 }
 
-// DnsHost represents a custom DNS host record loaded from the addon configuration file
-type DnsHost struct {
+// DnsCustomHost represents a custom DNS host record loaded from the addon configuration file
+type DnsCustomHost struct {
 	Name        string `json:"name"`
 	IPv4Address string `json:"ipv4_address"`
 	IPv6Address string `json:"ipv6_address"`
@@ -174,10 +174,10 @@ type HtmlTemplate struct {
 	BlockedMACCount            int
 
 	// DNS config info
-	DnsEnabled   string
-	DnsDomain    string
-	DnsHostCount int
-	DnsHostsJSON htmltemplate.JS
+	DnsEnabled         string
+	DnsDomain          string
+	DnsCustomHostCount int
+	DnsCustomHostsJSON htmltemplate.JS
 
 	// dnsmasq log counters (initial snapshot when the page is rendered)
 	LogCounters dnsmasqwrapper.DnsmasqLogCounters

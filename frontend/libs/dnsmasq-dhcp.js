@@ -10,7 +10,7 @@ var config = { // this global variable is initialized via setConfig()
     "webSocketURI": null,
     "dhcpServerStartTime": null,
     "dhcpPoolSize": null,
-    "dnsHosts": null,
+    "dnsCustomHosts": null,
 }
 var global_objects = {
     "table_current": null,
@@ -19,6 +19,14 @@ var global_objects = {
     "table_dns_hosts": null,
     "backend_ws": null,
     "num_updates": 0
+}
+
+/* HELPER FUNCTIONS */
+
+function assert(condition, message) {
+    if (!condition) {
+        throw new Error(message || "Assertion failed");
+    }
 }
 
 
@@ -212,7 +220,7 @@ function initPastTable() {
         });
 }
 
-function initDnsHostsTable(dnsHosts) {
+function initdnsCustomHostsTable(dnsCustomHosts) {
     console.log("Initializing table for custom DNS host records");
 
     global_objects.table_dns_hosts = new DataTable('#dns_hosts_table', {
@@ -231,12 +239,12 @@ function initDnsHostsTable(dnsHosts) {
             }
         });
 
-    if (dnsHosts == null || dnsHosts.length == 0) {
+    if (dnsCustomHosts == null || dnsCustomHosts.length == 0) {
         console.log("No custom DNS host records found in the configuration file");
         global_objects.table_dns_hosts.clear().draw(false);
     } else {
         var tableData = [];
-        dnsHosts.forEach(function (item, index) {
+        dnsCustomHosts.forEach(function (item, index) {
             tableData.push([index + 1,
                 item.name,
                 item.ipv4_address || 'N/A',
@@ -280,19 +288,19 @@ function initTableDarkOrLightTheme() {
 function initAll() {
     initCurrentTable()
     initPastTable()
-    initDnsHostsTable(config["dnsHosts"])
+    initdnsCustomHostsTable(config["dnsCustomHosts"])
     initDnsUpstreamServersTable()
     initTabs()
     initTableDarkOrLightTheme()
 }
 
-function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize, dnsHosts) {
+function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize, dnsCustomHosts) {
     // update the global config variable
     config = {
         "webSocketURI": webSocketURI,
         "dhcpServerStartTime": dhcpServerStartTime,
         "dhcpPoolSize": dhcpPoolSize,
-        "dnsHosts": dnsHosts
+        "dnsCustomHosts": dnsCustomHosts
     }
 
     // now that we have the URI of the websocket server, we can open the connection
@@ -539,6 +547,8 @@ function processWebSocketEvent(event) {
 
     var dhcpMsgElem = document.getElementById("dhcp_stats_message");
     var dnsMsgElem = document.getElementById("dns_stats_message");
+    assert(dhcpMsgElem != null);
+    assert(dnsMsgElem != null);
 
     if (data === null) {
         console.log("Websocket connection: received an empty JSON");

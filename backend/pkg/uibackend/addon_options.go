@@ -46,10 +46,10 @@ type AddonOptions struct {
 	addressReservationLease string
 
 	// DNS
-	dnsEnable bool
-	dnsDomain string
-	dnsPort   int
-	dnsHosts  []DnsHost
+	dnsEnable      bool
+	dnsDomain      string
+	dnsPort        int
+	dnsCustomHosts []DnsCustomHost
 }
 
 // isValidRFC1123Hostname checks whether the given string is a valid hostname
@@ -182,11 +182,11 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Port      int    `json:"port"`
 		} `json:"dns_server"`
 
-		DnsHosts []struct {
+		DnsCustomHosts []struct {
 			Name        string `json:"name"`
 			IPv4Address string `json:"ipv4_address"`
 			IPv6Address string `json:"ipv6_address"`
-		} `json:"dns_hosts"`
+		} `json:"dns_custom_hosts"`
 
 		WebUI struct {
 			Log                bool `json:"log_activity"`
@@ -344,26 +344,26 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 	}
 
 	// parse custom DNS host records
-	for _, h := range cfg.DnsHosts {
+	for _, h := range cfg.DnsCustomHosts {
 		if !isValidRFC1123DNSName(h.Name) {
-			return fmt.Errorf("invalid DNS name found inside 'dns_hosts': %q (must consist of RFC 1123 labels separated by dots)", h.Name)
+			return fmt.Errorf("invalid DNS name found inside 'dns_custom_hosts': %q (must consist of RFC 1123 labels separated by dots)", h.Name)
 		}
 		ipv4 := strings.TrimSpace(h.IPv4Address)
 		ipv6 := strings.TrimSpace(h.IPv6Address)
 		if ipv4 == "" && ipv6 == "" {
-			return fmt.Errorf("dns_hosts entry %q must have at least one of 'ipv4_address' or 'ipv6_address'", h.Name)
+			return fmt.Errorf("dns_custom_hosts entry %q must have at least one of 'ipv4_address' or 'ipv6_address'", h.Name)
 		}
 		if ipv4 != "" {
 			if ip := net.ParseIP(ipv4); ip == nil || ip.To4() == nil {
-				return fmt.Errorf("invalid IPv4 address found inside 'dns_hosts' for %q: %s", h.Name, ipv4)
+				return fmt.Errorf("invalid IPv4 address found inside 'dns_custom_hosts' for %q: %s", h.Name, ipv4)
 			}
 		}
 		if ipv6 != "" {
 			if ip := net.ParseIP(ipv6); ip == nil || ip.To4() != nil {
-				return fmt.Errorf("invalid IPv6 address found inside 'dns_hosts' for %q: %s", h.Name, ipv6)
+				return fmt.Errorf("invalid IPv6 address found inside 'dns_custom_hosts' for %q: %s", h.Name, ipv6)
 			}
 		}
-		o.dnsHosts = append(o.dnsHosts, DnsHost{
+		o.dnsCustomHosts = append(o.dnsCustomHosts, DnsCustomHost{
 			Name:        h.Name,
 			IPv4Address: ipv4,
 			IPv6Address: ipv6,

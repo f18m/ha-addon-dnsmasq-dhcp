@@ -301,6 +301,18 @@ dns_server:
     - 8.8.8.8
     - 8.8.4.4
 
+# DNS custom hosts
+# These are additional custom entries that the DNS server will resolve to the provided
+# IPv4/IPv6 address(es). The DNS server will create A, AAAA and PTR records for each
+# entry in the DNS custom hosts list.
+dns_custom_hosts:
+  # the "name" must be a valid FQDN according to RFC1123; typical format is "hostname.domain.tld" 
+  # where "tld" is the top-level domain; typically this should match the dns_server.dns_domain 
+  # but is not strictly required.
+  - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$)
+    ipv4_address: "str?"
+    ipv6_address: "str?"
+
 # All settings related to the web UI
 web_ui:
   log_activity: false

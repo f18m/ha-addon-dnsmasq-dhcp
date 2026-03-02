@@ -46,7 +46,7 @@
         var templated_dhcpServerStartTime = {{ .DHCPServerStartTime }}
         var templated_dnsHosts = {{ .DnsHostsJSON }};
 
-        setConfig(templated_webSocketURI, templated_dhcpServerStartTime, templated_dhcpPoolSize);
+        setConfig(templated_webSocketURI, templated_dhcpServerStartTime, templated_dhcpPoolSize, templated_dnsHosts);
     </script>
 </head>
 <body>

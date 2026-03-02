@@ -10,6 +10,7 @@ var config = { // this global variable is initialized via setConfig()
     "webSocketURI": null,
     "dhcpServerStartTime": null,
     "dhcpPoolSize": null,
+    "dnsHosts": null,
 }
 // TODO create a "status" dictionary holding all these globals below
 var table_current = null;
@@ -273,18 +274,19 @@ function initTableDarkOrLightTheme() {
 function initAll() {
     initCurrentTable()
     initPastTable()
-    initDnsHostsTable(templated_dnsHosts)
+    initDnsHostsTable(config["dnsHosts"])
     initDnsUpstreamServersTable()
     initTabs()
     initTableDarkOrLightTheme()
 }
 
-function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize) {
+function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize, dnsHosts) {
     // update the global config variable
     config = {
         "webSocketURI": webSocketURI,
         "dhcpServerStartTime": dhcpServerStartTime,
         "dhcpPoolSize": dhcpPoolSize,
+        "dnsHosts": dnsHosts
     }
 
     // now that we have the URI of the websocket server, we can open the connection

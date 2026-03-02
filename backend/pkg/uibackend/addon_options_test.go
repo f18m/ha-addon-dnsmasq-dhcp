@@ -670,3 +670,175 @@ func TestAddonOptionsMacBlocklistConflictsWithFriendlyNames(t *testing.T) {
 		t.Errorf("Unexpected error message: %v", err)
 	}
 }
+
+func TestIsValidRFC1123DNSName(t *testing.T) {
+	testCases := []struct {
+		input  string
+		wantOK bool
+	}{
+		{"myhost", true},
+		{"my-host", true},
+		{"my-host-123", true},
+		{"www.google.com", true},
+		{"tapo.lan", true},
+		{"a.b.c", true},
+		// single valid label
+		{"abc123", true},
+		// empty string
+		{"", false},
+		// starts with hyphen
+		{"-myhost", false},
+		// ends with hyphen
+		{"myhost-", false},
+		// label starts with hyphen
+		{"good.-bad", false},
+		// contains underscore
+		{"my_host", false},
+		// contains space
+		{"my host", false},
+		// trailing dot (empty label)
+		{"myhost.", false},
+		// leading dot (empty label)
+		{".myhost", false},
+		// double dot (empty label)
+		{"my..host", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			got := isValidRFC1123DNSName(tc.input)
+			if got != tc.wantOK {
+				t.Errorf("isValidRFC1123DNSName(%q) = %v, want %v", tc.input, got, tc.wantOK)
+			}
+		})
+	}
+}
+
+func TestAddonOptionsDnsHostsParsed(t *testing.T) {
+	jsonConfig := baseTestConfig(`,
+		"dns_hosts": [
+			{
+				"name": "tapo.lan",
+				"ipv4_address": "192.168.0.65",
+				"ipv6_address": ""
+			},
+			{
+				"name": "myserver",
+				"ipv4_address": "10.0.0.1",
+				"ipv6_address": "2001:db8::1"
+			}
+		]`)
+
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if len(opts.dnsHosts) != 2 {
+		t.Fatalf("Expected 2 dns_hosts, got %d", len(opts.dnsHosts))
+	}
+	if opts.dnsHosts[0].Name != "tapo.lan" {
+		t.Errorf("Expected dnsHosts[0].Name = \"tapo.lan\", got %q", opts.dnsHosts[0].Name)
+	}
+	if opts.dnsHosts[0].IPv4Address != "192.168.0.65" {
+		t.Errorf("Expected dnsHosts[0].IPv4Address = \"192.168.0.65\", got %q", opts.dnsHosts[0].IPv4Address)
+	}
+	if opts.dnsHosts[1].Name != "myserver" {
+		t.Errorf("Expected dnsHosts[1].Name = \"myserver\", got %q", opts.dnsHosts[1].Name)
+	}
+	if opts.dnsHosts[1].IPv6Address != "2001:db8::1" {
+		t.Errorf("Expected dnsHosts[1].IPv6Address = \"2001:db8::1\", got %q", opts.dnsHosts[1].IPv6Address)
+	}
+}
+
+func TestAddonOptionsDnsHostsInvalidName(t *testing.T) {
+	invalidNames := []string{
+		"-badstart",
+		"bad end",
+		"has..double.dot",
+		"",
+	}
+	for _, name := range invalidNames {
+		t.Run("invalid:"+name, func(t *testing.T) {
+			jsonConfig := baseTestConfig(`,
+			"dns_hosts": [
+				{
+					"name": "` + name + `",
+					"ipv4_address": "192.168.0.1",
+					"ipv6_address": ""
+				}
+			]`)
+			opts := newTestAddonOptions()
+			err := json.Unmarshal([]byte(jsonConfig), &opts)
+			if err == nil {
+				t.Errorf("Expected error for dns_hosts name %q, but got none", name)
+			}
+		})
+	}
+}
+
+func TestAddonOptionsDnsHostsMissingIPAddress(t *testing.T) {
+	jsonConfig := baseTestConfig(`,
+		"dns_hosts": [
+			{
+				"name": "myhost",
+				"ipv4_address": "",
+				"ipv6_address": ""
+			}
+		]`)
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err == nil {
+		t.Error("Expected error when both ipv4_address and ipv6_address are empty, but got none")
+	}
+}
+
+func TestAddonOptionsDnsHostsInvalidIPv4(t *testing.T) {
+	jsonConfig := baseTestConfig(`,
+		"dns_hosts": [
+			{
+				"name": "myhost",
+				"ipv4_address": "not-an-ip",
+				"ipv6_address": ""
+			}
+		]`)
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err == nil {
+		t.Error("Expected error for invalid IPv4 address in dns_hosts, but got none")
+	}
+}
+
+func TestAddonOptionsDnsHostsInvalidIPv6(t *testing.T) {
+	jsonConfig := baseTestConfig(`,
+		"dns_hosts": [
+			{
+				"name": "myhost",
+				"ipv4_address": "",
+				"ipv6_address": "not-an-ipv6"
+			}
+		]`)
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err == nil {
+		t.Error("Expected error for invalid IPv6 address in dns_hosts, but got none")
+	}
+}
+
+func TestAddonOptionsDnsHostsIPv4AsIPv6Rejected(t *testing.T) {
+	// Providing an IPv4 address in the ipv6_address field should be rejected
+	jsonConfig := baseTestConfig(`,
+		"dns_hosts": [
+			{
+				"name": "myhost",
+				"ipv4_address": "",
+				"ipv6_address": "192.168.0.1"
+			}
+		]`)
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err == nil {
+		t.Error("Expected error when IPv4 address is given in ipv6_address field, but got none")
+	}
+}

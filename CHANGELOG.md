@@ -2,8 +2,8 @@
 
 For the full changelog please check https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/releases.
 
-This file mainly contains only migration instructions from a major version to the next major version.
-A new major version is released each time there is a backward-incompatible change in the config format.
+This file mainly contains only migration instructions from a major version to the next major version. A new major version is released each time there is a backward-incompatible change in the config format.
+Additionally some notable new features are also documented here as well.
 
 
 ## Version 4.1.0
@@ -17,8 +17,9 @@ This release also adds support for a `description` associated to each DHCP IP ad
 Finally it adds support for a MAC address blocklist: a list of MAC addresses that
 will be completely ignored by the DHCP server, see `dhcp_mac_address_blocklist`
 
-This change does not require you to do any change on your configuration and is 
-backward compatible. But you might want to spend some time to better organize 
+All configuration file changes mentioned above are backward compatible; however please be aware that this version now includes many more checks for configuration file coherency. E.g. a MAC address cannot appear both as inside an DHCP IP address reservation and as part of a DHCP friendly name mapping.
+In case the app detects such kind of misconfigurations, it will immediately stop at startup. So you might need to spend some time adjusting your configuration following the addon startup errors.
+Or you might want to spend some time to better organize 
 your DHCP mappings with tags and descriptions now :)
 
 ## Version 4.0.0

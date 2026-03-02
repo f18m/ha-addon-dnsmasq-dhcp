@@ -842,3 +842,72 @@ func TestAddonOptionsDnsHostsIPv4AsIPv6Rejected(t *testing.T) {
 		t.Error("Expected error when IPv4 address is given in ipv6_address field, but got none")
 	}
 }
+
+func TestGetEgressInterface(t *testing.T) {
+	// getEgressInterface() should return a non-empty, valid interface name.
+	// This test requires a working network with a route to 1.1.1.1.
+	iface, err := getEgressInterface()
+	if err != nil {
+		t.Skipf("Skipping test: could not detect egress interface: %v", err)
+	}
+	if iface == "" {
+		t.Error("Expected non-empty interface name from getEgressInterface()")
+	}
+	// Verify the returned interface actually exists on the host
+	if _, err := net.InterfaceByName(iface); err != nil {
+		t.Errorf("getEgressInterface() returned %q but interface does not exist: %v", iface, err)
+	}
+}
+
+func TestAddonOptionsAutoInterface(t *testing.T) {
+	// When dhcp_pools[].interface is "auto", UnmarshalJSON should resolve it to
+	// the actual egress interface rather than leaving it as "auto".
+	// Skip if no route to the internet is available.
+	autoIface, err := getEgressInterface()
+	if err != nil {
+		t.Skipf("Skipping test: could not detect egress interface: %v", err)
+	}
+
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "auto",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_ip_address_reservations": [],
+		"dhcp_clients_friendly_names": [],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	opts := newTestAddonOptions()
+	err = json.Unmarshal([]byte(jsonConfig), &opts)
+	if err != nil {
+		t.Fatalf("Unexpected error when parsing config with interface=auto: %v", err)
+	}
+
+	if len(opts.dhcpRanges) != 1 {
+		t.Fatalf("Expected 1 DHCP range, got %d", len(opts.dhcpRanges))
+	}
+	if opts.dhcpRanges[0].Interface != autoIface {
+		t.Errorf("Expected interface %q, got %q", autoIface, opts.dhcpRanges[0].Interface)
+	}
+}

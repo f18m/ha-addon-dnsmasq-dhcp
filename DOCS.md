@@ -121,6 +121,8 @@ All configuration settings mentioned in the [Requirements](#requirements) sectio
 # The interfaces on which the DHCP/DNS server will listen
 # DHCP requests are listened on port 67
 # DNS requests are listened on port 53 (DNS port is configurable via dns_server.port key)
+# Each value can be set to "auto" to automatically select the network interface that routes
+# traffic to the internet (determined by the egress route to 1.1.1.1).
 interfaces:
   - enp1s0
 
@@ -212,7 +214,8 @@ dhcp_server:
 # network specified by the "start", "end" and "netmask" properties.
 dhcp_pools:
 
-    # each DHCP pool starts with the "interface" on which a specific IP range / IP network will be served
+    # each DHCP pool starts with the "interface" on which a specific IP range / IP network will be served;
+    # set to "auto" to automatically select the interface that routes traffic to the internet
   - interface: enp1s0
     start: 192.168.1.50
     # the "end" IP address must always be numerically larger than the "start" IP

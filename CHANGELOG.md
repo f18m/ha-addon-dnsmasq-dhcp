@@ -2,9 +2,18 @@
 
 For the full changelog please check https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/releases.
 
-This file mainly contains only migration instructions from a major version to the next major version.
-A new major version is released each time there is a backward-incompatible change in the config format.
+This file mainly contains only migration instructions from a major version to the next major version. A new major version is released each time there is a backward-incompatible change in the config format.
+Additionally some notable new features are also documented here as well.
 
+## Version 4.2.0
+
+This release adds supports for `DNS custom hosts`, i.e. additional custom entries that the DNS server will resolve to the provided IPv4/IPv6 address(es). The DNS server will create A, AAAA and PTR records for each
+entry in the DNS custom hosts list. These additional entries allow you to e.g. associate a resolvable Fully Qualified Domain Name (FQDN) to devices that are configured to use a static IP address (and as such are "invisible" to the DHCP server).
+
+This release also resolves a long-standing problem for new users: the presence of an hardcoded network interface name in the default configuration has been removed. Now by default the DHCP pool that is present
+in the default configuration is associated to the `auto` network interface, which is resolved at runtime
+to the first interface which can egress traffic to the Internet.
+This helps to get the first configuraton right and get started with this app.
 
 ## Version 4.1.0
 
@@ -17,8 +26,9 @@ This release also adds support for a `description` associated to each DHCP IP ad
 Finally it adds support for a MAC address blocklist: a list of MAC addresses that
 will be completely ignored by the DHCP server, see `dhcp_mac_address_blocklist`
 
-This change does not require you to do any change on your configuration and is 
-backward compatible. But you might want to spend some time to better organize 
+All configuration file changes mentioned above are backward compatible; however please be aware that this version now includes many more checks for configuration file coherency. E.g. a MAC address cannot appear both as inside an DHCP IP address reservation and as part of a DHCP friendly name mapping.
+In case the app detects such kind of misconfigurations, it will immediately stop at startup. So you might need to spend some time adjusting your configuration following the addon startup errors.
+Or you might want to spend some time to better organize 
 your DHCP mappings with tags and descriptions now :)
 
 ## Version 4.0.0

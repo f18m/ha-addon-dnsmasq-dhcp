@@ -18,9 +18,9 @@ url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 #   version: 4.x.y
 #   slug: dnsmasq-dhcp-beta
 #   name: Dnsmasq-DHCP BETA
-version: 4.1.1
-slug: dnsmasq-dhcp
-name: Dnsmasq-DHCP
+version: beta
+slug: dnsmasq-dhcp-beta
+name: Dnsmasq-DHCP BETA
 # advanced true means that the HA user can see this addon only if it's flagged as 'advanced' in the
 # Home Assistant UI
 advanced: true
@@ -40,7 +40,7 @@ panel_title: DHCP
 options:
   # see DOCS.md for documentation on each setting
   interfaces:
-    - enp1s0
+    - auto
   dhcp_server:
     default_lease: 1h
     address_reservation_lease: 1h
@@ -56,14 +56,9 @@ options:
       - 2.europe.pool.ntp.org
     dnsmasq_customizations: ""
   dhcp_pools:
-    - interface: enp1s0
+    - interface: auto
       start: 192.168.1.50
       end: 192.168.1.150
-      gateway: 192.168.1.254
-      netmask: 255.255.255.0
-    - interface: enp1s0
-      start: 192.168.1.220
-      end: 192.168.1.230
       gateway: 192.168.1.254
       netmask: 255.255.255.0
   dhcp_ip_address_reservations:
@@ -93,6 +88,10 @@ options:
     upstream_servers:
       - 8.8.8.8
       - 8.8.4.4
+  dns_custom_hosts:
+    - name: "my-custom-host"
+      ipv4_address: "192.168.1.99"
+      ipv6_address: ""
   web_ui:
     log_activity: false
     port: 8976
@@ -151,6 +150,10 @@ schema:
     dns_domain: str
     upstream_servers:
       - str
+  dns_custom_hosts:
+    - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$)
+      ipv4_address: "str?"
+      ipv6_address: "str?"
   web_ui:
     log_activity: bool
     port: int

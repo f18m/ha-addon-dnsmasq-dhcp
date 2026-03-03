@@ -121,6 +121,8 @@ All configuration settings mentioned in the [Requirements](#requirements) sectio
 # The interfaces on which the DHCP/DNS server will listen
 # DHCP requests are listened on port 67
 # DNS requests are listened on port 53 (DNS port is configurable via dns_server.port key)
+# Each value can be set to "auto" to automatically select the network interface that routes
+# traffic to the internet (determined by the egress route to 1.1.1.1).
 interfaces:
   - enp1s0
 
@@ -212,12 +214,17 @@ dhcp_server:
 # network specified by the "start", "end" and "netmask" properties.
 dhcp_pools:
 
-    # each DHCP pool starts with the "interface" on which a specific IP range / IP network will be served
+    # each DHCP pool starts with the "interface" on which a specific IP range / IP network will be served;
+    # set to "auto" to automatically select the interface that routes traffic to the internet;
+    # remember that all interfaces referenced by DHCP pools should also appear in the top-level "interfaces"
+    # configuration key
   - interface: enp1s0
+    # the "start" IP address is the first IP that is available to DHCP clients
     start: 192.168.1.50
     # the "end" IP address must always be numerically larger than the "start" IP
     end: 192.168.1.150
-    # the "gateway" IP address to advertise in DHCP answers
+    # the "gateway" IP address is the gateway/router to advertise in DHCP answers, 
+    # typically is the router that allows to reach out to the Internet
     gateway: 192.168.1.254
     # the "netmask" to advertise in DHCP answers
     netmask: 255.255.255.0
@@ -300,6 +307,21 @@ dns_server:
   upstream_servers:
     - 8.8.8.8
     - 8.8.4.4
+
+# DNS custom hosts
+# These are additional custom entries that the DNS server will resolve to the provided
+# IPv4/IPv6 address(es). The DNS server will create A, AAAA and PTR records for each
+# entry in the DNS custom hosts list.
+# These additional entries allow you to e.g. associate a resolvable Fully Qualified Domain Name (FQDN)
+# to devices that are configured to use a static IP address (and as such are "invisible" to the DHCP server).
+dns_custom_hosts:
+  # the "name" must be a valid FQDN according to RFC1123; typical format is "hostname.domain.tld" 
+  # where "tld" is the top-level domain; typically this should match the dns_server.dns_domain 
+  # but is not strictly required.
+  - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$)
+    # you can associate both an IPv4 and IPv6; at least one of the two is required
+    ipv4_address: "str?"
+    ipv6_address: "str?"
 
 # All settings related to the web UI
 web_ui:

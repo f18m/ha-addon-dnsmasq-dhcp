@@ -46,9 +46,10 @@ type AddonOptions struct {
 	addressReservationLease string
 
 	// DNS
-	dnsEnable bool
-	dnsDomain string
-	dnsPort   int
+	dnsEnable      bool
+	dnsDomain      string
+	dnsPort        int
+	dnsCustomHosts []DnsCustomHost
 }
 
 // isValidRFC1123Hostname checks whether the given string is a valid hostname
@@ -60,6 +61,21 @@ func isValidRFC1123Hostname(name string) bool {
 	}
 	validHostname := regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$`)
 	return validHostname.MatchString(name)
+}
+
+// isValidRFC1123DNSName checks whether the given string is a valid DNS name
+// as per RFC 1123: one or more labels separated by dots, where each label
+// satisfies isValidRFC1123Hostname.
+func isValidRFC1123DNSName(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	for _, label := range strings.Split(name, ".") {
+		if !isValidRFC1123Hostname(label) {
+			return false
+		}
+	}
+	return true
 }
 
 // ParseDuration parses a duration string.
@@ -166,6 +182,12 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Port      int    `json:"port"`
 		} `json:"dns_server"`
 
+		DnsCustomHosts []struct {
+			Name        string `json:"name"`
+			IPv4Address string `json:"ipv4_address"`
+			IPv6Address string `json:"ipv6_address"`
+		} `json:"dns_custom_hosts"`
+
 		WebUI struct {
 			Log                bool `json:"log_activity"`
 			Port               int  `json:"port"`
@@ -184,9 +206,15 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("invalid DHCP range %s-%s found in addon config file", r.Start, r.End)
 		}
 
+		// please be aware that the interface name might be something like "auto";
+		// in that case the real interface name is resolved only for dnsmasq by the dnsmasq-init s6 service;
+		// if we ever need the actual interface name in this Backend, then we might want to save the
+		// dnsmasq-init processing output to a file and read it here. Or just load the dnsmasq config file here.
+		ifaceName := strings.TrimSpace(r.Interface)
+
 		// create also the IpNetworkInfo obj associated:
 		ipNetInfo := IpNetworkInfo{
-			Interface: r.Interface,
+			Interface: ifaceName,
 			Start:     dhcpR.Start,
 			End:       dhcpR.End,
 			Gateway:   net.ParseIP(strings.TrimSpace(r.Gateway)),
@@ -319,6 +347,33 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Mac:         macAddr,
 			Description: devInfo.Description,
 		}
+	}
+
+	// parse custom DNS host records
+	for _, h := range cfg.DnsCustomHosts {
+		if !isValidRFC1123DNSName(h.Name) {
+			return fmt.Errorf("invalid DNS name found inside 'dns_custom_hosts': %q (must consist of RFC 1123 labels separated by dots)", h.Name)
+		}
+		ipv4 := strings.TrimSpace(h.IPv4Address)
+		ipv6 := strings.TrimSpace(h.IPv6Address)
+		if ipv4 == "" && ipv6 == "" {
+			return fmt.Errorf("dns_custom_hosts entry %q must have at least one of 'ipv4_address' or 'ipv6_address'", h.Name)
+		}
+		if ipv4 != "" {
+			if ip := net.ParseIP(ipv4); ip == nil || ip.To4() == nil {
+				return fmt.Errorf("invalid IPv4 address found inside 'dns_custom_hosts' for %q: %s", h.Name, ipv4)
+			}
+		}
+		if ipv6 != "" {
+			if ip := net.ParseIP(ipv6); ip == nil || ip.To4() != nil {
+				return fmt.Errorf("invalid IPv6 address found inside 'dns_custom_hosts' for %q: %s", h.Name, ipv6)
+			}
+		}
+		o.dnsCustomHosts = append(o.dnsCustomHosts, DnsCustomHost{
+			Name:        h.Name,
+			IPv4Address: ipv4,
+			IPv6Address: ipv6,
+		})
 	}
 
 	// parse time duration

@@ -429,8 +429,13 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		BlockedMACCount:            len(b.options.blockedMACs),
 
 		// DNS config info
-		DnsEnabled: dnsEnableString,
-		DnsDomain:  b.options.dnsDomain,
+		DnsEnabled:         dnsEnableString,
+		DnsDomain:          b.options.dnsDomain,
+		DnsCustomHostCount: len(b.options.dnsCustomHosts),
+		DnsCustomHostsJSON: func() htmltemplate.JS {
+			encoded, _ := json.Marshal(b.options.dnsCustomHosts)
+			return htmltemplate.JS(encoded) //nolint:gosec
+		}(),
 
 		// dnsmasq log counters
 		LogCounters: b.dnsmasq.GetLogCounters(),
@@ -651,6 +656,7 @@ func (b *UIBackend) readAddonOptions() error {
 	b.logger.Infof("Acquired %d IP address reservations\n", len(b.options.ipAddressReservationsByIP))
 	b.logger.Infof("Acquired %d friendly name definitions\n", len(b.options.friendlyNames))
 	b.logger.Infof("Acquired %d blocked MAC addresses\n", len(b.options.blockedMACs))
+	b.logger.Infof("Acquired %d custom DNS host records\n", len(b.options.dnsCustomHosts))
 	b.logger.Infof("DHCP requests logging enabled=%t; cleanup threshold for past DHCP clients set to %s\n",
 		b.options.logDHCP, human_duration.ShortString(b.options.forgetPastClientsAfter, human_duration.Minute))
 	b.logger.Infof("Web server on port %d; Web UI logging enabled=%t; Web UI refresh interval=%s\n",

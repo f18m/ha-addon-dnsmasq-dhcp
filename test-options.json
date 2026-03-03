@@ -79,6 +79,21 @@
       "8.8.4.4"
     ]
   },
+  "dns_custom_hosts": [
+    {
+      "name": "test1ipv4.lan",
+      "ipv4_address": "192.168.1.10"
+    },
+    {
+      "name": "test2ipv6.lan",
+      "ipv6_address": "fd00::1234"
+    },
+    {
+      "name": "ipv46.domain.lan",
+      "ipv4_address": "192.168.1.99",
+      "ipv6_address": "fd00::1234"
+    }
+  ],
   "web_ui": {
     "log_requests": true,
     "port": 8976,

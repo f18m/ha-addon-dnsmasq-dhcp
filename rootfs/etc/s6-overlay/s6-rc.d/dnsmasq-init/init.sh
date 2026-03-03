@@ -35,6 +35,30 @@ function ipvalid() {
   return 0
 }
 
+function resolve_auto_interfaces() {
+    # Get the network interface that routes traffic to the internet
+    AUTO_IFACE=$(ip route get 1.1.1.1 2>/dev/null | awk '/dev/{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
+
+    if [[ -z "${AUTO_IFACE}" ]]; then
+        bashio::log.warning "dnsmasq-init.sh: Could not auto-detect egress network interface; leaving 'auto' values unchanged"
+        return
+    fi
+
+    log_info "Auto-detected egress network interface: ${AUTO_IFACE}"
+
+    # Replace "auto" values in the top-level interfaces list
+    jq --arg iface "${AUTO_IFACE}" \
+        'if .interfaces then .interfaces |= map(if . == "auto" then $iface else . end) else . end' \
+        ${ADDON_CONFIG_RESOLVED} >${ADDON_CONFIG_RESOLVED}.tmp
+    mv ${ADDON_CONFIG_RESOLVED}.tmp ${ADDON_CONFIG_RESOLVED}
+
+    # Replace "auto" values in dhcp_pools[].interface
+    jq --arg iface "${AUTO_IFACE}" \
+        '(.dhcp_pools[] | select(.interface == "auto") | .interface) |= $iface' \
+        ${ADDON_CONFIG_RESOLVED} >${ADDON_CONFIG_RESOLVED}.tmp
+    mv ${ADDON_CONFIG_RESOLVED}.tmp ${ADDON_CONFIG_RESOLVED}
+}
+
 function resolve_ntp_servers() {
     NTP_SERVERS="$(jq --raw-output '.dhcp_server.ntp_servers[]' ${ADDON_CONFIG_RESOLVED} 2>/dev/null)"
     if [[ ! -z "${NTP_SERVERS}" ]]; then
@@ -148,6 +172,8 @@ bump_dhcp_server_start_epoch
 cp ${ADDON_CONFIG} ${ADDON_CONFIG_RESOLVED}
 
 # do some processing:
+log_info "Resolving 'auto' interface names..."
+resolve_auto_interfaces
 log_info "Resolving NTP hostnames eventually provided..."
 resolve_ntp_servers
 log_info "Processing DHCP DNS server list..."

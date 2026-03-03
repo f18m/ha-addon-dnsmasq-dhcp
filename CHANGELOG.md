@@ -5,6 +5,12 @@ For the full changelog please check https://github.com/f18m/ha-addon-dnsmasq-dhc
 This file mainly contains only migration instructions from a major version to the next major version. A new major version is released each time there is a backward-incompatible change in the config format.
 Additionally some notable new features are also documented here as well.
 
+
+## Version 4.3.0
+
+This release contains only a UI refresh.
+There are no changes to the configuration files and or DHCP/DNS exposed features.
+
 ## Version 4.2.0
 
 This release adds supports for `DNS custom hosts`, i.e. additional custom entries that the DNS server will resolve to the provided IPv4/IPv6 address(es). The DNS server will create A, AAAA and PTR records for each

@@ -50,17 +50,20 @@
     </script>
 </head>
 <body>
-    <h1 class="topLevel">Dnsmasq-DHCP addon</h1>
-    <h2 class="topLevel">Take control of your network... with DHCP & DNS servers for HomeAssistant</h3>
+        <div class="page-shell">
+            <header class="page-header">
+                <h1 class="topLevel app-title">Dnsmasq-DHCP addon</h1>
+                <h2 class="topLevel app-subtitle">Take control of your network with DHCP and DNS services for Home Assistant</h2>
 
-    <div class="uiSettings">
-      <p class="liveIndicator">
-        <img id="websocket_conn_status" src="static/ko.png" height="20px" alt="WebSocket Connection Status"/>
-        LIVE UPDATES
-      </p>
-    </div>
-      
-    <div class="container">
+                <div class="uiSettings">
+                    <p class="liveIndicator status-pill">
+                        <img id="websocket_conn_status" src="static/ko.png" height="20px" alt="WebSocket Connection Status"/>
+                        LIVE UPDATES
+                    </p>
+                </div>
+            </header>
+
+            <div class="container">
         <div class="tabs">
           <div class="tabs__pills">
             <button class="btn active" data-id="dhcp_summary">DHCP Summary</button>
@@ -148,13 +151,14 @@
             </div>
           </div>
         </div>
-    </div>
+      </div>
 
-    <!-- Note that it's important to open in a new window when this UI is running 
-         embedded into HomeAssistant UI -->
-    <div class="footer">
-        Dnsmasq-DHCP addon version {{ .AddonVersion }}<br/>
-        <a href="https://github.com/f18m/ha-addon-dnsmasq-dhcp/" target="_blank">Project Homepage</a>
+      <!-- Note that it's important to open in a new window when this UI is running 
+           embedded into HomeAssistant UI -->
+      <div class="footer">
+          Dnsmasq-DHCP addon version {{ .AddonVersion }}<br/>
+          <a href="https://github.com/f18m/ha-addon-dnsmasq-dhcp/" target="_blank">Project Homepage</a>
+      </div>
     </div>
 </body>
 </html>

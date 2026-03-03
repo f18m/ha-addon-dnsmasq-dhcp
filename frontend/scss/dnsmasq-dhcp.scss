@@ -407,3 +407,44 @@ table.dataTable tbody tr:hover {
   color: white;
   font-style: italic;
 }
+
+/* Monospaced address styles */
+.mono-address {
+  font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+}
+
+/* Copy-to-clipboard button that appears inline next to copyable cell values */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  padding: 2px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--subtle-text);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 120ms ease-in-out, color 120ms ease-in-out, background-color 120ms ease-in-out;
+  vertical-align: middle;
+
+  &:hover {
+    opacity: 1;
+    background-color: var(--btn-text-hover);
+    color: var(--btn-text-active);
+  }
+
+  &.copy-btn-success {
+    opacity: 1;
+    color: #22c55e;
+    border-color: #22c55e;
+  }
+
+  &.copy-btn-error {
+    opacity: 1;
+    color: #ef4444;
+    border-color: #ef4444;
+  }
+}

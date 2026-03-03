@@ -370,4 +370,66 @@ table.dataTable tbody tr:hover {
   font-style: italic;
 }
 
+/* Copy button styles 
+.copy-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  //padding: 2px 6px;
+  padding: 1px 1px 1px 1px;
+  margin-left: 2px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  color: var(--text-color);
+  vertical-align: middle;
+
+  &:hover {
+    background-color: var(--btn-text-hover);
+    border-color: var(--btn-text-active);
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}*/
+/* Monospaced address styles */
+.mono-address {
+  font-family: "Courier New", "Consolas", "Monaco", monospace;
+  font-size: 13px;
+}
+
+/* Copy-to-clipboard button that appears inline next to copyable cell values */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  padding: 2px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--subtle-text);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 120ms ease-in-out, color 120ms ease-in-out, background-color 120ms ease-in-out;
+  vertical-align: middle;
+}
+.copy-btn:hover {
+  opacity: 1;
+  background-color: var(--btn-text-hover);
+  color: var(--btn-text-active);
+}
+.copy-btn.copy-btn-success {
+  opacity: 1;
+  color: #22c55e;
+  border-color: #22c55e;
+}
+.copy-btn.copy-btn-error {
+  opacity: 1;
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
 /*# sourceMappingURL=dnsmasq-dhcp.css.map */

@@ -52,53 +52,6 @@ type AddonOptions struct {
 	dnsCustomHosts []DnsCustomHost
 }
 
-// egressProbeDestination is the address used to probe the egress interface.
-// No data is actually sent; the OS routing decision is used to find the egress interface.
-const egressProbeDestination = "1.1.1.1:53"
-
-// getEgressInterface returns the name of the network interface that would be used
-// to route traffic to the internet (using 1.1.1.1 as the probe destination).
-// This is done by opening a UDP socket (no data is actually sent) and inspecting
-// the local address chosen by the OS, then matching it to a network interface.
-func getEgressInterface() (string, error) {
-	conn, err := net.Dial("udp4", egressProbeDestination)
-	if err != nil {
-		return "", fmt.Errorf("failed to connect to probe destination for interface auto-detection: %w", err)
-	}
-	defer conn.Close() //nolint:errcheck
-
-	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
-	if !ok {
-		return "", fmt.Errorf("unexpected local address type during interface auto-detection")
-	}
-
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return "", fmt.Errorf("failed to list network interfaces: %w", err)
-	}
-
-	for _, iface := range ifaces {
-		addrs, err := iface.Addrs()
-		if err != nil {
-			continue
-		}
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-			if ip != nil && ip.Equal(localAddr.IP) {
-				return iface.Name, nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("could not find network interface for local IP %s", localAddr.IP)
-}
-
 // isValidRFC1123Hostname checks whether the given string is a valid hostname
 // label as per RFC 1123: 1–63 characters, consisting only of letters, digits,
 // and hyphens, and must not start or end with a hyphen.
@@ -253,14 +206,11 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("invalid DHCP range %s-%s found in addon config file", r.Start, r.End)
 		}
 
-		// resolve "auto" interface name to the actual egress interface
+		// please be aware that the interface name might be something like "auto";
+		// in that case the real interface name is resolved only for dnsmasq by the dnsmasq-init s6 service;
+		// if we ever need the actual interface name in this Backend, then we might want to save the
+		// dnsmasq-init processing output to a file and read it here. Or just load the dnsmasq config file here.
 		ifaceName := strings.TrimSpace(r.Interface)
-		if ifaceName == "auto" {
-			ifaceName, err = getEgressInterface()
-			if err != nil {
-				return fmt.Errorf("failed to auto-detect network interface for DHCP pool: %w", err)
-			}
-		}
 
 		// create also the IpNetworkInfo obj associated:
 		ipNetInfo := IpNetworkInfo{

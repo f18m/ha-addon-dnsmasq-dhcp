@@ -11,19 +11,25 @@
 
 :root {
   --btn-text-inactive: #101927;
-  --background-tab: #f7f7f7;
+  --background-tab: #f6f8fc;
   --btn-text-active: #2955ac;
-  --btn-text-hover: #d4ddee;
-  --background-mono-text: lightgrey;
-  --text-color: black;  // General text color
-  --background-color: white; // General background color
+  --btn-text-hover: #e8efff;
+  --background-mono-text: #e8edf3;
+  --text-color: #111827;
+  --background-color: #f2f5fb;
+  --card-background: #ffffff;
+  --border-color: #dbe3ef;
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --subtle-text: #4b5563;
 }
 
 body {
-  background-color: white;
-  color: black;
+  margin: 0;
+  background-color: var(--background-color);
+  color: var(--text-color);
   font-family: 'Roboto', 'Mono', sans-serif;
   font-weight: 500;
+  line-height: 1.5;
 }
 
 
@@ -31,19 +37,23 @@ body {
 
 @media screen and (prefers-color-scheme: dark) {
   :root {
-    --btn-text-inactive: #e0e0e0; // Lighter for dark mode
-    --background-tab: #222;
+    --btn-text-inactive: #cfd8e3;
+    --background-tab: #111a2a;
     --btn-text-active: #64b5f6; // Lighter blue
-    --background-mono-text: #444;
-    --text-color: white;
-    --background-color: #121212;
+    --background-mono-text: #2d3648;
+    --text-color: #e6edf7;
+    --background-color: #0b1020;
+    --card-background: #131c2d;
+    --border-color: #253047;
+    --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.45);
+    --subtle-text: #b4c0d3;
   }
 
   // note that the override of the body foreground/background color will 
   // be inherited also by the DataTable
   body {
-    background-color: black;
-    color: white;
+    background-color: var(--background-color);
+    color: var(--text-color);
   }
   
   // in dark mode the usual blue of the links in the datatable is hard to read,
@@ -57,16 +67,59 @@ body {
 /* styles used in the UI */
 
 .topLevel {
-    margin-left: 10px;
+  margin: 0;
     color: var(--text-color); // Use the variable
 }
 
 .uiSettings {
-    text-align: right;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .liveIndicator > img {
     vertical-align: middle;
+}
+
+.page-shell {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-header {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-soft);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.app-title {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.app-subtitle {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--subtle-text);
+}
+
+.status-pill {
+  margin: 12px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(100, 181, 246, 0.14);
+  border: 1px solid rgba(100, 181, 246, 0.32);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  font-weight: 700;
 }
 
 .solidBorder {
@@ -97,11 +150,8 @@ body {
 }
 
 .container {
-    //max-width: 980px;
     width: 100%;
     margin: 0 auto;
-    //padding: 60px 16px 30px 16px;
-    //display: flex;
 }
 
 /*
@@ -115,10 +165,19 @@ a[href*="http"]::after {
 }*/
 
 .footer {
-    margin-top: 20px;
-    padding: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
     text-align: center;
     font-size: 12px;
+  color: var(--subtle-text);
+}
+
+.footer a {
+  color: var(--btn-text-active);
+  font-weight: 700;
 }
 
 
@@ -194,65 +253,67 @@ a[href*="http"]::after {
 /* tabs implementations */
 
 .btn {
-    font-size: 12px;
+  font-size: 13px;
     font-weight: 600;
-    padding: 10px;
+  padding: 10px 14px;
     background: transparent;
     outline: transparent;
-    border: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
     color: var(--btn-text-inactive);
-    transition: 300ms all ease-in-out;
+  transition: 180ms all ease-in-out;
     cursor: pointer;
+    transform: none;
     @media only screen and (max-width: 576px) {
         padding: 10px 8px;
     }
-    transform: scale(1);
 
     &.active {
         color: var(--btn-text-active);
         position: relative;
 
-        /* make the active item slightly bigger to emphasize it's the active tab */
-        transform: scale(1.1);
+        transform: none;
+        background: rgba(100, 181, 246, 0.12);
+        border-color: rgba(100, 181, 246, 0.32);
 
         &::after {
-            content: '';
-            width: 100%;
-            height: 2px;
-            background-color: var(--btn-text-active);
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            transform: scale(1);
+          content: none;
         }
     }
     &:hover {
         color:var(--btn-text-active);
         background-color: var(--btn-text-hover);
-
-        /* make the hovered item slightly bigger to emphasize it's the hovered tab */
-        transform: scale(1.1);
+        border-color: var(--border-color);
+        transform: translateY(-1px);
     }
 }
 
 .tabs {
-    background-color: var(--background-tab);
-    border-radius: 8px;
-    padding: 16px 16px 16px 16px;
+      background-color: var(--background-tab);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: var(--shadow-soft);
+      padding: 14px;
 
     &__pills {
-        //width: fit-content;
-        border-bottom: 2px solid rgba($color: var(--btn-text-inactive), $alpha: 0.2);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
     }
 
     &__panels {
-        padding: 20px 0;
+        padding: 14px 0 0;
 
         // the styling for inactive panels
         > div {
             width: 100%;
             display: none;
-            gap: 20px;
+          padding: 14px;
+          background: var(--card-background);
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
 
             > figure {
                 max-width: 400px;
@@ -292,6 +353,41 @@ a[href*="http"]::after {
     }
 }
 
+.tabs__panels h2 {
+  margin-top: 4px;
+}
+
+.tabs__panels p,
+.tabs__panels li {
+  color: var(--subtle-text);
+}
+
+.tabs__panels ul {
+  padding-left: 20px;
+}
+
+.dataTable {
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+
+table.dataTable tbody tr {
+  transition: background-color 120ms ease-in-out;
+}
+
+table.dataTable tbody tr:hover {
+  background-color: rgba(100, 181, 246, 0.08);
+}
+
+.dt-container .dt-search input,
+.dt-container .dt-length select {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--card-background);
+  color: var(--text-color);
+}
+
 
 /* Tag label styles */
 .tag-label {
@@ -310,4 +406,45 @@ a[href*="http"]::after {
   background-color: #999;
   color: white;
   font-style: italic;
+}
+
+/* Monospaced address styles */
+.mono-address {
+  font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+}
+
+/* Copy-to-clipboard button that appears inline next to copyable cell values */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  padding: 2px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--subtle-text);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 120ms ease-in-out, color 120ms ease-in-out, background-color 120ms ease-in-out;
+  vertical-align: middle;
+
+  &:hover {
+    opacity: 1;
+    background-color: var(--btn-text-hover);
+    color: var(--btn-text-active);
+  }
+
+  &.copy-btn-success {
+    opacity: 1;
+    color: #22c55e;
+    border-color: #22c55e;
+  }
+
+  &.copy-btn-error {
+    opacity: 1;
+    color: #ef4444;
+    border-color: #ef4444;
+  }
 }

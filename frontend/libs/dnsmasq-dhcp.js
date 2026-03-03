@@ -32,8 +32,71 @@ function assert(condition, message) {
     }
 }
 
+// Copy the value stored in data-copy of the clicked button to the clipboard
+// and give brief visual feedback by toggling the copy-btn-success CSS class.
+// On failure, toggle copy-btn-error to indicate the problem to the user.
+function copyToClipboard(btn) {
+    var text = btn.getAttribute('data-copy');
+    
+    // Use modern Clipboard API if available and in secure context
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function() {
+            btn.classList.add('copy-btn-success');
+            setTimeout(function() {
+                btn.classList.remove('copy-btn-success');
+            }, 1500);
+        }).catch(function(err) {
+            console.error('Could not copy text to clipboard: ', err);
+            btn.classList.add('copy-btn-error');
+            setTimeout(function() {
+                btn.classList.remove('copy-btn-error');
+            }, 1500);
+        });
+    } else {
+        // Fallback for older browsers or non-secure contexts
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            btn.classList.add('copy-btn-success');
+            setTimeout(function() {
+                btn.classList.remove('copy-btn-success');
+            }, 1500);
+        } catch (err) {
+            console.error('Failed to copy (fallback): ', err);
+            btn.classList.add('copy-btn-error');
+            setTimeout(function() {
+                btn.classList.remove('copy-btn-error');
+            }, 1500);
+        }
+        document.body.removeChild(textArea);
+    }
+}
+
 
 /* FORMATTING FUNCTIONS */
+
+// SVG clipboard icon used by copy buttons
+var COPY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+
+// Render a table cell value with a small inline copy-to-clipboard button.
+// The "type" parameter is the DataTables rendering context; the button is
+// only injected for the 'display' type so that sorting and filtering still
+// operate on the plain text value.
+function renderWithCopyButton(data, type) {
+    if (type !== 'display' || !data || data === 'N/A') {
+        return data;
+    }
+    // Escape special HTML characters to prevent injection via the attribute value and cell content
+    var escaped = data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return '<span class="mono-address">' + escaped + '</span><button class="copy-btn" onclick="copyToClipboard(this)" data-copy="' + escaped + '" title="Copy to clipboard">' + COPY_ICON_SVG + '</button>';
+}
 
 // Generate a consistent color for a tag based on its string
 function getTagColor(tagString) {
@@ -162,8 +225,8 @@ function initCurrentTable() {
                 { title: 'Hostname', type: 'string' },
                 { title: 'Description', type: 'string' },
                 { title: 'Link', type: 'string' },
-                { title: 'IP Address', type: 'ip-address' },
-                { title: 'MAC Address', type: 'string' },
+                { title: 'IP Address', type: 'ip-address', render: renderWithCopyButton },
+                { title: 'MAC Address', type: 'string', render: renderWithCopyButton },
                 { title: 'Expires in', 'orderDataType': 'custom-date-order' },
                 { title: 'Static IP?', type: 'string', width: '8%' },
                 { title: 'Tags', type: 'string', width: '15%' }
@@ -201,7 +264,7 @@ function initPastTable() {
                 { title: 'Friendly Name', type: 'string' },
                 { title: 'Hostname', type: 'string' },
                 { title: 'Description', type: 'string' },
-                { title: 'MAC Address', type: 'string' },
+                { title: 'MAC Address', type: 'string', render: renderWithCopyButton },
                 { title: 'Static IP?', type: 'string', width: '8%' },
                 { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order', width: '10%' },
                 { title: 'Notes', type: 'string', width: '25%' },

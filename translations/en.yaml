@@ -3,71 +3,161 @@ configuration:
   interfaces:
     name: List of Network Interfaces
     description: The interfaces on which the DHCP/DNS server will listen; DHCP requests are listened on port 67; DNS requests are listened on port 53
-
+  
   dhcp_server:
     name: DHCP Server settings
     description: Contains some critical configs for the DHCP server
-  # FIXME: somehow the below syntax does not work
-  # default_lease:
-  #   name: Default DHCP lease time 
-  #   description: This represents the default DHCP lease time for all DHCP clients except those having an IP address reservation. This can be given in seconds, minutes (m) or hours (h) or you can use 'infinite'.
-  # address_reservation_lease:
-  #   name: DHCP lease time for IP address reservations
-  #   description: This can be given in seconds, minutes (m) or hours (h) or you can use 'infinite'.
-  # start_ip:
-  #     name: DHCP Start IP address
-  #     description: The first IP address of the DHCP range that defines the DHCP address pool.
-  # end_ip:
-  #     name: DHCP End IP address
-  #     description: The last IP address of the DHCP range that defines the DHCP address pool.
-  # log_requests:
-  #   name: Log DHCP
-  #   description: Log all details about DHCP requests served by the server
-  # reset_dhcp_lease_database_on_reboot:
-  #   name: Reset DHCP Lease Database On Reboot
-  #   description: |
-  #     The addon can detect whether the server which is running the addon has just rebooted;
-  #     if that's the case and the following flag is set to "true", then the DHCP lease database
-  #     is reset before starting the DHCP server; this is useful in case a loss of power of the
-  #     HomeAssistant server means also a loss of power of several/all DHCP clients. In such a case
-  #     the old DHCP lease database is not useful and actually misleading.
-
+    fields:
+      default_lease:
+        name: Default DHCP lease time
+        description: Default DHCP lease time for all DHCP clients except those having an IP address reservation (e.g., 1h, 30m, 3600s, or 'infinite')
+      address_reservation_lease:
+        name: DHCP lease time for IP address reservations
+        description: DHCP lease time for clients with reserved IP addresses (e.g., 1h, 30m, 3600s, or 'infinite')
+      reset_dhcp_lease_database_on_reboot:
+        name: Reset DHCP Lease Database On Reboot
+        description: Reset the DHCP lease database on addon reboot; useful when both server and clients power cycle together
+      forget_past_clients_after:
+        name: Forget past clients after
+        description: Time after which past DHCP clients are forgotten in the web UI (e.g., 30d, 7d)
+      log_requests:
+        name: Log DHCP requests
+        description: Log all details about DHCP requests served by the server
+      dns_servers:
+        name: DNS servers
+        description: DNS servers to advertise in DHCP OFFER messages (use 0.0.0.0 for automatic detection)
+      dns_domain:
+        name: DNS domain
+        description: Local DNS domain name for the network
+      ntp_servers:
+        name: NTP servers
+        description: NTP servers to advertise in DHCP OFFER messages
+      dnsmasq_customizations:
+        name: Dnsmasq customizations
+        description: Additional dnsmasq configuration lines (advanced users only)
+  
   dhcp_pools:
     name: DHCP IP Address Pools
-    description: Contains the configuration of the IP address pool in each pool. Typically you have 1 pool for each network interface where DHCP server must serve requests.
-  #   gateway:
-  #     name: Gateway Address
-  #     description: The address of the router that can forward packets outside the local network.
-  #   interface:
-  #     name: Interface
-  #     description: The network interface of your Home Assistant platform/hardware where the DHCP server will listen to. Typical example are 'eth0', 'enpXs0', etc.
-  #   netmask:
-  #     name: Network Mask
-  #     description: The network mask which defines the size of the network. The typical example is 255.255.255.0.
-  #   dns:
-  #     name: List of DNS servers 
-  #     description: DNS servers to advertise inside DHCP OFFER messages.
-
+    description: Contains the configuration of IP address pools. Typically you have 1 pool for each network interface where DHCP must serve requests
+    fields:
+      interface:
+        name: Interface
+        description: Network interface where the DHCP server will listen (e.g., eth0, enpXs0, auto for automatic detection)
+      start:
+        name: Start IP address
+        description: First IP address of the DHCP pool range
+      end:
+        name: End IP address
+        description: Last IP address of the DHCP pool range
+      gateway:
+        name: Gateway address
+        description: Router address to forward packets outside the local network
+      netmask:
+        name: Network mask
+        description: Defines the network size (typically 255.255.255.0)
+  
   dhcp_ip_address_reservations:
     name: DHCP IP Address Reservations
-    description: List of MAC addresses / IP addresses pairs that are reserved. Strict regex validation is performed on MAC addresses and hostnames (use alphanumeric chars plus dot or hyphens only).
+    description: MAC address / IP address pairs to reserve. Strict regex validation on MAC addresses and hostnames
+    fields:
+      mac:
+        name: MAC address
+        description: Physical MAC address (format XX:XX:XX:XX:XX:XX)
+      ip:
+        name: IP address
+        description: Reserved IP address for this MAC address
+      name:
+        name: Hostname
+        description: Valid hostname (alphanumeric, dots, and hyphens only)
+      description:
+        name: Description
+        description: Optional description of this device
+      link:
+        name: Link
+        description: Optional link to access this device (supports templates, see DOCS)
+      tags:
+        name: Tags
+        description: Optional tags to categorize this device
+  
   dhcp_clients_friendly_names:
     name: DHCP Clients Friendly Names
-    description: List of MAC addresses / friendly-name pairs to help identify the DHCP clients in the Web UI. Strict regex validation is performed on MAC addresses.
-
+    description: Mapping between a MAC address and its friendly-name to identify DHCP clients in the web UI
+    fields:
+      mac:
+        name: MAC address
+        description: Physical MAC address (format XX:XX:XX:XX:XX:XX)
+      name:
+        name: Friendly name
+        description: User-friendly name for this DHCP client
+      description:
+        name: Description
+        description: Optional description of this device
+      link:
+        name: Link
+        description: Optional link to access this device (supports templates, see DOCS)
+      tags:
+        name: Tags
+        description: Optional tags to categorize this device
+  
+  dhcp_mac_address_blocklist:
+    name: DHCP MAC Address Blocklist
+    description: List of MAC addresses to block from DHCP service
+    fields:
+      mac:
+        name: MAC address
+        description: Physical MAC address to block (format XX:XX:XX:XX:XX:XX)
+      description:
+        name: Description
+        description: Optional description of why this MAC is blocked
+  
   dns_server:
     name: DNS Server Settings
-    description: Enables the possibility to use dnsmasq as a local DNS resolver
-  # log_dns:
-  #   name: Log DNS
-  #   description: Log all details about DNS requests served by the server
-  # upstream_servers:
-  #   name: DNS Upstream Servers
-  #   description: List of DNS servers to which queries are forwarded when local DNS resolver does not have the answer in cache
+    description: Configure dnsmasq as a local DNS resolver
+    fields:
+      enable:
+        name: Enable DNS server
+        description: Enable or disable the local DNS server functionality
+      port:
+        name: DNS port
+        description: Port on which the DNS server listens (typically 53)
+      cache_size:
+        name: DNS cache size
+        description: Number of DNS responses to cache
+      log_requests:
+        name: Log DNS requests
+        description: Log all DNS requests served by the server
+      dns_domain:
+        name: DNS domain
+        description: Local DNS domain name
+      upstream_servers:
+        name: Upstream DNS servers
+        description: DNS servers to forward queries to when not in local cache
+  
+  dns_custom_hosts:
+    name: DNS Custom Hosts
+    description: Define custom host entries for local DNS resolution
+    fields:
+      name:
+        name: Hostname
+        description: DNS hostname (must start and end with alphanumeric characters)
+      ipv4_address:
+        name: IPv4 address
+        description: IPv4 address to resolve for this hostname
+      ipv6_address:
+        name: IPv6 address
+        description: Optional IPv6 address to resolve for this hostname
+  
   web_ui:
     name: Web UI Settings
-    description: All settings related to the web UI
-  # port:
-  #   name: Web UI Port
-  #   description: Port used by the internal HTTP server. Change only if you get a conflict on the default port.
+    description: Configure the web user interface settings
+    fields:
+      log_activity:
+        name: Log activity
+        description: Log user activity in the web UI
+      port:
+        name: Web UI port
+        description: Port for the internal HTTP server
+      refresh_interval_sec:
+        name: Refresh interval
+        description: How often to refresh data in the web UI (in seconds)
   

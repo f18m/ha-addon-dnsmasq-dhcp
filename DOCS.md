@@ -215,12 +215,16 @@ dhcp_server:
 dhcp_pools:
 
     # each DHCP pool starts with the "interface" on which a specific IP range / IP network will be served;
-    # set to "auto" to automatically select the interface that routes traffic to the internet
+    # set to "auto" to automatically select the interface that routes traffic to the internet;
+    # remember that all interfaces referenced by DHCP pools should also appear in the top-level "interfaces"
+    # configuration key
   - interface: enp1s0
+    # the "start" IP address is the first IP that is available to DHCP clients
     start: 192.168.1.50
     # the "end" IP address must always be numerically larger than the "start" IP
     end: 192.168.1.150
-    # the "gateway" IP address to advertise in DHCP answers
+    # the "gateway" IP address is the gateway/router to advertise in DHCP answers, 
+    # typically is the router that allows to reach out to the Internet
     gateway: 192.168.1.254
     # the "netmask" to advertise in DHCP answers
     netmask: 255.255.255.0

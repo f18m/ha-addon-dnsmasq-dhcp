@@ -40,7 +40,7 @@ panel_title: DHCP
 options:
   # see DOCS.md for documentation on each setting
   interfaces:
-    - enp1s0
+    - auto
   dhcp_server:
     default_lease: 1h
     address_reservation_lease: 1h
@@ -56,14 +56,9 @@ options:
       - 2.europe.pool.ntp.org
     dnsmasq_customizations: ""
   dhcp_pools:
-    - interface: enp1s0
+    - interface: auto
       start: 192.168.1.50
       end: 192.168.1.150
-      gateway: 192.168.1.254
-      netmask: 255.255.255.0
-    - interface: enp1s0
-      start: 192.168.1.220
-      end: 192.168.1.230
       gateway: 192.168.1.254
       netmask: 255.255.255.0
   dhcp_ip_address_reservations:

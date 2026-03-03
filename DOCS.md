@@ -312,11 +312,14 @@ dns_server:
 # These are additional custom entries that the DNS server will resolve to the provided
 # IPv4/IPv6 address(es). The DNS server will create A, AAAA and PTR records for each
 # entry in the DNS custom hosts list.
+# These additional entries allow you to e.g. associate a resolvable Fully Qualified Domain Name (FQDN)
+# to devices that are configured to use a static IP address (and as such are "invisible" to the DHCP server).
 dns_custom_hosts:
   # the "name" must be a valid FQDN according to RFC1123; typical format is "hostname.domain.tld" 
   # where "tld" is the top-level domain; typically this should match the dns_server.dns_domain 
   # but is not strictly required.
   - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$)
+    # you can associate both an IPv4 and IPv6; at least one of the two is required
     ipv4_address: "str?"
     ipv6_address: "str?"
 

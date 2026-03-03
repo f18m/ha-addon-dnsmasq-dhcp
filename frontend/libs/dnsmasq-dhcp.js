@@ -13,12 +13,15 @@ var config = { // this global variable is initialized via setConfig()
     "dnsCustomHosts": null,
 }
 var global_objects = {
-    "table_current": null,
-    "table_past": null,
-    "table_dns_upstreams": null,
-    "table_dns_hosts": null,
-    "backend_ws": null,
-    "num_updates": 0
+    // Datatables.net instances:
+    table_current: null,
+    table_past: null,
+    table_dns_upstreams: null,
+    table_dns_hosts: null,
+    // Websocket:
+    backend_ws: null,
+    // stats:
+    num_updates: 0
 }
 
 /* HELPER FUNCTIONS */

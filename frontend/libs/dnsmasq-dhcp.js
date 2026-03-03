@@ -32,6 +32,53 @@ function assert(condition, message) {
     }
 }
 
+// Copy the value stored in data-copy of the clicked button to the clipboard
+// and give brief visual feedback by toggling the copy-btn-success CSS class.
+// On failure, toggle copy-btn-error to indicate the problem to the user.
+function copyToClipboard(btn) {
+    var text = btn.getAttribute('data-copy');
+    
+    // Use modern Clipboard API if available and in secure context
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function() {
+            btn.classList.add('copy-btn-success');
+            setTimeout(function() {
+                btn.classList.remove('copy-btn-success');
+            }, 1500);
+        }).catch(function(err) {
+            console.error('Could not copy text to clipboard: ', err);
+            btn.classList.add('copy-btn-error');
+            setTimeout(function() {
+                btn.classList.remove('copy-btn-error');
+            }, 1500);
+        });
+    } else {
+        // Fallback for older browsers or non-secure contexts
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            btn.classList.add('copy-btn-success');
+            setTimeout(function() {
+                btn.classList.remove('copy-btn-success');
+            }, 1500);
+        } catch (err) {
+            console.error('Failed to copy (fallback): ', err);
+            btn.classList.add('copy-btn-error');
+            setTimeout(function() {
+                btn.classList.remove('copy-btn-error');
+            }, 1500);
+        }
+        document.body.removeChild(textArea);
+    }
+}
+
 
 /* FORMATTING FUNCTIONS */
 
@@ -49,25 +96,6 @@ function renderWithCopyButton(data, type) {
     // Escape special HTML characters to prevent injection via the attribute value and cell content
     var escaped = data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     return '<span class="mono-address">' + escaped + '</span><button class="copy-btn" onclick="copyToClipboard(this)" data-copy="' + escaped + '" title="Copy to clipboard">' + COPY_ICON_SVG + '</button>';
-}
-
-// Copy the value stored in data-copy of the clicked button to the clipboard
-// and give brief visual feedback by toggling the copy-btn-success CSS class.
-// On failure, toggle copy-btn-error to indicate the problem to the user.
-function copyToClipboard(btn) {
-    var text = btn.getAttribute('data-copy');
-    navigator.clipboard.writeText(text).then(function() {
-        btn.classList.add('copy-btn-success');
-        setTimeout(function() {
-            btn.classList.remove('copy-btn-success');
-        }, 1500);
-    }).catch(function(err) {
-        console.error('Could not copy text to clipboard: ', err);
-        btn.classList.add('copy-btn-error');
-        setTimeout(function() {
-            btn.classList.remove('copy-btn-error');
-        }, 1500);
-    });
 }
 
 // Generate a consistent color for a tag based on its string

@@ -74,14 +74,14 @@ configuration:
         description: Optional description of this device
       link:
         name: Link
-        description: Optional link to access this device (supports {{ .ip }} template)
+        description: Optional link to access this device (supports templates, see DOCS)
       tags:
         name: Tags
         description: Optional tags to categorize this device
   
   dhcp_clients_friendly_names:
     name: DHCP Clients Friendly Names
-    description: MAC address / friendly-name pairs to identify DHCP clients in the web UI
+    description: Mapping between a MAC address and its friendly-name to identify DHCP clients in the web UI
     fields:
       mac:
         name: MAC address
@@ -94,7 +94,7 @@ configuration:
         description: Optional description of this device
       link:
         name: Link
-        description: Optional link to access this device (supports {{ .ip }} template)
+        description: Optional link to access this device (supports templates, see DOCS)
       tags:
         name: Tags
         description: Optional tags to categorize this device

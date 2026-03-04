@@ -3,9 +3,6 @@
 
 # Home Assistant App: flexible DNS and DHCP servers for your LAN
 
-> :warning: **This project is looking for frontend developers to improve the aesthetics and UX of the web UI. If you are interested in collaborating please reach out with [an issue](https://github.com/f18m/ha-addon-dnsmasq-dhcp/issues) or by [email](francesco.montorsi@nospam@gmail.com). Thanks.**
-
-
 - [About](#about)
 - [Why should I use a DHCP/DNS server](#why-should-i-use-a-dhcpdns-server)
 - [Features](#features)
@@ -15,7 +12,7 @@
 - [Other Noteworthy Projects](#other-noteworthy-projects)
 - [Development](#development)
 
-## About
+## 📋 About
 
 *Take control of your network!*
 If you want to
@@ -41,7 +38,7 @@ Please note that despite the name '`dnsmasq`' also provides DHCP server function
 Several similar solutions employ instead the [ISC dhcpd](https://www.isc.org/dhcp/) utility, however dnsmasq is on many aspects more feature-complete than the ISC DHCP server. Moreover ISC DHCP is discontinued since 2022.
 
 
-## Why should I use a DHCP/DNS server
+## 💡 Why should I use a DHCP/DNS server
 
 You will have many benefits like:
 * remove static IP address configurations from end devices, to centralize IP address control;
@@ -49,64 +46,78 @@ You will have many benefits like:
 * establish a basic heartbeat (DHCP lease renewal) to check which devices are still up and running;
 * use human-friendly DNS names to connect to your devices;
 
-## Features
+## ✨ Features
 
-* **Web-based UI** integrated in Home Assistant to view the list of all DHCP clients; the web UI is *responsive* and has nice rendering also from mobile phones (this is handy when you're e.g. installing a new Wifi or wired device in your network and you only have your mobile phone).
-* **UI Instant update**: no need to refresh the UI, whenever a new DHCP client connects to or leaves the network
+* 🌐 **Web-based UI** integrated in Home Assistant to view the list of all DHCP clients; the web UI is *responsive* and has nice rendering also from mobile phones (this is handy when you're e.g. installing a new Wifi or wired device in your network and you only have your mobile phone).
+* ⚡ **UI Instant update**: no need to refresh the UI, whenever a new DHCP client connects to or leaves the network
   the UI gets instantly updated.
-* **IP address reservation** using the MAC address: you can associate a specific IP address (even outside
+* 🔒 **IP address reservation** using the MAC address: you can associate a specific IP address (even outside
   the DHCP address pool) to particular hosts.
-* **Friendly name configuration**: you can provide your own friendly-name to any host (using its MAC address
+* 🏷️ **Friendly name configuration**: you can provide your own friendly-name to any host (using its MAC address
   as identifier); this is particularly useful to identify the DHCP clients that provide unhelpful hostnames
   in their DHCP requests.
-* **NTP and DNS server options**: you can advertise in DHCP OFFER packets whatever NTP and DNS server you want.
-* **Past DHCP clients**: the app keeps track of _any_ DHCP client ever connected to your network, and allows you to check if some important device in your network was connected in the past but somehow has failed to renew its DHCP lease (e.g. it is shut down).
-* **DNS local cache**: speed up DNS in your network by using this app as your home DNS server: `dnsmasq` will cache DNS resolutions from upstream servers to dramatically lower DNS resolution latency; in addition `dnsmasq` will be able to resolve any of your home device to your LAN IP address.
-* **Rock-solid DHCP and DNS server**: this app is using the [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) utility which is deployed in millions of devices since roughly 2001.
+* 🕐 **NTP and DNS server options**: you can advertise in DHCP OFFER packets whatever NTP and DNS server you want.
+* 📊 **Past DHCP clients**: the app keeps track of _any_ DHCP client ever connected to your network, and allows you to check if some important device in your network was connected in the past but somehow has failed to renew its DHCP lease (e.g. it is shut down).
+* 💾 **DNS local cache**: speed up DNS in your network by using this app as your home DNS server: `dnsmasq` will cache DNS resolutions from upstream servers to dramatically lower DNS resolution latency; in addition `dnsmasq` will be able to resolve any of your home device to your LAN IP address.
+* 🏔️ **Rock-solid DHCP and DNS server**: this app is using the [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) utility which is deployed in millions of devices since roughly 2001.
 
 For technical savvy users, note that this app _should_ support IPv6 but so far has been tested by
 its author only on IPv4 networks.
 
 
-## Web UI Screenshots
+## 🖼️ Web UI Screenshots
 
-These are screenshots from the app UI v3.0.0.
+These are screenshots from the app UI v4.3.0. The UI supports both light and dark modes.
 
-DHCP basic summary:
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <strong>DHCP Summary</strong><br/>
+      View all DHCP statistics and server status at a glance
+      <br/><br/>
+      <img src="docs/screenshot1.png" alt="DHCP summary" width="100%"/>
+    </td>
+    <td align="center" width="50%">
+      <strong>Current DHCP Clients</strong><br/>
+      Real-time updates with lease expiration time, custom DNS links<br/>
+      Sortable columns, responsive design
+      <br/><br/>
+      <img src="docs/screenshot2.png" alt="DHCP current clients" width="100%"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <strong>Past DHCP Clients</strong><br/>
+      Historical view of all devices that ever connected to your network
+      <br/><br/>
+      <img src="docs/screenshot3.png" alt="DHCP past clients" width="100%"/>
+    </td>
+    <td align="center" width="50%">
+      <strong>DNS Statistics</strong><br/>
+      DNS query metrics and performance insights
+      <br/><br/>
+      <img src="docs/screenshot4.png" alt="DNS summary" width="100%"/>
+    </td>
+  </tr>
+</table>
 
-<img src="docs/screenshot1.png" alt="WebUI screenshot"/>
-
-DHCP current clients, with DHCP lease expiration time indicator, custom link using local DNS resolver (for the `lan` domain):
-
-<img src="docs/screenshot2.png" alt="WebUI screenshot"/>
-
-DNS basic stats:
-
-<img src="docs/screenshot3.png" alt="WebUI screenshot"/>
-
-The two screenshots show the Current and the Past DHCP clients tabs.
-The tables of DHCP clients are updated in real-time (no manual refresh needed) and can be sorted on any column.
-Plus they're responsive and thus adapt nicely to small screens (cellphones).
-
-Last the Web UI supports both light and dark modes.
-
-## How to Install and How to Configure
+## 🚀 How to Install and How to Configure
 
 Check out the [app docs](DOCS.md). Open an [issue](https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/issues) if you hit any problem.
 
-## Similar Apps
+## 🔄 Similar Apps
 
 * [dnsmasq](https://github.com/home-assistant/addons/tree/master/dnsmasq): a simple DNS server app (no DHCP).
 * [AdGuard Home](https://github.com/hassio-addons/addon-adguard-home): network-wide ads & trackers blocking DNS server. It also includes an embedded DHCP server.
 
 Please note that you can use this app in tandem with similar apps and e.g. configure AdGuard Home to fallback to the DNS server provided by this app only for hosts having the `lan` top-level domain.
 
-## Other Noteworthy Projects
+## ⭐ Other Noteworthy Projects
 
 * [pihole](https://pi-hole.net/): pi-hole embeds a modified `dnsmasq` variant (they named it "FTL", Faster Than Light) which provides a bunch of DNS metrics that are missing from the regular `dnsmasq` binary.
 
 
-## Development
+## 🛠️ Development
 
 See the [Home Assistant app guide](https://developers.home-assistant.io/docs/apps/). This app was originally inspired by other 2 apps maintained by Home Assistant team:
 * https://github.com/home-assistant/addons/tree/master/dnsmasq

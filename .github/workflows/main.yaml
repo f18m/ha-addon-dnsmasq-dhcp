@@ -162,7 +162,7 @@ jobs:
 
       - name: Metadata extraction
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         if: ${{ needs.check_tag.outputs.is_tag == 'false' }}
 
       - run: |

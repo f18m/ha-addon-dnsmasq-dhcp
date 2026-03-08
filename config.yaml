@@ -115,7 +115,9 @@ schema:
       - str
     dnsmasq_customizations: str
   dhcp_pools:
-    - interface: str
+      # the "interface" field of each DHCP pool must be either "auto" or a valid network interface as per the regex 
+      # used in the "interfaces" field
+    - interface: match(^([a-z][a-zA-Z0-9\.:]*)$)
       start: str
       end: str
       gateway: str

@@ -101,7 +101,7 @@ schema:
     # we expect a list of valid network interfaces; the character "@" which typically appears in
     # veth pairs (used by docker) is not allowed on-purpose to avoid mistakes where the user
     # provides a docker veth pair as interface for dnsmasq (this is typically not a good idea)
-    - match(^([a-z][a-z0-9\.:]*)$)
+    - match(^([a-z][a-zA-Z0-9\.:]*)$)
   dhcp_server:
     default_lease: str
     address_reservation_lease: str

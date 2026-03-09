@@ -308,12 +308,11 @@ a[href*="http"]::after {
 
         // the styling for inactive panels
         > div {
-            width: 100%;
             display: none;
-          padding: 14px;
-          background: var(--card-background);
-          border: 1px solid var(--border-color);
-          border-radius: 12px;
+            padding: 14px;
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
 
             > figure {
                 max-width: 400px;

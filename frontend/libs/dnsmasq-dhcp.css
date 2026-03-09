@@ -284,7 +284,6 @@ a[href*="http"]::after {
   padding: 14px 0 0;
 }
 .tabs__panels > div {
-  width: 100%;
   display: none;
   padding: 14px;
   background: var(--card-background);

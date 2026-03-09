@@ -12,6 +12,8 @@
 - [Other Noteworthy Projects](#other-noteworthy-projects)
 - [Development](#development)
 
+<a id="about"></a>
+
 ## 📋 About
 
 *Take control of your network!*
@@ -38,6 +40,8 @@ Please note that despite the name '`dnsmasq`' also provides DHCP server function
 Several similar solutions employ instead the [ISC dhcpd](https://www.isc.org/dhcp/) utility, however dnsmasq is on many aspects more feature-complete than the ISC DHCP server. Moreover ISC DHCP is discontinued since 2022.
 
 
+<a id="why-should-i-use-a-dhcpdns-server"></a>
+
 ## 💡 Why should I use a DHCP/DNS server
 
 You will have many benefits like:
@@ -45,6 +49,8 @@ You will have many benefits like:
 * get fine-grained control over which devices connect to your network and when;
 * establish a basic heartbeat (DHCP lease renewal) to check which devices are still up and running;
 * use human-friendly DNS names to connect to your devices;
+
+<a id="features"></a>
 
 ## ✨ Features
 
@@ -64,6 +70,8 @@ You will have many benefits like:
 For technical savvy users, note that this app _should_ support IPv6 but so far has been tested by
 its author only on IPv4 networks.
 
+
+<a id="web-ui-screenshots"></a>
 
 ## 🖼️ Web UI Screenshots
 
@@ -101,9 +109,13 @@ These are screenshots from the app UI v4.3.0. The UI supports both light and dar
   </tr>
 </table>
 
+<a id="how-to-install-and-how-to-configure"></a>
+
 ## 🚀 How to Install and How to Configure
 
 Check out the [app docs](DOCS.md). Open an [issue](https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/issues) if you hit any problem.
+
+<a id="similar-apps"></a>
 
 ## 🔄 Similar Apps
 
@@ -112,10 +124,14 @@ Check out the [app docs](DOCS.md). Open an [issue](https://github.com/f18m/ha-ad
 
 Please note that you can use this app in tandem with similar apps and e.g. configure AdGuard Home to fallback to the DNS server provided by this app only for hosts having the `lan` top-level domain.
 
+<a id="other-noteworthy-projects"></a>
+
 ## ⭐ Other Noteworthy Projects
 
 * [pihole](https://pi-hole.net/): pi-hole embeds a modified `dnsmasq` variant (they named it "FTL", Faster Than Light) which provides a bunch of DNS metrics that are missing from the regular `dnsmasq` binary.
 
+
+<a id="development"></a>
 
 ## 🛠️ Development
 

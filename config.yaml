@@ -18,9 +18,9 @@ url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 #   version: 4.x.y
 #   slug: dnsmasq-dhcp-beta
 #   name: Dnsmasq-DHCP BETA
-version: 4.3.0
-slug: dnsmasq-dhcp
-name: Dnsmasq-DHCP
+version: beta
+slug: dnsmasq-dhcp-beta
+name: Dnsmasq-DHCP BETA
 # advanced true means that the HA user can see this addon only if it's flagged as 'advanced' in the
 # Home Assistant UI
 advanced: true
@@ -115,8 +115,8 @@ schema:
       - str
     dnsmasq_customizations: str
   dhcp_pools:
-      # the "interface" field of each DHCP pool must be either "auto" or a valid network interface as per the regex 
-      # used in the "interfaces" field
+    # the "interface" field of each DHCP pool must be either "auto" or a valid network interface as per the regex 
+    # used in the "interfaces" field
     - interface: match(^([a-z][a-zA-Z0-9\.:]*)$)
       start: str
       end: str

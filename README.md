@@ -12,6 +12,8 @@
 - [Other Noteworthy Projects](#other-noteworthy-projects)
 - [Development](#development)
 
+⭐ If you find this App useful, please star this repo - it helps others discover the project!
+
 <a id="about"></a>
 
 ## 📋 About

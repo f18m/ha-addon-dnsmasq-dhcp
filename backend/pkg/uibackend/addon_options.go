@@ -146,6 +146,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Description string   `json:"description"`
 			Link        string   `json:"link"`
 			Tags        []string `json:"tags"`
+			DnsAliases  []string `json:"dns_aliases"`
 		} `json:"dhcp_ip_address_reservations"`
 
 		DhcpClientsFriendlyNames []struct {
@@ -272,6 +273,19 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			}
 		}
 
+		// validate DNS aliases, if any, trimming whitespace once during validation
+		var normalizedAliases []string
+		if len(r.DnsAliases) > 0 {
+			normalizedAliases = make([]string, 0, len(r.DnsAliases))
+			for _, alias := range r.DnsAliases {
+				alias = strings.TrimSpace(alias)
+				if !isValidRFC1123DNSName(alias) {
+					return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must consist of RFC 1123 labels separated by dots)", r.Name, alias)
+				}
+				normalizedAliases = append(normalizedAliases, alias)
+			}
+		}
+
 		// normalize the IP and MAC address format (e.g. to lowercase)
 		r.IP = ipAddr.String()
 		r.Mac = macAddr.String()
@@ -283,6 +297,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 			Description: r.Description,
 			Link:        linkTemplate,
 			Tags:        r.Tags,
+			DnsAliases:  normalizedAliases,
 		}
 
 		// check for duplicates in IP/MAC address reservations

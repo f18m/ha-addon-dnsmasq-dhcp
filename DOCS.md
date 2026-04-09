@@ -257,6 +257,12 @@ dhcp_ip_address_reservations:
       - server
       - critical
       - fixed_ip
+    # the 'dns_aliases' property is an optional list of DNS CNAME aliases for this device.
+    # Each alias must be a valid RFC 1123 DNS name (labels separated by dots).
+    # dnsmasq will return a CNAME record pointing each alias to the primary hostname ('name' field).
+    dns_aliases:
+      - "myserver"
+      - "myserver.lan"
 
 # DHCP friendly name mappings
 # Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.

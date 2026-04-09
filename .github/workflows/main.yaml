@@ -16,6 +16,13 @@ on:
   schedule:
     - cron: '0 0 1 * *'
 
+env:
+  ARCHITECTURES: '["amd64", "aarch64"]'
+  IMAGE_NAME: addon-dnsmasq-dhcp
+
+permissions:
+  contents: read
+
 jobs:
   unit_tests:
     name: Golang Tests
@@ -66,20 +73,23 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       is_tag: ${{ steps.check.outputs.is_tag }}
-
+      tag: ${{ steps.check.outputs.tag }}
     steps:
     - name: Check if it's a tagged release
       id: check
       run: |
-        echo "GITHUB_REF is: ${GITHUB_REF}"
+        git_tag=${GITHUB_REF##*/}
+        echo "GITHUB_REF is: ${GITHUB_REF}; git_tag is [${git_tag}]"
         if [[ -n "${GITHUB_REF##*refs/tags/*}" ]]; then
           echo "This looks like a non-TAG build"
           echo "is_tag=false" >> $GITHUB_ENV
           echo "is_tag=false" >> $GITHUB_OUTPUT
+          echo "tag=" >> $GITHUB_OUTPUT
         else
           echo "This looks like a TAG build"
           echo "is_tag=true" >> $GITHUB_ENV
           echo "is_tag=true" >> $GITHUB_OUTPUT
+          echo "tag=${git_tag}" >> $GITHUB_OUTPUT
         fi
     - run: |
         echo "This is a TAG build"
@@ -88,35 +98,22 @@ jobs:
         echo "This is a non-TAG build"
       if: ${{ steps.check.outputs.is_tag == 'false' }}
 
-  publish-docker-image:
-    name: Publish
+
+    # -------------------------------------------------------------------------- #
+    #                                  PUBLISH                                   #
+    # -------------------------------------------------------------------------- #
+
+  publish_init:
+    name: Initialize build
     runs-on: ubuntu-latest
     needs:
       - unit_tests
       - check_tag
       - golangci
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v6
-        with:
-          path: ./myaddon
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-        
-      # -------------------------------------------------------------------------- #
-      #                       build & push for tagged builds                       #
-      # -------------------------------------------------------------------------- #
+      - uses: actions/checkout@v6
 
       - name: Check coherency between tag and config.yaml
         run: |
@@ -138,66 +135,76 @@ jobs:
             echo "Git and config.yaml are coherent! Proceeding."
           fi
         if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
-        
-      - name: Docker build and push (tag builds)
-        uses: home-assistant/builder@2026.02.1
+
+      - name: Get build matrix
+        id: matrix
+        uses: home-assistant/builder/actions/prepare-multi-arch-matrix@2026.03.2
         with:
-          args: |
-            --amd64 --aarch64 \
-            --target myaddon \
-            --docker-hub ghcr.io/f18m
-        if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
-        
-      - name: Emit Architecture list
-        run: |
-          echo "### Supported Docker Image Architectures" >> $GITHUB_STEP_SUMMARY
-          echo '`amd64`, `aarch64`' >> $GITHUB_STEP_SUMMARY
-        if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
+          architectures: ${{ env.ARCHITECTURES }}
+          image-name: ${{ env.IMAGE_NAME }}
 
 
+  publish_tagged_build:
+    name: Build ${{ matrix.arch }} image
+    needs:
+      - publish_init
+      - check_tag
+    if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read # To check out the code
+      id-token: write # Write needed for Cosign signing (issue OIDC token for signing)
+      packages: write # To push built images to GitHub Container Registry
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.publish_init.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v6
 
-      # -------------------------------------------------------------------------- #
-      #                       build & push for non-TAG builds                      #
-      # -------------------------------------------------------------------------- #
-
-      - name: Metadata extraction
-        id: meta
-        uses: docker/metadata-action@v6
-        if: ${{ needs.check_tag.outputs.is_tag == 'false' }}
-
-      - run: |
-          echo "Docker image will be versioned as: ${{ steps.meta.outputs.version }}"
-        if: ${{ needs.check_tag.outputs.is_tag == 'false' }}
-
-      # notice that we build only 1 arch to speedup
-      # notice the additional --version and --no-latest flags
-      # compared to the variant for TAG builds:
-      - name: Docker build and push (non-tag builds)
-        uses: home-assistant/builder@2026.02.1
+      - name: Build image
+        uses: home-assistant/builder/actions/build-image@2026.03.2
         with:
-          args: |
-            --amd64 \
-            --target myaddon \
-            --docker-hub ghcr.io/f18m \
-            --version ${{ steps.meta.outputs.version }} \
-            --no-latest
-        if: ${{ needs.check_tag.outputs.is_tag == 'false' }}
-
-      - name: Emit Architecture list
-        run: |
-          echo "### Supported Docker Image Architectures" >> $GITHUB_STEP_SUMMARY
-          echo '`amd64` [non-tag build]' >> $GITHUB_STEP_SUMMARY
-        if: ${{ needs.check_tag.outputs.is_tag == 'false' }}
+          arch: ${{ matrix.arch }}
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          image: ${{ matrix.image }}
+          image-tags: |
+            ${{ needs.check_tag.outputs.tag }}
+            latest
+          push: "true"
+          version: ${{ needs.check_tag.outputs.tag }}
 
 
+  publish_manifest:
+    name: Publish multi-arch manifest
+    needs:
+      - publish_init
+      - publish_tagged_build
+      - check_tag
+    if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Write needed for Cosign signing (issue OIDC token for signing)
+      packages: write # To push the manifest to GitHub Container Registry
+    steps:
+      - name: Publish multi-arch manifest
+        uses: home-assistant/builder/actions/publish-multi-arch-manifest@2026.03.2
+        with:
+          architectures: ${{ env.ARCHITECTURES }}
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          image-name: ${{ env.IMAGE_NAME }}
+          image-tags: |
+            ${{ needs.check_tag.outputs.tag }}
+            latest
 
-      # -------------------------------------------------------------------------- #
-      #                                 Job summary                                #
-      # -------------------------------------------------------------------------- #
 
-      - name: Emit Job Summary
-        run: |
-          echo "### Published Docker Image :rocket:" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "ghcr.io/f18m/${{ github.repository }}:${{ steps.meta.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+
+    #   # -------------------------------------------------------------------------- #
+    #   #                                 Job summary                                #
+    #   # -------------------------------------------------------------------------- #
+
+    #   - name: Emit Job Summary
+    #     run: |
+    #       echo "### Published Docker Image :rocket:" >> $GITHUB_STEP_SUMMARY
+    #       echo '```' >> $GITHUB_STEP_SUMMARY
+    #       echo "ghcr.io/f18m/${{ github.repository }}:${{ steps.meta.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+    #       echo '```' >> $GITHUB_STEP_SUMMARY

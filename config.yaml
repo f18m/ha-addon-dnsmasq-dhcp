@@ -69,6 +69,9 @@ options:
       link: "http://{{ .ip }}/landing-page/for/this/host"
       tags:
         - server
+      dns_aliases:
+        - "alias-for-this-device"
+        - "another-alias.lan"
   dhcp_clients_friendly_names:
     - mac: dd:ee:aa:dd:bb:ee
       name: "friendly-name-for-this-device"
@@ -131,6 +134,8 @@ schema:
       description: "str?"
       link: "str?"
       tags:
+        - "str?"
+      dns_aliases:
         - "str?"
   dhcp_clients_friendly_names:
     - mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)

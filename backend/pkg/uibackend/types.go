@@ -29,6 +29,7 @@ type IpAddressReservation struct {
 	Description string
 	Link        *texttemplate.Template // maybe nil
 	Tags        []string
+	DnsAliases  []string // optional list of DNS CNAME aliases for this reservation
 }
 
 // BlockedDeviceInfo represents a blocked MAC address loaded from the addon configuration file

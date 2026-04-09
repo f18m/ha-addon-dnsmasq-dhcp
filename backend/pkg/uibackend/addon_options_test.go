@@ -842,3 +842,174 @@ func TestAddonOptionsDnsHostsIPv4AsIPv6Rejected(t *testing.T) {
 		t.Error("Expected error when IPv4 address is given in ipv6_address field, but got none")
 	}
 }
+
+func TestAddonOptionsIPReservationValidDnsAliases(t *testing.T) {
+	// Verify that valid dns_aliases are correctly parsed and stored on an IP reservation
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_ip_address_reservations": [
+			{
+				"ip": "192.168.1.10",
+				"mac": "aa:bb:cc:dd:ee:ff",
+				"name": "myserver",
+				"dns_aliases": ["alias1", "alias2.lan", "my-server-alias"]
+			}
+		],
+		"dhcp_clients_friendly_names": [],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	reservationIP := netip.MustParseAddr("192.168.1.10")
+	reservation, ok := opts.ipAddressReservationsByIP[reservationIP]
+	if !ok {
+		t.Fatalf("Expected IP reservation for 192.168.1.10 not found")
+	}
+	expectedAliases := []string{"alias1", "alias2.lan", "my-server-alias"}
+	if len(reservation.DnsAliases) != len(expectedAliases) {
+		t.Fatalf("Expected %d DNS aliases, got %d", len(expectedAliases), len(reservation.DnsAliases))
+	}
+	for i, alias := range expectedAliases {
+		if reservation.DnsAliases[i] != alias {
+			t.Errorf("Expected DnsAliases[%d]=%q, got %q", i, alias, reservation.DnsAliases[i])
+		}
+	}
+}
+
+func TestAddonOptionsIPReservationNoDnsAliases(t *testing.T) {
+	// Verify that an IP reservation without dns_aliases gets an empty DnsAliases slice
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_ip_address_reservations": [
+			{
+				"ip": "192.168.1.10",
+				"mac": "aa:bb:cc:dd:ee:ff",
+				"name": "myserver"
+			}
+		],
+		"dhcp_clients_friendly_names": [],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	opts := newTestAddonOptions()
+	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	reservationIP := netip.MustParseAddr("192.168.1.10")
+	reservation, ok := opts.ipAddressReservationsByIP[reservationIP]
+	if !ok {
+		t.Fatalf("Expected IP reservation for 192.168.1.10 not found")
+	}
+	if len(reservation.DnsAliases) != 0 {
+		t.Errorf("Expected no DNS aliases, got %d", len(reservation.DnsAliases))
+	}
+}
+
+func TestAddonOptionsIPReservationInvalidDnsAlias(t *testing.T) {
+	// Verify that an invalid dns_alias is rejected
+	invalidAliases := []string{
+		"-bad-start",
+		"bad-end-",
+		"has space",
+		"under_score",
+	}
+	for _, alias := range invalidAliases {
+		t.Run("invalid:"+alias, func(t *testing.T) {
+			jsonConfig := `{
+				"dhcp_pools": [
+					{
+						"interface": "eth0",
+						"start": "192.168.1.50",
+						"end": "192.168.1.100",
+						"gateway": "192.168.1.1",
+						"netmask": "255.255.255.0"
+					}
+				],
+				"dhcp_ip_address_reservations": [
+					{
+						"ip": "192.168.1.10",
+						"mac": "aa:bb:cc:dd:ee:ff",
+						"name": "myserver",
+						"dns_aliases": ["` + alias + `"]
+					}
+				],
+				"dhcp_clients_friendly_names": [],
+				"dhcp_server": {
+					"default_lease": "1h",
+					"address_reservation_lease": "1h",
+					"forget_past_clients_after": "30d",
+					"log_requests": false
+				},
+				"dns_server": {
+					"enable": false,
+					"dns_domain": "lan",
+					"port": 53
+				},
+				"web_ui": {
+					"log_activity": false,
+					"port": 8976,
+					"refresh_interval_sec": 10
+				}
+			}`
+
+			opts := newTestAddonOptions()
+			err := json.Unmarshal([]byte(jsonConfig), &opts)
+			if err == nil {
+				t.Errorf("Expected error for invalid DNS alias %q, but got none", alias)
+			}
+		})
+	}
+}

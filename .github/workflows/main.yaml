@@ -73,23 +73,20 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       is_tag: ${{ steps.check.outputs.is_tag }}
-      tag: ${{ steps.check.outputs.tag }}
     steps:
     - name: Check if it's a tagged release
       id: check
       run: |
         git_tag=${GITHUB_REF##*/}
-        echo "GITHUB_REF is: ${GITHUB_REF}; git_tag is [${git_tag}]"
+        echo "GITHUB_REF is: ${GITHUB_REF}; git_tag is [${git_tag}]; branch_name is [${branch_name}]"
         if [[ -n "${GITHUB_REF##*refs/tags/*}" ]]; then
           echo "This looks like a non-TAG build"
           echo "is_tag=false" >> $GITHUB_ENV
           echo "is_tag=false" >> $GITHUB_OUTPUT
-          echo "tag=" >> $GITHUB_OUTPUT
         else
           echo "This looks like a TAG build"
           echo "is_tag=true" >> $GITHUB_ENV
           echo "is_tag=true" >> $GITHUB_OUTPUT
-          echo "tag=${git_tag}" >> $GITHUB_OUTPUT
         fi
     - run: |
         echo "This is a TAG build"
@@ -112,9 +109,28 @@ jobs:
       - golangci
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
 
+      - name: Choose Docker image tag
+        id: tag
+        run: |
+          git_tag=${GITHUB_REF##*/}
+          branch_name="${GITHUB_REF_NAME:-${GITHUB_REF#refs/heads/}}"
+          echo "GITHUB_REF is: ${GITHUB_REF}; git_tag is [${git_tag}]; branch_name is [${branch_name}]"
+          if [[ -n "${GITHUB_REF##*refs/tags/*}" ]]; then
+            echo "This looks like a non-TAG build"
+            echo "is_tag=false" >> $GITHUB_ENV
+            echo "is_tag=false" >> $GITHUB_OUTPUT
+            echo "tag=${branch_name}" >> $GITHUB_OUTPUT
+          else
+            echo "This looks like a TAG build"
+            echo "is_tag=true" >> $GITHUB_ENV
+            echo "is_tag=true" >> $GITHUB_OUTPUT
+            echo "tag=${git_tag}" >> $GITHUB_OUTPUT
+          fi
+            
       - name: Check coherency between tag and config.yaml
         run: |
           git_tag=${GITHUB_REF##*/}
@@ -149,7 +165,7 @@ jobs:
     needs:
       - publish_init
       - check_tag
-    if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
+    # if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read # To check out the code
@@ -168,10 +184,9 @@ jobs:
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           image: ${{ matrix.image }}
           image-tags: |
-            ${{ needs.check_tag.outputs.tag }}
-            latest
+            ${{ needs.publish_init.outputs.tag }}
           push: "true"
-          version: ${{ needs.check_tag.outputs.tag }}
+          version: ${{ needs.publish_init.outputs.tag }}
 
 
   publish_manifest:
@@ -180,7 +195,7 @@ jobs:
       - publish_init
       - publish_tagged_build
       - check_tag
-    if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
+    # if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Write needed for Cosign signing (issue OIDC token for signing)
@@ -193,8 +208,7 @@ jobs:
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           image-name: ${{ env.IMAGE_NAME }}
           image-tags: |
-            ${{ needs.check_tag.outputs.tag }}
-            latest
+            ${{ needs.publish_init.outputs.tag }}
 
 
 
@@ -206,5 +220,5 @@ jobs:
     #     run: |
     #       echo "### Published Docker Image :rocket:" >> $GITHUB_STEP_SUMMARY
     #       echo '```' >> $GITHUB_STEP_SUMMARY
-    #       echo "ghcr.io/f18m/${{ github.repository }}:${{ steps.meta.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+    #       echo "ghcr.io/f18m/${{ github.repository }}:${{ needs.publish_init.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
     #       echo '```' >> $GITHUB_STEP_SUMMARY

@@ -455,10 +455,9 @@ ping <hostname>.<DNS domain configured>
 The _beta_ version of `Dnsmasq-DHCP` is where most bugfixes are first deployed and tested.
 Only if they are working fine, they will be merged in the _stable_ version.
 
-Please note that as of now the Beta version is provided only for the `amd64` architecture.
-
-Since the _beta_ version of `Dnsmasq-DHCP` does not use a real version scheme, to make sure you're running
-the latest build of the _beta_, please run:
+Since the _beta_ version of `Dnsmasq-DHCP` does not use a real version scheme (the version is
+always set to the string `beta`), to make sure you're running
+the latest build, please run:
 
 ```sh
 docker pull ghcr.io/f18m/addon-dnsmasq-dhcp:beta

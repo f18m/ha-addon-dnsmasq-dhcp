@@ -126,6 +126,79 @@ func TestAddonOptionsInvalidHostname(t *testing.T) {
 	}
 }
 
+func TestAddonOptionsDnsDomainLocalRejected(t *testing.T) {
+	baseConfig := func(domain string) string {
+		return `{
+			"dhcp_pools": [
+				{
+					"interface": "eth0",
+					"start": "192.168.1.50",
+					"end": "192.168.1.100",
+					"gateway": "192.168.1.1",
+					"netmask": "255.255.255.0"
+				}
+			],
+			"dhcp_ip_address_reservations": [],
+			"dhcp_clients_friendly_names": [],
+			"dhcp_server": {
+				"default_lease": "1h",
+				"address_reservation_lease": "1h",
+				"forget_past_clients_after": "30d",
+				"log_requests": false
+			},
+			"dns_server": {
+				"enable": true,
+				"dns_domain": "` + domain + `",
+				"port": 53
+			},
+			"web_ui": {
+				"log_activity": false,
+				"port": 8976,
+				"refresh_interval_sec": 10
+			}
+		}`
+	}
+
+	t.Run("reject local", func(t *testing.T) {
+		var opts AddonOptions
+		opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
+		opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
+		opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+
+		err := json.Unmarshal([]byte(baseConfig("local")), &opts)
+		if err == nil {
+			t.Fatal("expected error for dns_domain=local, got none")
+		}
+		if !strings.Contains(strings.ToLower(err.Error()), "reserved for mdns") {
+			t.Fatalf("unexpected error message: %v", err)
+		}
+	})
+
+	t.Run("reject LOCAL case-insensitively", func(t *testing.T) {
+		var opts AddonOptions
+		opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
+		opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
+		opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+
+		err := json.Unmarshal([]byte(baseConfig("LOCAL")), &opts)
+		if err == nil {
+			t.Fatal("expected error for dns_domain=LOCAL, got none")
+		}
+	})
+
+	t.Run("accept non-local domain", func(t *testing.T) {
+		var opts AddonOptions
+		opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
+		opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
+		opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+
+		err := json.Unmarshal([]byte(baseConfig("lan")), &opts)
+		if err != nil {
+			t.Fatalf("unexpected error for dns_domain=lan: %v", err)
+		}
+	})
+}
+
 func TestAddonOptionsMACInBothLists(t *testing.T) {
 	// A MAC address that appears in both dhcp_ip_address_reservations and
 	// dhcp_clients_friendly_names must be rejected.
@@ -860,7 +933,7 @@ func TestAddonOptionsIPReservationValidDnsAliases(t *testing.T) {
 				"ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "myserver",
-				"dns_aliases": ["alias1", "alias2.lan", "my-server-alias"]
+				"dns_aliases": ["alias1.lan", "alias2.lan", "my-server-alias.lan"]
 			}
 		],
 		"dhcp_clients_friendly_names": [],
@@ -893,7 +966,7 @@ func TestAddonOptionsIPReservationValidDnsAliases(t *testing.T) {
 	if !ok {
 		t.Fatalf("Expected IP reservation for 192.168.1.10 not found")
 	}
-	expectedAliases := []string{"alias1", "alias2.lan", "my-server-alias"}
+	expectedAliases := []string{"alias1.lan", "alias2.lan", "my-server-alias.lan"}
 	if len(reservation.DnsAliases) != len(expectedAliases) {
 		t.Fatalf("Expected %d DNS aliases, got %d", len(expectedAliases), len(reservation.DnsAliases))
 	}
@@ -965,6 +1038,8 @@ func TestAddonOptionsIPReservationInvalidDnsAlias(t *testing.T) {
 		"bad-end-",
 		"has space",
 		"under_score",
+		"plainalias",
+		"host.otherdomain",
 	}
 	for _, alias := range invalidAliases {
 		t.Run("invalid:"+alias, func(t *testing.T) {

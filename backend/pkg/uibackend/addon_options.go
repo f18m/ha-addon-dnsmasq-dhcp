@@ -247,6 +247,12 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("invalid web UI port number: %d", cfg.WebUI.Port)
 	}
 
+	// "local" is reserved by mDNS and must not be used as dnsmasq DNS domain.
+	dnsDomain := strings.TrimSpace(cfg.DnsServer.DnsDomain)
+	if strings.EqualFold(dnsDomain, "local") {
+		return fmt.Errorf("invalid DNS domain found inside 'dns_server': %q ('local' is reserved for mDNS)", cfg.DnsServer.DnsDomain)
+	}
+
 	// convert IP address reservations to a map indexed by IP
 	for _, r := range cfg.DhcpIpAddressReservations {
 		// validate (host)name
@@ -281,6 +287,25 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 				alias = strings.TrimSpace(alias)
 				if !isValidRFC1123DNSName(alias) {
 					return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must consist of RFC 1123 labels separated by dots)", r.Name, alias)
+				}
+
+				// Why do we require that the DNS aliases end with the configured DNS domain?
+				// Because dnsmasq will automatically append the DNS domain to any alias that doesn't already
+				// end with it, and this can lead to confusion if the user accidentally adds an alias without
+				// the DNS domain suffix.
+				// By enforcing this rule in the UI backend, we remove this confusion.
+				// Also note that providing as dns_alias an FQDN with a different domain than the one configured
+				// in dns_domain won't work for 2 reasons:
+				// 1) dnsmasq will still append the configured dns_domain to the alias, resulting in a final FQDN
+				//    that is different from the one provided by the user
+				//    (e.g. "printer.testdomain" -> "printer.testdomain.lan" if dns_domain is "lan")
+				//    So you cannot really create an entry for "printer.testdomain"!
+				// 2) even if dnsmasq didn't append the dns_domain, the DNS resolution of that alias would
+				//    still fail because dnsmasq only resolves names within the configured dns_domain.
+				//    Moreover devices in your network would probably fail to route the request to the dnsmasq DNS server
+				//    because they know (by DHCP) that dnsmasq is authoritative only for the configured dns_domain
+				if !strings.HasSuffix(strings.ToLower(alias), "."+strings.ToLower(dnsDomain)) {
+					return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must end with .%s)", r.Name, alias, dnsDomain)
 				}
 				normalizedAliases = append(normalizedAliases, alias)
 			}
@@ -406,7 +431,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 	o.defaultLease = cfg.DhcpServer.DefaultLease
 	o.addressReservationLease = cfg.DhcpServer.AddressReservationLease
 	o.dnsEnable = cfg.DnsServer.Enable
-	o.dnsDomain = cfg.DnsServer.DnsDomain
+	o.dnsDomain = dnsDomain
 	o.dnsPort = cfg.DnsServer.Port
 
 	return nil

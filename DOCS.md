@@ -173,6 +173,7 @@ dhcp_server:
   log_requests: true
 
   # DNS domain to advertise in DHCP answers
+  # See the "DNS Domain" concept explanation above.
   dns_domain: lan
 
   # DNS servers to advertise in DHCP answers.
@@ -275,10 +276,13 @@ dhcp_ip_address_reservations:
       - fixed_ip
     # the 'dns_aliases' property is an optional list of DNS CNAME aliases for this device.
     # Each alias must be a valid RFC 1123 DNS name (labels separated by dots).
+    # Each alias must end with a dot followed by the 'dhcp_server.dns_domain' string ('lan' by default).
     # dnsmasq will return a CNAME record pointing each alias to the primary hostname ('name' field).
+    # This means that in this example both `ping important-server.lan` and `ping myserver.lan` and
+    # `ping the-important-one.lan` will all resolve to the `192.168.1.15` IP address.
     dns_aliases:
-      - "myserver"
       - "myserver.lan"
+      - "the-important-one.lan"
 
 # DHCP friendly name mappings
 # Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.
@@ -324,6 +328,8 @@ dns_server:
   # log_requests will enable logging all DNS requests... which results in a very verbose log!!
   log_requests: false
   # DNS domain to resolve locally
+  # Unless you're trying to achieve some advanced configuration, you want this to always match
+  # the dhcp_server.dns_domain configuration key
   dns_domain: lan
   # Upstream servers to which queries are forwarded when the answer is not cached locally
   upstream_servers:

@@ -9,6 +9,8 @@ all: build-docker-image
 build-backend:
 	@echo "Assuming GO is already installed -- see https://golang.org/doc/install if that's not the case"
 	cd backend && \
+		go mod tidy
+	cd backend && \
 		go build -o bin/backend . 
 	@echo "Assuming golangci-lint is already installed -- see https://golangci-lint.run/usage/install/#installing-golangci-lint if that's not the case"
 	cd backend && \

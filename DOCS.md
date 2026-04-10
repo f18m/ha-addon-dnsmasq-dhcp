@@ -432,7 +432,7 @@ Since the _beta_ version of `Dnsmasq-DHCP` does not use a real version scheme, t
 the latest build of the _beta_, please run:
 
 ```sh
-docker pull ghcr.io/f18m/amd64-addon-dnsmasq-dhcp:beta
+docker pull ghcr.io/f18m/addon-dnsmasq-dhcp:beta
 ```
 
 on your HomeAssistant server. 
@@ -441,7 +441,7 @@ To switch from the _stable_ version to the _beta_ version, without loosing the l
 DHCP clients, their lease times and the list of the old DHCP clients, just use:
 
 ```sh
-docker pull ghcr.io/f18m/amd64-addon-dnsmasq-dhcp:beta
+docker pull ghcr.io/f18m/addon-dnsmasq-dhcp:beta
 cd /usr/share/hassio/addons/data/79957c2e_dnsmasq-dhcp && sudo cp -av * ../79957c2e_dnsmasq-dhcp-beta/
 ```
 

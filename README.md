@@ -7,7 +7,7 @@
 - [Why should I use a DHCP/DNS server](#why-should-i-use-a-dhcpdns-server)
 - [Features](#features)
 - [Web UI](#web-ui-screenshots)
-- [How to Install and How to Configure](#how-to-install-and-how-to-configure)
+- [Docs: How to Install and How to Configure](#how-to-install-and-how-to-configure)
 - [Similar Apps](#similar-apps)
 - [Other Noteworthy Projects](#other-noteworthy-projects)
 - [Development](#development)
@@ -113,7 +113,7 @@ These are screenshots from the app UI v4.3.0. The UI supports both light and dar
 
 <a id="how-to-install-and-how-to-configure"></a>
 
-## 🚀 How to Install and How to Configure
+## 🚀 Documentation: How to Install and How to Configure
 
 Check out the [app docs](DOCS.md). Open an [issue](https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/issues) if you hit any problem.
 

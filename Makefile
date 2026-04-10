@@ -198,6 +198,7 @@ recreate-beta-branch:
 	yq -i '.version = "beta"' config.yaml
 	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
 	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
+	yq -i '.stage = "experimental"' config.yaml
 	git add config.yaml
 	git commit -m "Update config.yaml for BETA branch"
 	@echo
@@ -215,11 +216,12 @@ adjust-config-for-beta-branch:
 	yq -i '.version = "beta"' config.yaml
 	yq -i '.slug = "dnsmasq-dhcp-beta"' config.yaml
 	yq -i '.name = "Dnsmasq-DHCP BETA"' config.yaml
-	
+	yq -i '.stage = "experimental"' config.yaml
 adjust-config-for-main-branch:
 	@echo
 	@echo "Editing the config.yaml to match MAIN branch settings..."
 	yq -i '.version = "4.0.1"' config.yaml
 	yq -i '.slug = "dnsmasq-dhcp"' config.yaml
 	yq -i '.name = "Dnsmasq-DHCP"' config.yaml
+	yq -i '.stage = "stable"' config.yaml
 	

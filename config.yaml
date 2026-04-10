@@ -12,15 +12,20 @@ url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 #   version: 4.x.y
 #   slug: dnsmasq-dhcp
 #   name: Dnsmasq-DHCP
+#   stage: stable
 #
 # instead on the 'beta' branch you want these 3 fields to be set to:
 #
 #   version: 4.x.y
 #   slug: dnsmasq-dhcp-beta
 #   name: Dnsmasq-DHCP BETA
+#   stage: experimental
+
 version: beta
 slug: dnsmasq-dhcp-beta
 name: Dnsmasq-DHCP BETA
+stage: experimental
+
 # advanced true means that the HA user can see this addon only if it's flagged as 'advanced' in the
 # Home Assistant UI
 advanced: true

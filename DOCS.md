@@ -94,7 +94,7 @@ meaning those devices will not receive an IP address from this DHCP server.
 
 If the DNS server of `Dnsmasq-DHCP` is enabled (by setting `dns_server.enable` to `true`),
 then `Dnsmasq-DHCP` maintains a local cache of DNS resolutions but needs to know which
-external or _upstream_ DNS servers should be contacted when something in the LAN network 
+external or _upstream_ DNS servers should be contacted when some DNS client in the LAN network 
 is asking for a DNS resolution that is not cached.
 The upstream servers typically used are:
 
@@ -104,6 +104,22 @@ The upstream servers typically used are:
 but you can actually point `Dnsmasq-DHCP` DNS server to another locally-hosted DNS server
 like e.g. the [AdGuard Home](https://github.com/hassio-addons/addon-adguard-home) DNS server
 to block ADs in your LAN.
+
+### DNS Domain
+
+The DNS domain is a string that is used to inform the DNS server what is the domain that it is 
+allowed to resolve.
+For small LANs, typical DNS domain choices are either `lan`, `home.arpa`.
+The `local` DNS domain should not be used as it is reserved for mDNS protocol.
+
+The DNS domain is also advertised to DHCP clients together with the DNS servers and it is used
+by the DHCP client to understand which names can be resolved by the `Dnsmasq-DHCP` server.
+E.g. imagine you have two devices in your LAN `computer` and `printer` and that you reserved a DHCP static IP address
+for those. If your DNS domain is the string `lan` then your device `computer` will be told during the DHCP lease
+negotiation that for anything ending with `lan` the DNS server to go is the `Dnsmasq-DHCP` server.
+In this way `computer` will be able to route DNS queries for `printer.lan` to the `Dnsmasq-DHCP` server,
+which will answer with the IP address leased to the `printer`.
+
 
 ### HomeAssistant mDNS
 

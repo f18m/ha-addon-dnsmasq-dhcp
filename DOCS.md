@@ -125,7 +125,14 @@ which will answer with the IP address leased to the `printer`.
 
 HomeAssistant runs an [mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) server on port 5353.
 This is not impacted in any way by the DNS server functionality offered by this app.
+Remember that a DNS server does not answer mDNS queries. mDNS is peer-to-peer.
+mDNS queries are sent in multicast mode and only the device which "owns" the FQDN mentioned in the
+query will answer.
 
+To test mDNS you will need to use tools like `avahi-resolve` vs `dig`.
+So as summary:
+* use `dig` to test `Dnsmasq-DHCP` DNS server
+* use `avahi-resolve` to troubleshoot your mDNS setup (e.g. is a particular host answering mDNS queries about his hostname)
 
 
 ## App Configuration

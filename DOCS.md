@@ -353,10 +353,18 @@ dns_custom_hosts:
   # the "name" must be a valid FQDN according to RFC1123; typical format is "hostname.domain.tld" 
   # where "tld" is the top-level domain; typically this should match the dns_server.dns_domain 
   # but is not strictly required.
-  - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$)
+  - name: my-custom-dns-entry.lan
     # you can associate both an IPv4 and IPv6; at least one of the two is required
-    ipv4_address: "str?"
-    ipv6_address: "str?"
+    ipv4_address: "192.168.1.2"
+    ipv6_address: "fe80::3141:f56c:be2d:4116"
+  # typical usecase for this feature is to inject into dnsmasq-dhcp a resolvable name
+  # for the HomeAssistant server itself: the server has to use a static IP address
+  # (you cannot use DHCP to configure the IP address of the DHCP server itself!)
+  # so it's not normally present in the list of hosts known by dnsmasq-dhcp DNS server;
+  # you can use this feature to fix that:
+  - name: homeassistant.lan
+    # replace this with the static IP of the HomeAssistant instance:
+    ipv4_address: "192.168.1.30"
 
 # All settings related to the web UI
 web_ui:

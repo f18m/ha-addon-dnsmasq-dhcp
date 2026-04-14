@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetDnsStats_NoUpstreamServers(t *testing.T) {
-	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+	dnsmasq := NewDnsmasqWrapper(logger.NewNopCustomLogger("unit tests"))
 
 	// Start a temporary dnsmasq instance
 	dnsmasqCmd := exec.CommandContext(context.Background(), "dnsmasq", "--port=12345", "--cache-size=100", "--no-daemon", "--no-resolv") // Adjust arguments as needed
@@ -51,7 +51,7 @@ func TestGetDnsStats_NoUpstreamServers(t *testing.T) {
 }
 
 func TestGetDnsStats_WithUpstreamServers(t *testing.T) {
-	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+	dnsmasq := NewDnsmasqWrapper(logger.NewNopCustomLogger("unit tests"))
 
 	// Test with resolv-file, simulating an upstream server
 	resolvFileContent := "nameserver 8.8.4.4" // Example upstream server
@@ -106,7 +106,7 @@ func writeTempFile(filePath, content string) error {
 }
 
 func TestProcessLogLine_NotUsingConfiguredAddress(t *testing.T) {
-	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+	dnsmasq := NewDnsmasqWrapper(logger.NewNopCustomLogger("unit tests"))
 
 	// Simulate a dnsmasq log line matching the "not using configured address" pattern
 	dnsmasq.processLogLine("dnsmasq-dhcp[1234]: not using configured address 192.168.1.106 because it is leased to 1c:db:d4:13:89:f0\n")
@@ -121,7 +121,7 @@ func TestProcessLogLine_NotUsingConfiguredAddress(t *testing.T) {
 }
 
 func TestProcessLogLine_NoMatch(t *testing.T) {
-	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+	dnsmasq := NewDnsmasqWrapper(logger.NewNopCustomLogger("unit tests"))
 
 	// A normal dnsmasq log line that should not match any warning pattern
 	dnsmasq.processLogLine("dnsmasq-dhcp[1234]: DHCPREQUEST(eth0) 192.168.1.50 aa:bb:cc:dd:ee:ff\n")
@@ -136,7 +136,7 @@ func TestProcessLogLine_NoMatch(t *testing.T) {
 }
 
 func TestProcessLogLine_MultipleMatches(t *testing.T) {
-	dnsmasq := NewDnsmasqWrapper(logger.NewCustomLogger("unit tests"))
+	dnsmasq := NewDnsmasqWrapper(logger.NewNopCustomLogger("unit tests"))
 
 	lines := []string{
 		"dnsmasq-dhcp[1234]: not using configured address 192.168.1.100 because it is leased to aa:bb:cc:dd:ee:ff\n",

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	logger := logger.NewCustomLogger("webui-backend")
+	logger := logger.NewCustomLoggerWithPidPrefix("webui-backend")
 
 	logger.Info("Web backend starting")
 

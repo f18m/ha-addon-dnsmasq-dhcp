@@ -86,7 +86,7 @@ func getMockUIBackend() *UIBackend {
 		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	return &UIBackend{
-		logger:    logger.NewCustomLogger("unit tests"),
+		logger:    logger.NewNopCustomLogger("unit tests"),
 		options:   backendopts,
 		trackerDB: trackerdb.NewTestDB(),
 	}
@@ -121,7 +121,7 @@ func TestGetDescriptionFor(t *testing.T) {
 		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	backend := &UIBackend{
-		logger:    logger.NewCustomLogger("unit tests"),
+		logger:    logger.NewNopCustomLogger("unit tests"),
 		options:   backendopts,
 		trackerDB: trackerdb.NewTestDB(),
 	}
@@ -187,7 +187,7 @@ func TestGetTagsFor(t *testing.T) {
 		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	backend := &UIBackend{
-		logger:    logger.NewCustomLogger("unit tests"),
+		logger:    logger.NewNopCustomLogger("unit tests"),
 		options:   backendopts,
 		trackerDB: trackerdb.NewTestDB(),
 	}

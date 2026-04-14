@@ -21,7 +21,7 @@ type CustomLoggerWithPidPrefix struct {
 	prefix string
 }
 
-func NewCustomLogger(prefix string) *CustomLoggerWithPidPrefix {
+func NewCustomLoggerWithPidPrefix(prefix string) *CustomLoggerWithPidPrefix {
 	pid := os.Getpid()
 	logger := log.New(os.Stdout, "", 0) // No flags here, we'll add timestamp manually
 	return &CustomLoggerWithPidPrefix{

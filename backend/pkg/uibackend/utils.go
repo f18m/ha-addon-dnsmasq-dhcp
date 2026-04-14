@@ -1,12 +1,13 @@
 package uibackend
 
 import (
+	"dnsmasq-dhcp-backend/pkg/config"
 	"fmt"
 	"net"
 	"time"
 )
 
-func IpPoolToHtmlTemplateRanges(networks []IpNetworkInfo) []HtmlTemplateIpRange {
+func IpPoolToHtmlTemplateRanges(networks []config.IpNetworkInfo) []HtmlTemplateIpRange {
 	ranges := make([]HtmlTemplateIpRange, 0, len(networks))
 	for _, n := range networks {
 		ranges = append(ranges, HtmlTemplateIpRange{

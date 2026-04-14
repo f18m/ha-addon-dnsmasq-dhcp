@@ -1,7 +1,8 @@
-package uibackend
+package config
 
 import (
 	"dnsmasq-dhcp-backend/pkg/ippool"
+	"dnsmasq-dhcp-backend/pkg/logger"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -10,46 +11,48 @@ import (
 	"strings"
 	texttemplate "text/template"
 	"time"
+
+	"github.com/davidbanham/human_duration/v3"
 )
 
 // AddonOptions contains the configuration provided by the user to the Home Assistant addon
 // in the HomeAssistant YAML editor
 type AddonOptions struct {
 	// Static IP addresses, as read from the configuration
-	ipAddressReservationsByIP  map[netip.Addr]IpAddressReservation
-	ipAddressReservationsByMAC map[string]IpAddressReservation
+	IpAddressReservationsByIP  map[netip.Addr]IpAddressReservation
+	IpAddressReservationsByMAC map[string]IpAddressReservation
 
 	// DHCP client friendly names, as read from the configuration
 	// The key of this map is the MAC address formatted as string (since net.HardwareAddr is not a valid map key type)
-	friendlyNames map[string]DhcpClientFriendlyName
+	FriendlyNames map[string]DhcpClientFriendlyName
 
 	// DHCP MAC address blocklist, as read from the configuration
 	// The key of this map is the MAC address formatted as string
-	blockedMACs map[string]BlockedDeviceInfo
+	BlockedMACs map[string]BlockedDeviceInfo
 
 	// Multiple IP ranges all together form the DHCP pool
-	dhcpPool   ippool.Pool     // this type provide the Size() and Contains() methods
-	dhcpRanges []IpNetworkInfo // this type stores additional metadata for each network
+	DhcpPool   ippool.Pool     // this type provide the Size() and Contains() methods
+	DhcpRanges []IpNetworkInfo // this type stores additional metadata for each network
 
-	forgetPastClientsAfter time.Duration
+	ForgetPastClientsAfter time.Duration
 
 	// Log this backend activities?
-	logDHCP  bool
-	logWebUI bool
+	LogDHCP  bool
+	LogWebUI bool
 
 	// web UI
-	webUIPort            int
-	webUIRefreshInterval time.Duration
+	WebUIPort            int
+	WebUIRefreshInterval time.Duration
 
 	// Lease times
-	defaultLease            string
-	addressReservationLease string
+	DefaultLease            string
+	AddressReservationLease string
 
 	// DNS
-	dnsEnable      bool
-	dnsDomain      string
-	dnsPort        int
-	dnsCustomHosts []DnsCustomHost
+	DnsEnable      bool
+	DnsDomain      string
+	DnsPort        int
+	DnsCustomHosts []DnsCustomHost
 }
 
 // isValidRFC1123Hostname checks whether the given string is a valid hostname
@@ -130,9 +133,12 @@ func parseDuration(s string) (time.Duration, error) {
 	return sumDur, nil
 }
 
-// UnmarshalJSON reads the configuration of this Home Assistant addon and converts it
+// LoadFromJSON reads the configuration of this Home Assistant addon and converts it
 // into maps and slices that get stored into the UIBackend instance
-func (o *AddonOptions) UnmarshalJSON(data []byte) error {
+//
+// The logger instance will be used to emit WARNING logs about potentially misconfigured settings
+// in the addon configuration file, but that are not severe enough to cause an error
+func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) error {
 	// JSON structure.
 	// This must be updated every time the config.yaml of the addon is changed;
 	// however this structure contains only fields that are relevant to the
@@ -238,8 +244,8 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 		}
 
 		// all good: store the info
-		o.dhcpPool.Ranges = append(o.dhcpPool.Ranges, dhcpR)
-		o.dhcpRanges = append(o.dhcpRanges, ipNetInfo)
+		o.DhcpPool.Ranges = append(o.DhcpPool.Ranges, dhcpR)
+		o.DhcpRanges = append(o.DhcpRanges, ipNetInfo)
 	}
 
 	// ensure we have a valid port for web UI
@@ -305,7 +311,12 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 				//    Moreover devices in your network would probably fail to route the request to the dnsmasq DNS server
 				//    because they know (by DHCP) that dnsmasq is authoritative only for the configured dns_domain
 				if !strings.HasSuffix(strings.ToLower(alias), "."+strings.ToLower(dnsDomain)) {
-					return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must end with .%s)", r.Name, alias, dnsDomain)
+					// do not error out:
+					// return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must end with .%s)", r.Name, alias, dnsDomain)
+
+					// do not error out, just add a warning log and automatically append the DNS domain suffix to the alias
+					logger.Warnf("DNS alias %q for host %q does not end with the configured DNS domain %q; automatically appending the DNS domain suffix", alias, r.Name, dnsDomain)
+					alias = fmt.Sprintf("%s.%s", alias, dnsDomain)
 				}
 				normalizedAliases = append(normalizedAliases, alias)
 			}
@@ -326,15 +337,15 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 		}
 
 		// check for duplicates in IP/MAC address reservations
-		if _, exists := o.ipAddressReservationsByIP[ipAddr]; exists {
-			return fmt.Errorf("duplicate IP address found inside 'dhcp_ip_address_reservations': the IP %s is assigned to both %s and %s", ipAddr, o.ipAddressReservationsByIP[ipAddr].Name, r.Name)
+		if _, exists := o.IpAddressReservationsByIP[ipAddr]; exists {
+			return fmt.Errorf("duplicate IP address found inside 'dhcp_ip_address_reservations': the IP %s is assigned to both %s and %s", ipAddr, o.IpAddressReservationsByIP[ipAddr].Name, r.Name)
 		}
-		if _, exists := o.ipAddressReservationsByMAC[macAddr.String()]; exists {
-			return fmt.Errorf("duplicate MAC address found inside 'dhcp_ip_address_reservations': the MAC %s is assigned to both %s and %s", macAddr, o.ipAddressReservationsByMAC[macAddr.String()].Name, r.Name)
+		if _, exists := o.IpAddressReservationsByMAC[macAddr.String()]; exists {
+			return fmt.Errorf("duplicate MAC address found inside 'dhcp_ip_address_reservations': the MAC %s is assigned to both %s and %s", macAddr, o.IpAddressReservationsByMAC[macAddr.String()].Name, r.Name)
 		}
 
-		o.ipAddressReservationsByIP[ipAddr] = ipReservation
-		o.ipAddressReservationsByMAC[macAddr.String()] = ipReservation
+		o.IpAddressReservationsByIP[ipAddr] = ipReservation
+		o.IpAddressReservationsByMAC[macAddr.String()] = ipReservation
 	}
 
 	// convert friendly names to a map of DhcpClientFriendlyName instances indexed by MAC address
@@ -353,11 +364,11 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 		}
 
 		// check that this MAC address is not already used in IP address reservations
-		if _, exists := o.ipAddressReservationsByMAC[macAddr.String()]; exists {
+		if _, exists := o.IpAddressReservationsByMAC[macAddr.String()]; exists {
 			return fmt.Errorf("MAC address %s appears in both 'dhcp_ip_address_reservations' and 'dhcp_clients_friendly_names'; a MAC address can only be in one of the two lists", macAddr)
 		}
 
-		o.friendlyNames[macAddr.String()] = DhcpClientFriendlyName{
+		o.FriendlyNames[macAddr.String()] = DhcpClientFriendlyName{
 			MacAddress:   macAddr,
 			FriendlyName: client.Name,
 			Description:  client.Description,
@@ -374,16 +385,16 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 		}
 
 		// check that this MAC address is not already used in IP address reservations
-		if _, exists := o.ipAddressReservationsByMAC[macAddr.String()]; exists {
+		if _, exists := o.IpAddressReservationsByMAC[macAddr.String()]; exists {
 			return fmt.Errorf("MAC address %s appears in both 'dhcp_ip_address_reservations' and 'dhcp_mac_address_blocklist'; a MAC address can only be in one of the two lists", macAddr)
 		}
 
 		// check that this MAC address is not already used in friendly names
-		if _, exists := o.friendlyNames[macAddr.String()]; exists {
+		if _, exists := o.FriendlyNames[macAddr.String()]; exists {
 			return fmt.Errorf("MAC address %s appears in both 'dhcp_clients_friendly_names' and 'dhcp_mac_address_blocklist'; a MAC address can only be in one of the two lists", macAddr)
 		}
 
-		o.blockedMACs[macAddr.String()] = BlockedDeviceInfo{
+		o.BlockedMACs[macAddr.String()] = BlockedDeviceInfo{
 			Mac:         macAddr,
 			Description: devInfo.Description,
 		}
@@ -409,7 +420,7 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 				return fmt.Errorf("invalid IPv6 address found inside 'dns_custom_hosts' for %q: %s", h.Name, ipv6)
 			}
 		}
-		o.dnsCustomHosts = append(o.dnsCustomHosts, DnsCustomHost{
+		o.DnsCustomHosts = append(o.DnsCustomHosts, DnsCustomHost{
 			Name:        h.Name,
 			IPv4Address: ipv4,
 			IPv6Address: ipv6,
@@ -417,22 +428,48 @@ func (o *AddonOptions) UnmarshalJSON(data []byte) error {
 	}
 
 	// parse time duration
-	o.forgetPastClientsAfter, err = parseDuration(cfg.DhcpServer.ForgetPastClientsAfter)
+	o.ForgetPastClientsAfter, err = parseDuration(cfg.DhcpServer.ForgetPastClientsAfter)
 	if err != nil {
 		return fmt.Errorf("invalid time duration found inside 'forget_past_clients_after': %s", cfg.DhcpServer.ForgetPastClientsAfter)
 	}
 
-	o.webUIRefreshInterval = time.Duration(cfg.WebUI.RefreshIntervalSec) * time.Second
+	o.WebUIRefreshInterval = time.Duration(cfg.WebUI.RefreshIntervalSec) * time.Second
 
 	// copy basic settings
-	o.logDHCP = cfg.DhcpServer.LogDHCP
-	o.logWebUI = cfg.WebUI.Log
-	o.webUIPort = cfg.WebUI.Port
-	o.defaultLease = cfg.DhcpServer.DefaultLease
-	o.addressReservationLease = cfg.DhcpServer.AddressReservationLease
-	o.dnsEnable = cfg.DnsServer.Enable
-	o.dnsDomain = dnsDomain
-	o.dnsPort = cfg.DnsServer.Port
+	o.LogDHCP = cfg.DhcpServer.LogDHCP
+	o.LogWebUI = cfg.WebUI.Log
+	o.WebUIPort = cfg.WebUI.Port
+	o.DefaultLease = cfg.DhcpServer.DefaultLease
+	o.AddressReservationLease = cfg.DhcpServer.AddressReservationLease
+	o.DnsEnable = cfg.DnsServer.Enable
+	o.DnsDomain = dnsDomain
+	o.DnsPort = cfg.DnsServer.Port
+
+	// print summary
+	logger.Infof("Acquired %d DHCP network/ranges\n", len(o.DhcpRanges))
+	logger.Infof("Acquired %d IP address reservations\n", len(o.IpAddressReservationsByIP))
+	logger.Infof("Acquired %d friendly name definitions\n", len(o.FriendlyNames))
+	logger.Infof("Acquired %d blocked MAC addresses\n", len(o.BlockedMACs))
+	logger.Infof("Acquired %d custom DNS host records\n", len(o.DnsCustomHosts))
+	logger.Infof("DHCP requests logging enabled=%t; cleanup threshold for past DHCP clients set to %s\n",
+		o.LogDHCP, human_duration.ShortString(o.ForgetPastClientsAfter, human_duration.Minute))
+	logger.Infof("Web server on port %d; Web UI logging enabled=%t; Web UI refresh interval=%s\n",
+		o.WebUIPort, o.LogWebUI, o.WebUIRefreshInterval.String())
 
 	return nil
+}
+
+func (o *AddonOptions) GetIpReservationByMAC(mac net.HardwareAddr) (IpAddressReservation, bool) {
+	reservation, exists := o.IpAddressReservationsByMAC[mac.String()]
+	return reservation, exists
+}
+
+func (o *AddonOptions) GetFriendlyNameByMAC(mac net.HardwareAddr) (DhcpClientFriendlyName, bool) {
+	friendlyName, exists := o.FriendlyNames[mac.String()]
+	return friendlyName, exists
+}
+
+func (o *AddonOptions) GetIpReservationByIP(ip netip.Addr) (IpAddressReservation, bool) {
+	reservation, exists := o.IpAddressReservationsByIP[ip]
+	return reservation, exists
 }

@@ -1,6 +1,7 @@
 package uibackend
 
 import (
+	"dnsmasq-dhcp-backend/pkg/config"
 	"dnsmasq-dhcp-backend/pkg/ippool"
 	"dnsmasq-dhcp-backend/pkg/logger"
 	"dnsmasq-dhcp-backend/pkg/trackerdb"
@@ -61,8 +62,8 @@ func getMockUIBackend() *UIBackend {
 	//  * IP address reservations
 	//  * friendly names for dynamic clients
 	//  * DHCP range
-	backendopts := AddonOptions{
-		friendlyNames: map[string]DhcpClientFriendlyName{
+	backendopts := config.AddonOptions{
+		FriendlyNames: map[string]config.DhcpClientFriendlyName{
 			"00:11:22:33:44:55": { // this is the MAC of 'client1'
 				MacAddress:   MustParseMAC("00:11:22:33:44:55"),
 				FriendlyName: "FriendlyClient1",
@@ -74,7 +75,7 @@ func getMockUIBackend() *UIBackend {
 				Link:         MustParseTemplate("https://{{ .hostname }}/client4-page"),
 			},
 		},
-		ipAddressReservationsByIP: map[netip.Addr]IpAddressReservation{
+		IpAddressReservationsByIP: map[netip.Addr]config.IpAddressReservation{
 			netip.MustParseAddr("192.168.0.3"): {
 				Name: "test-friendly-name",
 				Mac:  MustParseMAC("00:11:22:33:44:56"), // this is the MAC of 'client2'
@@ -82,7 +83,7 @@ func getMockUIBackend() *UIBackend {
 				Link: MustParseTemplate("https://{{ .ip }}"),
 			},
 		},
-		dhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
+		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	return &UIBackend{
 		logger:    logger.NewCustomLogger("unit tests"),
@@ -93,15 +94,15 @@ func getMockUIBackend() *UIBackend {
 
 // TestGetDescriptionFor tests that getDescriptionFor() correctly returns descriptions for a given MAC address.
 func TestGetDescriptionFor(t *testing.T) {
-	backendopts := AddonOptions{
-		friendlyNames: map[string]DhcpClientFriendlyName{
+	backendopts := config.AddonOptions{
+		FriendlyNames: map[string]config.DhcpClientFriendlyName{
 			"00:11:22:33:44:55": {
 				MacAddress:   MustParseMAC("00:11:22:33:44:55"),
 				FriendlyName: "FriendlyClient1",
 				Description:  "My laptop",
 			},
 		},
-		ipAddressReservationsByIP: map[netip.Addr]IpAddressReservation{
+		IpAddressReservationsByIP: map[netip.Addr]config.IpAddressReservation{
 			netip.MustParseAddr("192.168.0.3"): {
 				Name:        "client2",
 				Mac:         MustParseMAC("00:11:22:33:44:56"),
@@ -109,7 +110,7 @@ func TestGetDescriptionFor(t *testing.T) {
 				Description: "My server",
 			},
 		},
-		ipAddressReservationsByMAC: map[string]IpAddressReservation{
+		IpAddressReservationsByMAC: map[string]config.IpAddressReservation{
 			"00:11:22:33:44:56": {
 				Name:        "client2",
 				Mac:         MustParseMAC("00:11:22:33:44:56"),
@@ -117,7 +118,7 @@ func TestGetDescriptionFor(t *testing.T) {
 				Description: "My server",
 			},
 		},
-		dhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
+		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	backend := &UIBackend{
 		logger:    logger.NewCustomLogger("unit tests"),
@@ -159,15 +160,15 @@ func TestGetDescriptionFor(t *testing.T) {
 
 // TestGetTagsFor tests that getTagsFor() correctly returns tags for a given MAC address.
 func TestGetTagsFor(t *testing.T) {
-	backendopts := AddonOptions{
-		friendlyNames: map[string]DhcpClientFriendlyName{
+	backendopts := config.AddonOptions{
+		FriendlyNames: map[string]config.DhcpClientFriendlyName{
 			"00:11:22:33:44:55": {
 				MacAddress:   MustParseMAC("00:11:22:33:44:55"),
 				FriendlyName: "FriendlyClient1",
 				Tags:         []string{"server", "production"},
 			},
 		},
-		ipAddressReservationsByIP: map[netip.Addr]IpAddressReservation{
+		IpAddressReservationsByIP: map[netip.Addr]config.IpAddressReservation{
 			netip.MustParseAddr("192.168.0.3"): {
 				Name: "client2",
 				Mac:  MustParseMAC("00:11:22:33:44:56"),
@@ -175,7 +176,7 @@ func TestGetTagsFor(t *testing.T) {
 				Tags: []string{"iot"},
 			},
 		},
-		ipAddressReservationsByMAC: map[string]IpAddressReservation{
+		IpAddressReservationsByMAC: map[string]config.IpAddressReservation{
 			"00:11:22:33:44:56": {
 				Name: "client2",
 				Mac:  MustParseMAC("00:11:22:33:44:56"),
@@ -183,7 +184,7 @@ func TestGetTagsFor(t *testing.T) {
 				Tags: []string{"iot"},
 			},
 		},
-		dhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
+		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	backend := &UIBackend{
 		logger:    logger.NewCustomLogger("unit tests"),

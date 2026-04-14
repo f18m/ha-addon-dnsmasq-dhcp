@@ -78,6 +78,9 @@ configuration:
       tags:
         name: Tags
         description: Optional tags to categorize this device
+      dns_aliases:
+        name: DNS aliases
+        description: Optional DNS CNAME aliases for this device
   
   dhcp_clients_friendly_names:
     name: DHCP Clients Friendly Names
@@ -98,6 +101,9 @@ configuration:
       tags:
         name: Tags
         description: Optional tags to categorize this device
+      dns_aliases:
+        name: DNS aliases
+        description: Optional DNS CNAME aliases for this device
   
   dhcp_mac_address_blocklist:
     name: DHCP MAC Address Blocklist

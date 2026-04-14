@@ -84,6 +84,8 @@ options:
       link: "http://{{ .ip }}/landing-page/for/this/host"
       tags:
         - laptop
+      dns_aliases:
+        - "alias-for-this-friendly-device"
   dhcp_mac_address_blocklist:
     - mac: aa:bb:cc:dd:ee:ff
       description: "This is a blocked MAC address"
@@ -145,11 +147,14 @@ schema:
   dhcp_clients_friendly_names:
     - mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
       # the friendly "name" associated to a DHCP client can be any string, since it is just used
-      # to label the client in the web UI, but it is not passed to dnsmasq or resolved over network
+      # to label the client in the web UI, but it is not passed to dnsmasq or resolved over network;
+      # however if dns_aliases are specified, the name must be a valid RFC 1123 hostname
       name: str
       description: "str?"
       link: "str?"
       tags:
+        - "str?"
+      dns_aliases:
         - "str?"
   dhcp_mac_address_blocklist:
     - mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)

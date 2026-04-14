@@ -13,6 +13,7 @@ type DhcpClientFriendlyName struct {
 	Description  string
 	Link         *texttemplate.Template // maybe nil
 	Tags         []string
+	DnsAliases   []string // optional list of DNS CNAME aliases for this client; requires FriendlyName to be a valid RFC 1123 hostname
 }
 
 // IpAddressReservation represents a static IP configuration loaded from the addon configuration file

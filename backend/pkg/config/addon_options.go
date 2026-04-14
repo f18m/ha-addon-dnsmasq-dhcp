@@ -133,6 +133,50 @@ func parseDuration(s string) (time.Duration, error) {
 	return sumDur, nil
 }
 
+func (o *AddonOptions) loadDnsAliases(dhcpClientName string, dnsAliases []string, dnsDomain string, logger logger.CustomLogger) ([]string, error) {
+
+	// validate DNS aliases, if any, trimming whitespace once during validation
+	var normalizedAliases []string
+	if len(dnsAliases) > 0 {
+		normalizedAliases = make([]string, 0, len(dnsAliases))
+		for _, alias := range dnsAliases {
+			alias = strings.TrimSpace(alias)
+			if !isValidRFC1123DNSName(alias) {
+				return nil, fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must consist of RFC 1123 labels separated by dots)",
+					dhcpClientName, alias)
+			}
+
+			// Why do we require that the DNS aliases end with the configured DNS domain?
+			// Because dnsmasq will automatically append the DNS domain to any alias that doesn't already
+			// end with it, and this can lead to confusion if the user accidentally adds an alias without
+			// the DNS domain suffix.
+			// By enforcing this rule in the UI backend, we remove this confusion.
+			// Also note that providing as dns_alias an FQDN with a different domain than the one configured
+			// in dns_domain won't work for 2 reasons:
+			// 1) dnsmasq will still append the configured dns_domain to the alias, resulting in a final FQDN
+			//    that is different from the one provided by the user
+			//    (e.g. "printer.testdomain" -> "printer.testdomain.lan" if dns_domain is "lan")
+			//    So you cannot really create an entry for "printer.testdomain"!
+			// 2) even if dnsmasq didn't append the dns_domain, the DNS resolution of that alias would
+			//    still fail because dnsmasq only resolves names within the configured dns_domain.
+			//    Moreover devices in your network would probably fail to route the request to the dnsmasq DNS server
+			//    because they know (by DHCP) that dnsmasq is authoritative only for the configured dns_domain
+			if !strings.HasSuffix(strings.ToLower(alias), "."+strings.ToLower(dnsDomain)) {
+				// do not error out:
+				// return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must end with .%s)", r.Name, alias, dnsDomain)
+
+				// do not error out, just add a warning log and automatically append the DNS domain suffix to the alias
+				logger.Warnf("DNS alias %q for host %q does not end with the configured DNS domain %q; automatically appending the DNS domain suffix",
+					alias, dhcpClientName, dnsDomain)
+				alias = fmt.Sprintf("%s.%s", alias, dnsDomain)
+			}
+			normalizedAliases = append(normalizedAliases, alias)
+		}
+	}
+
+	return normalizedAliases, nil
+}
+
 // LoadFromJSON reads the configuration of this Home Assistant addon and converts it
 // into maps and slices that get stored into the UIBackend instance
 //
@@ -161,6 +205,7 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 			Description string   `json:"description"`
 			Link        string   `json:"link"`
 			Tags        []string `json:"tags"`
+			DnsAliases  []string `json:"dns_aliases"`
 		} `json:"dhcp_clients_friendly_names"`
 
 		DhcpMacAddressBlocklist []struct {
@@ -285,41 +330,10 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 			}
 		}
 
-		// validate DNS aliases, if any, trimming whitespace once during validation
-		var normalizedAliases []string
-		if len(r.DnsAliases) > 0 {
-			normalizedAliases = make([]string, 0, len(r.DnsAliases))
-			for _, alias := range r.DnsAliases {
-				alias = strings.TrimSpace(alias)
-				if !isValidRFC1123DNSName(alias) {
-					return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must consist of RFC 1123 labels separated by dots)", r.Name, alias)
-				}
-
-				// Why do we require that the DNS aliases end with the configured DNS domain?
-				// Because dnsmasq will automatically append the DNS domain to any alias that doesn't already
-				// end with it, and this can lead to confusion if the user accidentally adds an alias without
-				// the DNS domain suffix.
-				// By enforcing this rule in the UI backend, we remove this confusion.
-				// Also note that providing as dns_alias an FQDN with a different domain than the one configured
-				// in dns_domain won't work for 2 reasons:
-				// 1) dnsmasq will still append the configured dns_domain to the alias, resulting in a final FQDN
-				//    that is different from the one provided by the user
-				//    (e.g. "printer.testdomain" -> "printer.testdomain.lan" if dns_domain is "lan")
-				//    So you cannot really create an entry for "printer.testdomain"!
-				// 2) even if dnsmasq didn't append the dns_domain, the DNS resolution of that alias would
-				//    still fail because dnsmasq only resolves names within the configured dns_domain.
-				//    Moreover devices in your network would probably fail to route the request to the dnsmasq DNS server
-				//    because they know (by DHCP) that dnsmasq is authoritative only for the configured dns_domain
-				if !strings.HasSuffix(strings.ToLower(alias), "."+strings.ToLower(dnsDomain)) {
-					// do not error out:
-					// return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must end with .%s)", r.Name, alias, dnsDomain)
-
-					// do not error out, just add a warning log and automatically append the DNS domain suffix to the alias
-					logger.Warnf("DNS alias %q for host %q does not end with the configured DNS domain %q; automatically appending the DNS domain suffix", alias, r.Name, dnsDomain)
-					alias = fmt.Sprintf("%s.%s", alias, dnsDomain)
-				}
-				normalizedAliases = append(normalizedAliases, alias)
-			}
+		// normalize DNS aliases if any
+		normalizedAliases, err := o.loadDnsAliases(r.Name, r.DnsAliases, dnsDomain, logger)
+		if err != nil {
+			return err
 		}
 
 		// normalize the IP and MAC address format (e.g. to lowercase)
@@ -368,12 +382,19 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 			return fmt.Errorf("MAC address %s appears in both 'dhcp_ip_address_reservations' and 'dhcp_clients_friendly_names'; a MAC address can only be in one of the two lists", macAddr)
 		}
 
+		// normalize DNS aliases if any
+		normalizedAliases, err := o.loadDnsAliases(client.Name, client.DnsAliases, dnsDomain, logger)
+		if err != nil {
+			return err
+		}
+
 		o.FriendlyNames[macAddr.String()] = DhcpClientFriendlyName{
 			MacAddress:   macAddr,
 			FriendlyName: client.Name,
 			Description:  client.Description,
 			Link:         linkTemplate,
 			Tags:         client.Tags,
+			DnsAliases:   normalizedAliases,
 		}
 	}
 

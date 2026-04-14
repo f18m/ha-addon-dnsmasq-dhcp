@@ -283,21 +283,26 @@ dhcp_ip_address_reservations:
       - fixed_ip
     # the 'dns_aliases' property is an optional list of DNS CNAME aliases for this device.
     # Each alias must be a valid RFC 1123 DNS name (labels separated by dots).
-    # Each alias must end with a dot followed by the 'dhcp_server.dns_domain' string ('lan' by default).
+    # Each alias must end with a dot followed by the 'dhcp_server.dns_domain' string ('lan' by default);
+    # if you forget the <.dns_domain> suffix, it will be appended automatically.
     # dnsmasq will return a CNAME record pointing each alias to the primary hostname ('name' field).
-    # This means that in this example both `ping important-server.lan` and `ping myserver.lan` and
-    # `ping the-important-one.lan` will all resolve to the `192.168.1.15` IP address.
+    # This means that for this example IP address reservation both `important-server.lan`, 
+    # `myserver.lan` and `the-important-one.lan` names will all resolve to the `192.168.1.15` IP address.
     dns_aliases:
       - "myserver.lan"
       - "the-important-one.lan"
 
 # DHCP friendly name mappings
 # Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.
-# This option can be used to remap the hostnames to human-friendly names, via the DHCP protocol.
-# E.g. my Macbook Pro reports itself just as "Mac" to the DHCP server; with this feature you can 
-# remap it to appear as e.g. "My Work Macbook Pro".
+# This option can be used to remap the hostnames to human-friendly names, via the DHCP protocol
+# and provide extra metadata (description, tags, a link, DNS aliase) to DHCP clients,
+# that you want to have a dynamic IP (opposed to DHCP clients present in the 
+# "dhcp_ip_address_reservations" list which get a static IP).
+# E.g. my Macbook Pro DHCP client reports itself with hostname="Mac" to the DHCP server; 
+#      with this feature you can remap it to appear as e.g. "My Work Macbook Pro", provide 
+#      tag "laptop" and alias that to mylaptop.lan
 # Please note that a MAC address cannot appear in both the "dhcp_ip_address_reservations" list and 
-# in the "dhcp_clients_friendly_names" list
+# in the "dhcp_clients_friendly_names" list.
 dhcp_clients_friendly_names:
   - mac: dd:ee:aa:dd:bb:ee
     # similarly to DHCP IP address reservations, the "name" of each DHCP friendly name mapping
@@ -313,6 +318,11 @@ dhcp_clients_friendly_names:
       # search them in the web UI
       - laptop
       - dynamic_ip
+    # the 'dns_aliases' property is an optional list of DNS CNAME aliases for this device.
+    # See the comments for the dhcp_ip_address_reservations.dns_aliases list for more info.
+    dns_aliases:
+      - "mylaptop.lan"
+
 
 # DHCP MAC address blocklist
 # Any MAC address added to this list will be ignored by the DHCP server.

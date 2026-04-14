@@ -303,11 +303,13 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 		return fmt.Errorf("invalid DNS domain found inside 'dns_server': %q ('local' is reserved for mDNS)", cfg.DnsServer.DnsDomain)
 	}
 
+	rfc1123Explanation := "a valid hostname must consist of 1 to 63 characters, and can only contain letters, digits, and hyphens, and must not start or end with a hyphen"
+
 	// convert IP address reservations to a map indexed by IP
 	for _, r := range cfg.DhcpIpAddressReservations {
 		// validate (host)name
 		if !isValidRFC1123Hostname(r.Name) {
-			return fmt.Errorf("invalid hostname found inside 'dhcp_ip_address_reservations': %q (must be 1–63 chars, letters/digits/hyphens only, not starting or ending with a hyphen)", r.Name)
+			return fmt.Errorf("invalid hostname found inside 'dhcp_ip_address_reservations': %q (%s)", r.Name, rfc1123Explanation)
 		}
 
 		// validate and normalize IP and MAC address
@@ -363,6 +365,12 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 
 	// convert friendly names to a map of DhcpClientFriendlyName instances indexed by MAC address
 	for _, client := range cfg.DhcpClientsFriendlyNames {
+		// validate (host)name
+		if !isValidRFC1123Hostname(client.Name) {
+			return fmt.Errorf("invalid hostname found inside 'dhcp_clients_friendly_names': %q (%s)", client.Name, rfc1123Explanation)
+		}
+
+		// validate MAC address
 		macAddr, err := net.ParseMAC(strings.TrimSpace(client.Mac))
 		if err != nil {
 			return fmt.Errorf("invalid MAC address found inside 'dhcp_clients_friendly_names': %s", client.Mac)

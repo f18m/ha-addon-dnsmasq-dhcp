@@ -262,12 +262,12 @@ dhcp_pools:
 
 # DHCP IP address reservations for special/important devices (identified by MAC address)
 dhcp_ip_address_reservations:
-    # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
-    # which uniquely identifies a particular network interface
-  - mac: aa:bb:cc:dd:ee:ff
     # the "name" of each DHCP IP address reservation must be a valid hostname as per RFC 1123 since 
     # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
-    name: "important-server"
+  - name: "important-server"
+    # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
+    # which uniquely identifies a particular network interface
+    mac: aa:bb:cc:dd:ee:ff
     # the IP address to provide whenever the DHCP lease request comes from a matching MAC address
     ip: 192.168.1.15
     # the 'description' property is a free-form string to describe the device (e.g. product model, location)
@@ -304,10 +304,11 @@ dhcp_ip_address_reservations:
 # Please note that a MAC address cannot appear in both the "dhcp_ip_address_reservations" list and 
 # in the "dhcp_clients_friendly_names" list.
 dhcp_clients_friendly_names:
-  - mac: dd:ee:aa:dd:bb:ee
     # similarly to DHCP IP address reservations, the "name" of each DHCP friendly name mapping
     # must be a valid hostname as per RFC 1123
-    name: "work-laptop"
+  - name: "work-laptop"
+    # MAC address for the DHCP client
+    mac: dd:ee:aa:dd:bb:ee
     # the 'description' property is a free-form string to describe the device (e.g. product model, location)
     description: "My personal laptop - living room"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'

@@ -134,7 +134,6 @@ func parseDuration(s string) (time.Duration, error) {
 }
 
 func (o *AddonOptions) loadDnsAliases(dhcpClientName string, dnsAliases []string, dnsDomain string, logger logger.CustomLogger) ([]string, error) {
-
 	// validate DNS aliases, if any, trimming whitespace once during validation
 	var normalizedAliases []string
 	if len(dnsAliases) > 0 {

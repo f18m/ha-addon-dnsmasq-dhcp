@@ -103,17 +103,17 @@
 
                         <p><span class="boldText">Notes:</span></p>
                         <ul>
-                            <li>The <span class="monoText">Friendly Name</span> column is populated using the <span class="monoText">dhcp_clients_friendly_names</span>
+                            <li>The <span class="monoText">Friendly Name</span> column is populated using the <span class="monoText">dhcp_client_settings</span>
                                 app configuration.</li>
                             <li>The <span class="monoText">Hostname</span> column is populated with the hostname advertised by the DHCP client or, with the 
                                 DHCP friendly name in case the DHCP client holds an IP reservation via the
-                                <span class="monoText">ip_address_reservations</span> app configuration.
+                                <span class="monoText">dhcp_client_settings</span> app configuration.
                             <li>The <span class="monoText">Link</span> column is populated using the <span class="monoText">link</span> attribute
-                                in the <span class="monoText">ip_address_reservations</span> app configuration. The link is opened in a new tab.</li>
+                                in the <span class="monoText">dhcp_client_settings</span> app configuration. The link is opened in a new tab.</li>
                             <li>The <span class="monoText">IP Address</span> column contains the currently allocated IP address.
                                 Note that the address might be located outside the DHCP range in the case 
                                 the DHCP client has an IP reservation assigned via the 
-                                <span class="monoText">ip_address_reservations</span> app configuration, configured
+                                <span class="monoText">dhcp_client_settings</span> app configuration, configured
                                 to be outside the DHCP range.</li>
                             <li>The <span class="monoText">Expires in</span> column contains the count down to the next DHCP lease renewal formatted as 
                                 <span class="monoText">HH:MM:SS</span>.</li>

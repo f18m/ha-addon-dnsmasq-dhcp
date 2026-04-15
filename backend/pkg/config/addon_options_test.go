@@ -59,14 +59,13 @@ func TestAddonOptionsInvalidHostname(t *testing.T) {
 					"netmask": "255.255.255.0"
 				}
 			],
-			"dhcp_ip_address_reservations": [
+			"dhcp_client_settings": [
 				{
-					"ip": "192.168.1.10",
+					"reserved_ip": "192.168.1.10",
 					"mac": "aa:bb:cc:dd:ee:ff",
 					"name": "` + name + `"
 				}
 			],
-			"dhcp_clients_friendly_names": [],
 			"dhcp_server": {
 				"default_lease": "1h",
 				"address_reservation_lease": "1h",
@@ -138,8 +137,7 @@ func TestAddonOptionsDnsDomainLocalRejected(t *testing.T) {
 					"netmask": "255.255.255.0"
 				}
 			],
-			"dhcp_ip_address_reservations": [],
-			"dhcp_clients_friendly_names": [],
+			"dhcp_client_settings": [],
 			"dhcp_server": {
 				"default_lease": "1h",
 				"address_reservation_lease": "1h",
@@ -200,8 +198,7 @@ func TestAddonOptionsDnsDomainLocalRejected(t *testing.T) {
 }
 
 func TestAddonOptionsMACInBothLists(t *testing.T) {
-	// A MAC address that appears in both dhcp_ip_address_reservations and
-	// dhcp_clients_friendly_names must be rejected.
+	// A MAC address that appears twice in dhcp_client_settings must be rejected.
 	jsonConfig := `{
 		"dhcp_pools": [
 			{
@@ -212,14 +209,12 @@ func TestAddonOptionsMACInBothLists(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "reserved-host"
-			}
-		],
-		"dhcp_clients_friendly_names": [
+			},
 			{
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "friendly-host"
@@ -251,8 +246,8 @@ func TestAddonOptionsMACInBothLists(t *testing.T) {
 	logger := logger.NewNopCustomLogger("test")
 	err := opts.LoadFromJSON([]byte(jsonConfig), logger)
 	if err == nil {
-		t.Error("expected error when the same MAC appears in both lists, but got none")
-	} else if !strings.Contains(err.Error(), "appears in both") {
+		t.Error("expected error when the same MAC appears twice in dhcp_client_settings, but got none")
+	} else if !strings.Contains(err.Error(), "duplicate") {
 		t.Errorf("unexpected error message: %v", err)
 	}
 }
@@ -314,14 +309,12 @@ func TestAddonOptionsUnmarshalJSONWithWhitespace(t *testing.T) {
 				"netmask": " 255.255.255.0 "
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": " 192.168.1.10 ",
+				"reserved_ip": " 192.168.1.10 ",
 				"mac": " aa:bb:cc:dd:ee:ff ",
 				"name": "test-host"
-			}
-		],
-		"dhcp_clients_friendly_names": [
+			},
 			{
 				"mac": " 11:22:33:44:55:66 ",
 				"name": "friendly-host"
@@ -407,15 +400,13 @@ func TestAddonOptionsUnmarshalJSONWithTags(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "test-host",
 				"tags": ["server", "production"]
-			}
-		],
-		"dhcp_clients_friendly_names": [
+			},
 			{
 				"mac": "11:22:33:44:55:66",
 				"name": "friendly-host",
@@ -494,15 +485,13 @@ func TestAddonOptionsUnmarshalJSONWithDescription(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "test-host",
 				"description": "My important server"
-			}
-		],
-		"dhcp_clients_friendly_names": [
+			},
 			{
 				"mac": "11:22:33:44:55:66",
 				"name": "friendly-host",
@@ -577,8 +566,7 @@ func baseTestConfig(extraFields string) string {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [],
-		"dhcp_clients_friendly_names": [],
+		"dhcp_client_settings": [],
 		"dhcp_server": {
 			"default_lease": "1h",
 			"address_reservation_lease": "1h",
@@ -653,14 +641,13 @@ func TestAddonOptionsMacBlocklistConflictsWithReservation(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "reserved-host"
 			}
 		],
-		"dhcp_clients_friendly_names": [],
 		"dhcp_mac_address_blocklist": [
 			{ 
 				"mac": "aa:bb:cc:dd:ee:ff",
@@ -689,7 +676,7 @@ func TestAddonOptionsMacBlocklistConflictsWithReservation(t *testing.T) {
 	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error when a MAC appears in both blocklist and reservations, but got none")
-	} else if !strings.Contains(err.Error(), "dhcp_ip_address_reservations") || !strings.Contains(err.Error(), "dhcp_mac_address_blocklist") {
+	} else if !strings.Contains(err.Error(), "dhcp_client_settings") || !strings.Contains(err.Error(), "dhcp_mac_address_blocklist") {
 		t.Errorf("Unexpected error message: %v", err)
 	}
 }
@@ -705,8 +692,7 @@ func TestAddonOptionsMacBlocklistConflictsWithFriendlyNames(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [],
-		"dhcp_clients_friendly_names": [
+		"dhcp_client_settings": [
 			{
 				"mac": "11:22:33:44:55:66",
 				"name": "friendly-host"
@@ -740,7 +726,7 @@ func TestAddonOptionsMacBlocklistConflictsWithFriendlyNames(t *testing.T) {
 	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error when a MAC appears in both blocklist and friendly names, but got none")
-	} else if !strings.Contains(err.Error(), "dhcp_clients_friendly_names") || !strings.Contains(err.Error(), "dhcp_mac_address_blocklist") {
+	} else if !strings.Contains(err.Error(), "dhcp_client_settings") || !strings.Contains(err.Error(), "dhcp_mac_address_blocklist") {
 		t.Errorf("Unexpected error message: %v", err)
 	}
 }
@@ -929,15 +915,14 @@ func TestAddonOptionsIPReservationValidDnsAliases(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "myserver",
 				"dns_aliases": ["alias1.lan", "alias2.lan", "my-server-alias.lan"]
 			}
 		],
-		"dhcp_clients_friendly_names": [],
 		"dhcp_server": {
 			"default_lease": "1h",
 			"address_reservation_lease": "1h",
@@ -990,14 +975,13 @@ func TestAddonOptionsIPReservationNoDnsAliases(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "myserver"
 			}
 		],
-		"dhcp_clients_friendly_names": [],
 		"dhcp_server": {
 			"default_lease": "1h",
 			"address_reservation_lease": "1h",
@@ -1052,15 +1036,14 @@ func TestAddonOptionsIPReservationInvalidDnsAlias(t *testing.T) {
 						"netmask": "255.255.255.0"
 					}
 				],
-				"dhcp_ip_address_reservations": [
+				"dhcp_client_settings": [
 					{
-						"ip": "192.168.1.10",
+						"reserved_ip": "192.168.1.10",
 						"mac": "aa:bb:cc:dd:ee:ff",
 						"name": "myserver",
 						"dns_aliases": ["` + alias + `"]
 					}
 				],
-				"dhcp_clients_friendly_names": [],
 				"dhcp_server": {
 					"default_lease": "1h",
 					"address_reservation_lease": "1h",

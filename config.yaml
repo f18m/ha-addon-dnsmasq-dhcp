@@ -66,10 +66,10 @@ options:
       end: 192.168.1.150
       gateway: 192.168.1.254
       netmask: 255.255.255.0
-  dhcp_ip_address_reservations:
+  dhcp_client_settings:
     - name: "hostname-for-this-device"
       mac: aa:bb:cc:dd:ee:ff
-      ip: 192.168.1.15
+      reserved_ip: 192.168.1.15
       description: "My important server"
       link: "http://{{ .ip }}/landing-page/for/this/host"
       tags:
@@ -77,9 +77,9 @@ options:
       dns_aliases:
         - "alias-for-this-device"
         - "another-alias.lan"
-  dhcp_clients_friendly_names:
     - name: "friendly-name-for-this-device"
       mac: dd:ee:aa:dd:bb:ee
+      reserved_ip: ""
       description: "My laptop"
       link: "http://{{ .ip }}/landing-page/for/this/host"
       tags:
@@ -132,24 +132,12 @@ schema:
       end: str
       gateway: str
       netmask: str
-  dhcp_ip_address_reservations:
-      # the "name" of each DHCP IP address reservation must be a valid hostname as per RFC 1123 since 
-      # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
+  dhcp_client_settings:
+      # the "name" of each entry must be a valid hostname as per RFC 1123 since it may be passed
+      # to dnsmasq; a non-empty "reserved_ip" triggers a static IP address reservation for that client
     - name: match(^[a-zA-Z0-9\-.]*$)
       mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
-      ip: str
-      description: "str?"
-      link: "str?"
-      tags:
-        - "str?"
-      dns_aliases:
-        - "str?"
-  dhcp_clients_friendly_names:
-      # the friendly "name" associated to a DHCP client can be any string, since it is just used
-      # to label the client in the web UI, but it is not passed to dnsmasq or resolved over network;
-      # however if dns_aliases are specified, the name must be a valid RFC 1123 hostname
-    - name: str
-      mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
+      reserved_ip: "str?"
       description: "str?"
       link: "str?"
       tags:

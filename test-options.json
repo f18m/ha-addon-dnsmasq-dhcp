@@ -1,22 +1,20 @@
 {
   "interfaces": [ "enp3s0" ],
-  "dhcp_ip_address_reservations": [
+  "dhcp_client_settings": [
     {
       "mac": "aa:bb:cc:dd:ee:00",
       "name": "static-ip-important-host",
-      "ip": "192.168.1.15",
+      "reserved_ip": "192.168.1.15",
       "link": "https://{{ .ip }}/important-host-land-page"
     },
     {
       "mac": "aa:bb:cc:dd:ee:01",
       "name": "static-ip-within-dhcp-range",
-      "ip": "192.168.1.55",
+      "reserved_ip": "192.168.1.55",
       "link": "https://{{ .ip }}/less-important"
-    }
-  ],
-  "dhcp_clients_friendly_names": [
+    },
     {
-      "name": "a human-friendly name for a DHCP client with dynamic IP",
+      "name": "a-human-friendly-name-for-a-dhcp-client-with-dynamic-ip",
       "mac": "4c:50:77:cf:3c:35",
       "link": "https://{{ .ip }}/page-{{ .hostname }}"
     }

@@ -33,7 +33,7 @@ Except for the `name`, no change is needed in remaining parameters for the entri
 5. Remove the `dhcp_clients_friendly_names:` string which should be now an empty list.
 
 
-> :info: ✅ New Features
+> ✅ New Features
 
 This release adds support for `DNS aliases`; in short these are [DNS CNAME entries](https://en.wikipedia.org/wiki/CNAME_record). 
 

@@ -68,9 +68,9 @@ options:
       netmask: 255.255.255.0
   dhcp_client_settings:
     - name: "important-server"
+      description: "My important server"
       mac: aa:bb:cc:dd:ee:ff
       reserved_ip: 192.168.1.15
-      description: "My important server"
       link: "http://{{ .ip }}/landing-page/for/this/host"
       tags:
         - server
@@ -78,9 +78,9 @@ options:
         - "alias-for-this-device"
         - "another-alias.lan"
     - name: "work-laptop"
+      description: "My laptop"
       mac: dd:ee:aa:dd:bb:ee
       reserved_ip: ""
-      description: "My laptop"
       link: "http://{{ .ip }}/landing-page/for/this/host"
       tags:
         - laptop
@@ -135,9 +135,9 @@ schema:
   dhcp_client_settings:
       # name must be a string containing only letters, digits and dashes. This is for RFC1123 compliancy.
     - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$)
+      description: "str?"
       mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
       reserved_ip: "str?"
-      description: "str?"
       link: "str?"
       tags:
         - "str?"

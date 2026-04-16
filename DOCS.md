@@ -75,14 +75,15 @@ Check [wikipedia page for private networks](https://en.wikipedia.org/wiki/Privat
 The DHCP server may be configured to provide a specific IP address
 to a specific client (using its [MAC address](https://en.wikipedia.org/wiki/MAC_address) as identifier).
 These are _IP address reservations_.
-Note that static IP addresses do not need to be inside the DHCP range; indeed quite often the
-static IP address reserved lies outside the DHCP range.
+Note that static IP addresses do not need to be inside the DHCP pool; indeed quite often the
+reserved static IP addresses lie outside the DHCP range that defines the DHCP pool.
 
-### DHCP Friendly Names
+### DHCP Friendly Name
 
 Sometimes the hostname provided by the DHCP client to the DHCP server is really awkward and
-non-informative, so `Dnsmasq-DHCP` allow users to override that by specifying a human-friendly
-name for a particular DHCP client (using its MAC address as identifier).
+non-informative (or sometimes even empty), so `Dnsmasq-DHCP` allow users to override that 
+advertised name by specifying a human-friendly
+`name` for a particular DHCP client (using its MAC address as identifier).
 
 ### DHCP MAC Address Blocklist
 
@@ -276,13 +277,13 @@ dhcp_client_settings:
     # to dnsmasq and used with DNS protocol to resolve hostname queries: this means using only
     # letters, digits and dashes
   - name: "important-server"
+    # the 'description' property is a free-form string to describe the device (e.g. product model, location)
+    description: "My important server - rack 3"
     # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
     # which uniquely identifies a particular network interface
     mac: aa:bb:cc:dd:ee:ff
     # set reserved_ip to assign a static IP address to this client; leave it empty for a dynamic IP
     reserved_ip: 192.168.1.15
-    # the 'description' property is a free-form string to describe the device (e.g. product model, location)
-    description: "My important server - rack 3"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page". It is used to render a link into the "current DHCP clients" tab of the UI.
     link: "http://{{ .ip }}/landing-page/for/this/host"
@@ -309,12 +310,12 @@ dhcp_client_settings:
   #      with this feature you can remap it to appear as e.g. "work-laptop", provide 
   #      tag "laptop" and alias that to mylaptop.lan
   - name: "work-laptop"
+    # the 'description' property is a free-form string to describe the device (e.g. product model, location)
+    description: "My personal laptop - living room"
     # MAC address for the DHCP client
     mac: dd:ee:aa:dd:bb:ee
     # reserved_ip is empty: this client receives a dynamic IP
     reserved_ip: ""
-    # the 'description' property is a free-form string to describe the device (e.g. product model, location)
-    description: "My personal laptop - living room"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page/for/this/dynamic/host"
     link: "http://{{ .ip }}/landing-page/for/this/host"

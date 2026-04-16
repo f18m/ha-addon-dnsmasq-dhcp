@@ -58,23 +58,23 @@ configuration:
   
   dhcp_client_settings:
     name: DHCP Client Settings
-    description: Unified list of DHCP client configuration entries. Set reserved_ip to assign a static IP; leave it empty for a friendly-name-only entry with a dynamic IP.
+    description: List of settings per DHCP client.
     fields:
+      name:
+        name: Hostname / Friendly name
+        description: Valid hostname (alphanumeric chars and hyphens only); used as the DHCP hostname and in the web UI
+      description:
+        name: Description
+        description: Optional description of this device.
       mac:
         name: MAC address
         description: Physical MAC address (format XX:XX:XX:XX:XX:XX)
       reserved_ip:
         name: Reserved IP address
-        description: Static IP address to reserve for this client (leave empty for a dynamic IP client)
-      name:
-        name: Hostname / Friendly name
-        description: Valid hostname (alphanumeric, dots, and hyphens only); used as the DHCP hostname and in the web UI
-      description:
-        name: Description
-        description: Optional description of this device
+        description: Static IP address to reserve for this client. Leave this field empty to provide a dynamic IP address from the DHCP pool
       link:
         name: Link
-        description: Optional link to access this device (supports templates, see DOCS)
+        description: Optional link to a URL that gives access this device (supports templates, see DOCS)
       tags:
         name: Tags
         description: Optional tags to categorize this device

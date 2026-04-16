@@ -7,6 +7,7 @@ import (
 )
 
 // DhcpClientFriendlyName is the 1:1 binding between a MAC address and a human-friendly name
+// FIXME: this needs to be removed and replaced with IpAddressReservation
 type DhcpClientFriendlyName struct {
 	MacAddress   net.HardwareAddr
 	FriendlyName string
@@ -17,6 +18,7 @@ type DhcpClientFriendlyName struct {
 }
 
 // IpAddressReservation represents a static IP configuration loaded from the addon configuration file
+// FIXME: this needs to be renamed to DhcpClientMetadata or DhcpClientSettings
 type IpAddressReservation struct {
 	Name        string
 	Mac         net.HardwareAddr

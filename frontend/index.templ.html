@@ -103,13 +103,10 @@
 
                         <p><span class="boldText">Notes:</span></p>
                         <ul>
-                            <li>The <span class="monoText">Friendly Name</span> column is populated using the <span class="monoText">dhcp_client_settings</span>
-                                app configuration.</li>
-                            <li>The <span class="monoText">Hostname</span> column is populated with the hostname advertised by the DHCP client or, with the 
-                                DHCP friendly name in case the DHCP client holds an IP reservation via the
-                                <span class="monoText">dhcp_client_settings</span> app configuration.
-                            <li>The <span class="monoText">Link</span> column is populated using the <span class="monoText">link</span> attribute
-                                in the <span class="monoText">dhcp_client_settings</span> app configuration. The link is opened in a new tab.</li>
+                            <li>Several columns like <span class="monoText">Friendly Name</span>, <span class="monoText">Description</span>, <span class="monoText">Link</span> are populated using 
+                                the per-DHCP-client metadata provided in the <span class="monoText">dhcp_client_settings</span> app configuration.
+                                Such contents are not exposed over DHCP/DNS and are only meant to be used as a way to provide more human-friendly information about the clients in this UI.
+                            </li>
                             <li>The <span class="monoText">IP Address</span> column contains the currently allocated IP address.
                                 Note that the address might be located outside the DHCP range in the case 
                                 the DHCP client has an IP reservation assigned via the 
@@ -126,7 +123,7 @@
 
                         <p><span class="boldText">Notes:</span></p>
                         <ul>
-                            <li>All clients last seen more than <span class="monoText">{{ .DHCPForgetPastClientsAfter }}</span> ago are automatically erased and do not appear in this table.</li>
+                            <li>All clients last seen more than <span class="monoText">{{ .DHCPForgetPastClientsAfter }}</span> ago are automatically erased and do not appear in this table. This is customizable via the <span class="monoText">forget_past_clients_after</span> setting.</li>
                         </ul>
                         
                     </div>

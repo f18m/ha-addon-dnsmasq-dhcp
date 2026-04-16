@@ -267,8 +267,10 @@ dhcp_pools:
 # will receive a dynamic IP but will still benefit from any friendly name, description, tags,
 # link, and DNS aliases configured here.
 dhcp_client_settings:
-    # the "name" of each entry must be a valid hostname as per RFC 1123 since 
-    # it may be passed to dnsmasq (e.g. for DHCP hostname assignment and DNS CNAME aliases)
+
+    # the "name" of each entry must be a valid hostname as per RFC 1123 since it will be provided
+    # to dnsmasq and used with DNS protocol to resolve hostname queries: this means using only
+    # letters, digits, dots and dashes
   - name: "important-server"
     # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
     # which uniquely identifies a particular network interface

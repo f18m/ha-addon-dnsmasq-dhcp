@@ -26,9 +26,6 @@ slug: dnsmasq-dhcp-beta
 name: Dnsmasq-DHCP BETA
 stage: experimental
 
-# advanced true means that the HA user can see this addon only if it's flagged as 'advanced' in the
-# Home Assistant UI
-advanced: true
 arch:
   - aarch64
   - amd64

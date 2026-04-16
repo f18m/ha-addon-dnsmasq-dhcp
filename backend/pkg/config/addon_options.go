@@ -16,7 +16,8 @@ import (
 )
 
 // AddonOptions contains the configuration provided by the user to the Home Assistant addon
-// in the HomeAssistant YAML editor
+// in the HomeAssistant YAML editor for App configurations.
+// This configuration is loaded at runtime by the UI backend.
 type AddonOptions struct {
 	// Static IP addresses, as read from the configuration
 	IpAddressReservationsByIP  map[netip.Addr]IpAddressReservation

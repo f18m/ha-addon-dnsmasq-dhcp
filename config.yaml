@@ -133,8 +133,8 @@ schema:
       gateway: str
       netmask: str
   dhcp_client_settings:
-      # name must be a string containing only letters, digits, dots and dashes. This is for RFC1123 compliancy.
-    - name: match(^[a-zA-Z0-9\-.]*$)
+      # name must be a string containing only letters, digits and dashes. This is for RFC1123 compliancy.
+    - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$)
       mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
       reserved_ip: "str?"
       description: "str?"

@@ -270,7 +270,7 @@ dhcp_client_settings:
 
     # the "name" of each entry must be a valid hostname as per RFC 1123 since it will be provided
     # to dnsmasq and used with DNS protocol to resolve hostname queries: this means using only
-    # letters, digits, dots and dashes
+    # letters, digits and dashes
   - name: "important-server"
     # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
     # which uniquely identifies a particular network interface

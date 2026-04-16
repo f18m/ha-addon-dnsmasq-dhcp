@@ -56,42 +56,19 @@ configuration:
         name: Network mask
         description: Defines the network size (typically 255.255.255.0)
   
-  dhcp_ip_address_reservations:
-    name: DHCP IP Address Reservations
-    description: MAC address / IP address pairs to reserve. Strict regex validation on MAC addresses and hostnames
+  dhcp_client_settings:
+    name: DHCP Client Settings
+    description: Unified list of DHCP client configuration entries. Set reserved_ip to assign a static IP; leave it empty for a friendly-name-only entry with a dynamic IP.
     fields:
       mac:
         name: MAC address
         description: Physical MAC address (format XX:XX:XX:XX:XX:XX)
-      ip:
-        name: IP address
-        description: Reserved IP address for this MAC address
+      reserved_ip:
+        name: Reserved IP address
+        description: Static IP address to reserve for this client (leave empty for a dynamic IP client)
       name:
-        name: Hostname
-        description: Valid hostname (alphanumeric, dots, and hyphens only)
-      description:
-        name: Description
-        description: Optional description of this device
-      link:
-        name: Link
-        description: Optional link to access this device (supports templates, see DOCS)
-      tags:
-        name: Tags
-        description: Optional tags to categorize this device
-      dns_aliases:
-        name: DNS aliases
-        description: Optional DNS CNAME aliases for this device
-  
-  dhcp_clients_friendly_names:
-    name: DHCP Clients Friendly Names
-    description: Mapping between a MAC address and its friendly-name to identify DHCP clients in the web UI
-    fields:
-      mac:
-        name: MAC address
-        description: Physical MAC address (format XX:XX:XX:XX:XX:XX)
-      name:
-        name: Friendly name
-        description: User-friendly name for this DHCP client
+        name: Hostname / Friendly name
+        description: Valid hostname (alphanumeric, dots, and hyphens only); used as the DHCP hostname and in the web UI
       description:
         name: Description
         description: Optional description of this device

@@ -141,7 +141,7 @@ func (o *AddonOptions) loadDnsAliases(dhcpClientName string, dnsAliases []string
 		for _, alias := range dnsAliases {
 			alias = strings.TrimSpace(alias)
 			if !isValidRFC1123DNSName(alias) {
-				return nil, fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must consist of RFC 1123 labels separated by dots)",
+				return nil, fmt.Errorf("invalid DNS alias found inside 'dhcp_client_settings' for host %q: %q (must consist of RFC 1123 labels separated by dots)",
 					dhcpClientName, alias)
 			}
 
@@ -162,7 +162,7 @@ func (o *AddonOptions) loadDnsAliases(dhcpClientName string, dnsAliases []string
 			//    because they know (by DHCP) that dnsmasq is authoritative only for the configured dns_domain
 			if !strings.HasSuffix(strings.ToLower(alias), "."+strings.ToLower(dnsDomain)) {
 				// do not error out:
-				// return fmt.Errorf("invalid DNS alias found inside 'dhcp_ip_address_reservations' for host %q: %q (must end with .%s)", r.Name, alias, dnsDomain)
+				// return fmt.Errorf("invalid DNS alias found inside 'dhcp_client_settings' for host %q: %q (must end with .%s)", dhcpClientName, alias, dnsDomain)
 
 				// do not error out, just add a warning log and automatically append the DNS domain suffix to the alias
 				logger.Warnf("DNS alias %q for host %q does not end with the configured DNS domain %q; automatically appending the DNS domain suffix",
@@ -188,24 +188,15 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 	// UI backend behavior. In other words the addon config.yaml might contain
 	// more settings than those listed here.
 	var cfg struct {
-		DhcpIpAddressReservations []struct {
+		DhcpClientSettings []struct {
 			Name        string   `json:"name"`
 			Mac         string   `json:"mac"`
-			IP          string   `json:"ip"`
+			ReservedIP  string   `json:"reserved_ip"`
 			Description string   `json:"description"`
 			Link        string   `json:"link"`
 			Tags        []string `json:"tags"`
 			DnsAliases  []string `json:"dns_aliases"`
-		} `json:"dhcp_ip_address_reservations"`
-
-		DhcpClientsFriendlyNames []struct {
-			Name        string   `json:"name"`
-			Mac         string   `json:"mac"`
-			Description string   `json:"description"`
-			Link        string   `json:"link"`
-			Tags        []string `json:"tags"`
-			DnsAliases  []string `json:"dns_aliases"`
-		} `json:"dhcp_clients_friendly_names"`
+		} `json:"dhcp_client_settings"`
 
 		DhcpMacAddressBlocklist []struct {
 			Mac         string `json:"mac"`
@@ -305,103 +296,80 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 
 	rfc1123Explanation := "a valid hostname must consist of 1 to 63 characters, and can only contain letters, digits, and hyphens, and must not start or end with a hyphen"
 
-	// convert IP address reservations to a map indexed by IP
-	for _, r := range cfg.DhcpIpAddressReservations {
+	// convert dhcp_client_settings entries to IP address reservations or friendly names
+	// depending on whether the reserved_ip field is set
+	for _, entry := range cfg.DhcpClientSettings {
 		// validate (host)name
-		if !isValidRFC1123Hostname(r.Name) {
-			return fmt.Errorf("invalid hostname found inside 'dhcp_ip_address_reservations': %q (%s)", r.Name, rfc1123Explanation)
+		if !isValidRFC1123Hostname(entry.Name) {
+			return fmt.Errorf("invalid hostname found inside 'dhcp_client_settings': %q (%s)", entry.Name, rfc1123Explanation)
 		}
 
-		// validate and normalize IP and MAC address
-		ipAddr, err := netip.ParseAddr(strings.TrimSpace(r.IP))
+		// validate MAC address
+		macAddr, err := net.ParseMAC(strings.TrimSpace(entry.Mac))
 		if err != nil {
-			return fmt.Errorf("invalid IP address found inside 'ip_address_reservations': %s", r.IP)
-		}
-		macAddr, err := net.ParseMAC(strings.TrimSpace(r.Mac))
-		if err != nil {
-			return fmt.Errorf("invalid MAC address found inside 'ip_address_reservations': %s", r.Mac)
+			return fmt.Errorf("invalid MAC address found inside 'dhcp_client_settings': %s", entry.Mac)
 		}
 
 		// validate the golang template provided in the "link" field, if any
 		var linkTemplate *texttemplate.Template
-		if r.Link != "" {
-			linkTemplate, err = texttemplate.New("linkTemplate").Parse(r.Link)
+		if entry.Link != "" {
+			linkTemplate, err = texttemplate.New("linkTemplate").Parse(entry.Link)
 			if err != nil {
-				return fmt.Errorf("invalid golang template found inside 'link': %s", r.Link)
+				return fmt.Errorf("invalid golang template found inside 'link': %s", entry.Link)
 			}
 		}
 
 		// normalize DNS aliases if any
-		normalizedAliases, err := o.loadDnsAliases(r.Name, r.DnsAliases, dnsDomain, logger)
+		normalizedAliases, err := o.loadDnsAliases(entry.Name, entry.DnsAliases, dnsDomain, logger)
 		if err != nil {
 			return err
 		}
 
-		// normalize the IP and MAC address format (e.g. to lowercase)
-		r.IP = ipAddr.String()
-		r.Mac = macAddr.String()
-
-		ipReservation := IpAddressReservation{
-			Name:        r.Name,
-			Mac:         macAddr,
-			IP:          ipAddr,
-			Description: r.Description,
-			Link:        linkTemplate,
-			Tags:        r.Tags,
-			DnsAliases:  normalizedAliases,
-		}
-
-		// check for duplicates in IP/MAC address reservations
-		if _, exists := o.IpAddressReservationsByIP[ipAddr]; exists {
-			return fmt.Errorf("duplicate IP address found inside 'dhcp_ip_address_reservations': the IP %s is assigned to both %s and %s", ipAddr, o.IpAddressReservationsByIP[ipAddr].Name, r.Name)
-		}
-		if _, exists := o.IpAddressReservationsByMAC[macAddr.String()]; exists {
-			return fmt.Errorf("duplicate MAC address found inside 'dhcp_ip_address_reservations': the MAC %s is assigned to both %s and %s", macAddr, o.IpAddressReservationsByMAC[macAddr.String()].Name, r.Name)
-		}
-
-		o.IpAddressReservationsByIP[ipAddr] = ipReservation
-		o.IpAddressReservationsByMAC[macAddr.String()] = ipReservation
-	}
-
-	// convert friendly names to a map of DhcpClientFriendlyName instances indexed by MAC address
-	for _, client := range cfg.DhcpClientsFriendlyNames {
-		// validate (host)name
-		if !isValidRFC1123Hostname(client.Name) {
-			return fmt.Errorf("invalid hostname found inside 'dhcp_clients_friendly_names': %q (%s)", client.Name, rfc1123Explanation)
-		}
-
-		// validate MAC address
-		macAddr, err := net.ParseMAC(strings.TrimSpace(client.Mac))
-		if err != nil {
-			return fmt.Errorf("invalid MAC address found inside 'dhcp_clients_friendly_names': %s", client.Mac)
-		}
-
-		var linkTemplate *texttemplate.Template
-		if client.Link != "" {
-			linkTemplate, err = texttemplate.New("linkTemplate").Parse(client.Link)
+		reservedIP := strings.TrimSpace(entry.ReservedIP)
+		if reservedIP != "" {
+			// entry has a reserved IP → treat as an IP address reservation
+			ipAddr, err := netip.ParseAddr(reservedIP)
 			if err != nil {
-				return fmt.Errorf("invalid golang template found inside 'link': %s", client.Link)
+				return fmt.Errorf("invalid IP address found inside 'dhcp_client_settings': %s", entry.ReservedIP)
 			}
-		}
 
-		// check that this MAC address is not already used in IP address reservations
-		if _, exists := o.IpAddressReservationsByMAC[macAddr.String()]; exists {
-			return fmt.Errorf("MAC address %s appears in both 'dhcp_ip_address_reservations' and 'dhcp_clients_friendly_names'; a MAC address can only be in one of the two lists", macAddr)
-		}
+			ipReservation := IpAddressReservation{
+				Name:        entry.Name,
+				Mac:         macAddr,
+				IP:          ipAddr,
+				Description: entry.Description,
+				Link:        linkTemplate,
+				Tags:        entry.Tags,
+				DnsAliases:  normalizedAliases,
+			}
 
-		// normalize DNS aliases if any
-		normalizedAliases, err := o.loadDnsAliases(client.Name, client.DnsAliases, dnsDomain, logger)
-		if err != nil {
-			return err
-		}
+			// check for duplicates
+			if _, exists := o.IpAddressReservationsByIP[ipAddr]; exists {
+				return fmt.Errorf("duplicate IP address found inside 'dhcp_client_settings': the IP %s is assigned to both %s and %s", ipAddr, o.IpAddressReservationsByIP[ipAddr].Name, entry.Name)
+			}
+			if _, exists := o.IpAddressReservationsByMAC[macAddr.String()]; exists {
+				return fmt.Errorf("duplicate MAC address found inside 'dhcp_client_settings': the MAC %s is assigned to both %s and %s", macAddr, o.IpAddressReservationsByMAC[macAddr.String()].Name, entry.Name)
+			}
 
-		o.FriendlyNames[macAddr.String()] = DhcpClientFriendlyName{
-			MacAddress:   macAddr,
-			FriendlyName: client.Name,
-			Description:  client.Description,
-			Link:         linkTemplate,
-			Tags:         client.Tags,
-			DnsAliases:   normalizedAliases,
+			o.IpAddressReservationsByIP[ipAddr] = ipReservation
+			o.IpAddressReservationsByMAC[macAddr.String()] = ipReservation
+		} else {
+			// entry has no reserved IP → treat as a friendly name
+			if _, exists := o.IpAddressReservationsByMAC[macAddr.String()]; exists {
+				return fmt.Errorf("duplicate MAC address found inside 'dhcp_client_settings': the MAC %s is assigned to both %s and %s", macAddr, o.IpAddressReservationsByMAC[macAddr.String()].Name, entry.Name)
+			}
+			if _, exists := o.FriendlyNames[macAddr.String()]; exists {
+				return fmt.Errorf("duplicate MAC address found inside 'dhcp_client_settings': the MAC %s appears more than once", macAddr)
+			}
+
+			o.FriendlyNames[macAddr.String()] = DhcpClientFriendlyName{
+				MacAddress:   macAddr,
+				FriendlyName: entry.Name,
+				Description:  entry.Description,
+				Link:         linkTemplate,
+				Tags:         entry.Tags,
+				DnsAliases:   normalizedAliases,
+			}
 		}
 	}
 
@@ -414,12 +382,12 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 
 		// check that this MAC address is not already used in IP address reservations
 		if _, exists := o.IpAddressReservationsByMAC[macAddr.String()]; exists {
-			return fmt.Errorf("MAC address %s appears in both 'dhcp_ip_address_reservations' and 'dhcp_mac_address_blocklist'; a MAC address can only be in one of the two lists", macAddr)
+			return fmt.Errorf("MAC address %s appears in both 'dhcp_client_settings' and 'dhcp_mac_address_blocklist'; a MAC address can only be in one of the two lists", macAddr)
 		}
 
 		// check that this MAC address is not already used in friendly names
 		if _, exists := o.FriendlyNames[macAddr.String()]; exists {
-			return fmt.Errorf("MAC address %s appears in both 'dhcp_clients_friendly_names' and 'dhcp_mac_address_blocklist'; a MAC address can only be in one of the two lists", macAddr)
+			return fmt.Errorf("MAC address %s appears in both 'dhcp_client_settings' and 'dhcp_mac_address_blocklist'; a MAC address can only be in one of the two lists", macAddr)
 		}
 
 		o.BlockedMACs[macAddr.String()] = BlockedDeviceInfo{

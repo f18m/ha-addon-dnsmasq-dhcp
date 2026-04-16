@@ -260,16 +260,21 @@ dhcp_pools:
     gateway: 192.168.1.254
     netmask: 255.255.255.0
 
-# DHCP IP address reservations for special/important devices (identified by MAC address)
-dhcp_ip_address_reservations:
-    # the "name" of each DHCP IP address reservation must be a valid hostname as per RFC 1123 since 
-    # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
+# DHCP client settings: configure static IP reservations and/or friendly names for DHCP clients
+# Each entry in this list identifies a DHCP client by its MAC address.
+# If the 'reserved_ip' field is set to a non-empty IP address, the client will always receive
+# that static IP address (DHCP reservation). If 'reserved_ip' is empty or omitted, the client
+# will receive a dynamic IP but will still benefit from any friendly name, description, tags,
+# link, and DNS aliases configured here.
+dhcp_client_settings:
+    # the "name" of each entry must be a valid hostname as per RFC 1123 since 
+    # it may be passed to dnsmasq (e.g. for DHCP hostname assignment and DNS CNAME aliases)
   - name: "important-server"
     # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
     # which uniquely identifies a particular network interface
     mac: aa:bb:cc:dd:ee:ff
-    # the IP address to provide whenever the DHCP lease request comes from a matching MAC address
-    ip: 192.168.1.15
+    # set reserved_ip to assign a static IP address to this client; leave it empty for a dynamic IP
+    reserved_ip: 192.168.1.15
     # the 'description' property is a free-form string to describe the device (e.g. product model, location)
     description: "My important server - rack 3"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
@@ -292,23 +297,16 @@ dhcp_ip_address_reservations:
       - "myserver.lan"
       - "the-important-one.lan"
 
-# DHCP friendly name mappings
-# Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.
-# This option can be used to remap the hostnames to human-friendly names, via the DHCP protocol
-# and provide extra metadata (description, tags, a link, DNS aliase) to DHCP clients,
-# that you want to have a dynamic IP (opposed to DHCP clients present in the 
-# "dhcp_ip_address_reservations" list which get a static IP).
-# E.g. my Macbook Pro DHCP client reports itself with hostname="Mac" to the DHCP server; 
-#      with this feature you can remap it to appear as e.g. "My Work Macbook Pro", provide 
-#      tag "laptop" and alias that to mylaptop.lan
-# Please note that a MAC address cannot appear in both the "dhcp_ip_address_reservations" list and 
-# in the "dhcp_clients_friendly_names" list.
-dhcp_clients_friendly_names:
-    # similarly to DHCP IP address reservations, the "name" of each DHCP friendly name mapping
-    # must be a valid hostname as per RFC 1123
+  # Entry without reserved_ip: the client gets a dynamic IP but still has a friendly name,
+  # description, tags, a link and DNS aliases configured.
+  # E.g. my Macbook Pro DHCP client reports itself with hostname="Mac" to the DHCP server; 
+  #      with this feature you can remap it to appear as e.g. "work-laptop", provide 
+  #      tag "laptop" and alias that to mylaptop.lan
   - name: "work-laptop"
     # MAC address for the DHCP client
     mac: dd:ee:aa:dd:bb:ee
+    # reserved_ip is empty: this client receives a dynamic IP
+    reserved_ip: ""
     # the 'description' property is a free-form string to describe the device (e.g. product model, location)
     description: "My personal laptop - living room"
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
@@ -320,7 +318,9 @@ dhcp_clients_friendly_names:
       - laptop
       - dynamic_ip
     # the 'dns_aliases' property is an optional list of DNS CNAME aliases for this device.
-    # See the comments for the dhcp_ip_address_reservations.dns_aliases list for more info.
+    # Each alias must be a valid RFC 1123 DNS name (labels separated by dots).
+    # Each alias must end with a dot followed by the 'dhcp_server.dns_domain' string ('lan' by default);
+    # if you forget the <.dns_domain> suffix, it will be appended automatically.
     dns_aliases:
       - "mylaptop.lan"
 
@@ -328,8 +328,7 @@ dhcp_clients_friendly_names:
 # DHCP MAC address blocklist
 # Any MAC address added to this list will be ignored by the DHCP server.
 # This means that devices with these MAC addresses will not receive an IP address from this DHCP server.
-# Please note that a MAC address cannot appear in both this list and either
-# "dhcp_ip_address_reservations" or "dhcp_clients_friendly_names".
+# Please note that a MAC address cannot appear in both this list and in "dhcp_client_settings".
 dhcp_mac_address_blocklist:
   - mac: 11:22:33:44:55:66
     description: A reminder about why this device is in the blocklist

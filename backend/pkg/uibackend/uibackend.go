@@ -115,10 +115,9 @@ func NewUIBackend(logger logger.CustomLogger) UIBackend {
 	return UIBackend{
 		logger: logger,
 		options: config.AddonOptions{
-			IpAddressReservationsByIP:  make(map[netip.Addr]config.IpAddressReservation),
-			IpAddressReservationsByMAC: make(map[string]config.IpAddressReservation),
-			FriendlyNames:              make(map[string]config.DhcpClientFriendlyName),
-			BlockedMACs:                make(map[string]config.BlockedDeviceInfo),
+			DhcpClientSettingsByIP:  make(map[netip.Addr]config.DhcpClientSettings),
+			DhcpClientSettingsByMAC: make(map[string]config.DhcpClientSettings),
+			BlockedMACs:             make(map[string]config.BlockedDeviceInfo),
 		},
 		startTimestamp: time.Now(),
 		startEpoch:     startEpoch,
@@ -212,9 +211,9 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 		pastClients[i].HasStaticIP = b.hasIpAddressReservationByMAC(deadC.MacAddr)
 		pastClients[i].FriendlyName = b.getFriendlyNameFor(deadC.MacAddr, deadC.Hostname)
 		if pastClients[i].FriendlyName == deadC.Hostname {
-			// look also in the IP address reservations "friendly names"
+			// look also in the static IP reservation metadata
 			if pastClients[i].HasStaticIP {
-				if reservation, exists := b.options.GetIpReservationByMAC(deadC.MacAddr); exists {
+				if reservation, exists := b.options.GetDhcpClientSettingsByMAC(deadC.MacAddr); exists {
 					pastClients[i].FriendlyName = reservation.Name
 				}
 			}
@@ -472,60 +471,50 @@ func (b *UIBackend) processLeaseUpdates() {
 }
 
 func (b *UIBackend) getFriendlyNameFor(mac net.HardwareAddr, hostname string) string {
-	// do we have a friendly-name registered for this MAC address?
-	metadata, ok := b.options.FriendlyNames[mac.String()]
+	// do we have configured metadata for this MAC address?
+	metadata, ok := b.options.GetDhcpClientSettingsByMAC(mac)
 	if ok {
-		// yes: enrich with some metadata this DHCP client entry
-		return metadata.FriendlyName
+		// yes: enrich with configured metadata
+		return metadata.Name
 	} else if hostname != dnsmasqMarkerForMissingHostname {
-		// no: user didn't provide any friendly name but the dnsmasq DHCP server
-		// has received (over DHCP protocol) an hostname... better than nothing:
-		// use that to create a "friendly name"
+		// no: user didn't provide a name but dnsmasq received one via DHCP
 		return hostname
 	}
 	return ""
 }
 
 func (b *UIBackend) getTagsFor(mac net.HardwareAddr) []string {
-	// a MAC address will only be present in either friendlyNames or ipAddressReservationsByMAC, not both
-	if fn, ok := b.options.GetFriendlyNameByMAC(mac); ok {
-		return fn.Tags
-	}
-	if r, ok := b.options.GetIpReservationByMAC(mac); ok {
+	if r, ok := b.options.GetDhcpClientSettingsByMAC(mac); ok {
 		return r.Tags
 	}
 	return nil
 }
 
 func (b *UIBackend) getDescriptionFor(mac net.HardwareAddr) string {
-	// a MAC address will only be present in either friendlyNames or ipAddressReservationsByMAC, not both
-	if fn, ok := b.options.GetFriendlyNameByMAC(mac); ok {
-		return fn.Description
-	}
-	if r, ok := b.options.GetIpReservationByMAC(mac); ok {
+	if r, ok := b.options.GetDhcpClientSettingsByMAC(mac); ok {
 		return r.Description
 	}
 	return ""
 }
 
 func (b *UIBackend) hasIpAddressReservationByIP(ip netip.Addr, macExpected net.HardwareAddr) bool {
-	res, hasReservation := b.options.GetIpReservationByIP(ip)
+	res, hasReservation := b.options.GetDhcpClientSettingsByIP(ip)
 	if hasReservation {
 		// the IP address provided is a reserved one...
 		// check if the MAC address is the one for which that IP was intended...
-		if strings.EqualFold(macExpected.String(), res.Mac.String()) {
+		if strings.EqualFold(macExpected.String(), res.MacAddress.String()) {
 			return true
 		} else {
 			b.logger.Warnf("the IP %s was leased to MAC address %s, but in configuration it was reserved for MAC %s\n",
-				ip.String(), macExpected.String(), res.Mac.String())
+				ip.String(), macExpected.String(), res.MacAddress.String())
 		}
 	}
 	return false
 }
 
 func (b *UIBackend) hasIpAddressReservationByMAC(mac net.HardwareAddr) bool {
-	_, hasReservation := b.options.GetIpReservationByMAC(mac)
-	return hasReservation
+	settings, hasSettings := b.options.GetDhcpClientSettingsByMAC(mac)
+	return hasSettings && settings.IP.IsValid()
 }
 
 // isValidURI checks if the given string is a valid URI.
@@ -538,12 +527,12 @@ func (b *UIBackend) evaluateLink(hostname string, ip netip.Addr, mac net.Hardwar
 	var theTemplate *texttemplate.Template
 	var friendlyName string
 
-	r, hasFriendlyName := b.options.GetFriendlyNameByMAC(mac)
-	if hasFriendlyName {
+	r, hasClientSettings := b.options.GetDhcpClientSettingsByMAC(mac)
+	if hasClientSettings {
 		theTemplate = r.Link
-		friendlyName = r.FriendlyName
+		friendlyName = r.Name
 	} else {
-		r, hasReservation := b.options.GetIpReservationByIP(ip)
+		r, hasReservation := b.options.GetDhcpClientSettingsByIP(ip)
 		if hasReservation {
 			theTemplate = r.Link
 		}

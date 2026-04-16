@@ -229,10 +229,10 @@ dhcp_server:
 # dhcp_pools is the core config for the DHCP server.
 # Each entry in the list represents a network segment. 
 # You can have multiple entries for the same "interface" (with same "gateway" and "netmask") 
-# to provide disjoint IP address ranges within the same network (e.g. if you want to provide .100-120 and .200-220
-# IP addresses of the same network).
-# You can provide IP ranges of different networks in case e.g. the DHCP server
-# is attached to multiple network interfaces (i.e. attached to different networks).
+# to provide disjoint IP address ranges within the same network (e.g. if you want to provide 
+# .100-120 and .200-220 IP addresses of the same network).
+# You can also provide IP ranges of different networks in case e.g. the DHCP server
+# has multiple network interfaces (i.e. it's attached to different networks).
 #
 # In any case remember that the "gateway" IP address must always be an IP address within the
 # network specified by the "start", "end" and "netmask" properties.
@@ -260,12 +260,16 @@ dhcp_pools:
     gateway: 192.168.1.254
     netmask: 255.255.255.0
 
-# DHCP client settings: configure static IP reservations and/or friendly names for DHCP clients
-# Each entry in this list identifies a DHCP client by its MAC address.
+# DHCP client settings: 
+# Configure metadata/attributes for DHCP clients to ease management, inventory and troubleshooting on your network.
+# Most notably, for each DHCP client you can set a static IP reservations.
+# Each entry in this list identifies uniquely a DHCP client by its MAC addres.
 # If the 'reserved_ip' field is set to a non-empty IP address, the client will always receive
 # that static IP address (DHCP reservation). If 'reserved_ip' is empty or omitted, the client
 # will receive a dynamic IP but will still benefit from any friendly name, description, tags,
 # link, and DNS aliases configured here.
+# If a DHCP client MAC address does not appear in this list, it will still be able to get a dynamic
+# IP address from the DHCP server but its entry in the UI will lack any extra metadata/attribute.
 dhcp_client_settings:
 
     # the "name" of each entry must be a valid hostname as per RFC 1123 since it will be provided

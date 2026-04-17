@@ -5,12 +5,13 @@ For the full changelog please check https://github.com/f18m/ha-addon-dnsmasq-dhc
 This file mainly contains only migration instructions from a major version to the next major version. A new major version is released each time there is a backward-incompatible change in the config format.
 Additionally some notable new features are also documented here as well.
 
-## Version 5.0.0
+## Version 5.0.1
+
+Please note that version 5.0.0 has been skipped due to packaging problems.
 
 > :warning: 💥 Breaking Changes
 
-The `dhcp_ip_address_reservations` and `dhcp_clients_friendly_names` lists have been merged together
-and renamed to `dhcp_client_settings`.
+Compared to v4, in v5 the `dhcp_ip_address_reservations` and `dhcp_clients_friendly_names` lists have been merged together and renamed to `dhcp_client_settings`.
 Now all the DHCP entries configured appear under the same list, instead of two similar but slightly-different lists.
 All entries in the `dhcp_client_settings` list must:
 

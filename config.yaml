@@ -21,7 +21,7 @@ url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 #   name: Dnsmasq-DHCP BETA
 #   stage: experimental
 
-version: 5.0.0
+version: 5.0.1
 slug: dnsmasq-dhcp
 name: Dnsmasq-DHCP
 stage: stable

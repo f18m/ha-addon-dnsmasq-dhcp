@@ -1,7 +1,7 @@
-package uibackend
+package config
 
 import (
-	"encoding/json"
+	"dnsmasq-dhcp-backend/pkg/logger"
 	"net"
 	"net/netip"
 	"strings"
@@ -59,14 +59,13 @@ func TestAddonOptionsInvalidHostname(t *testing.T) {
 					"netmask": "255.255.255.0"
 				}
 			],
-			"dhcp_ip_address_reservations": [
+			"dhcp_client_settings": [
 				{
-					"ip": "192.168.1.10",
+					"reserved_ip": "192.168.1.10",
 					"mac": "aa:bb:cc:dd:ee:ff",
 					"name": "` + name + `"
 				}
 			],
-			"dhcp_clients_friendly_names": [],
 			"dhcp_server": {
 				"default_lease": "1h",
 				"address_reservation_lease": "1h",
@@ -97,10 +96,9 @@ func TestAddonOptionsInvalidHostname(t *testing.T) {
 	for _, name := range invalidNames {
 		t.Run("invalid:"+name, func(t *testing.T) {
 			var opts AddonOptions
-			opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
-			opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
-			opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
-			err := json.Unmarshal([]byte(baseConfig(name)), &opts)
+			opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+			opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
+			err := opts.LoadFromJSON([]byte(baseConfig(name)), logger.NewNopCustomLogger("test"))
 			if err == nil {
 				t.Errorf("expected error for hostname %q, but got none", name)
 			}
@@ -115,10 +113,9 @@ func TestAddonOptionsInvalidHostname(t *testing.T) {
 	for _, name := range validNames {
 		t.Run("valid:"+name, func(t *testing.T) {
 			var opts AddonOptions
-			opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
-			opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
-			opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
-			err := json.Unmarshal([]byte(baseConfig(name)), &opts)
+			opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+			opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
+			err := opts.LoadFromJSON([]byte(baseConfig(name)), logger.NewNopCustomLogger("test"))
 			if err != nil {
 				t.Errorf("unexpected error for hostname %q: %v", name, err)
 			}
@@ -126,9 +123,77 @@ func TestAddonOptionsInvalidHostname(t *testing.T) {
 	}
 }
 
+func TestAddonOptionsDnsDomainLocalRejected(t *testing.T) {
+	baseConfig := func(domain string) string {
+		return `{
+			"dhcp_pools": [
+				{
+					"interface": "eth0",
+					"start": "192.168.1.50",
+					"end": "192.168.1.100",
+					"gateway": "192.168.1.1",
+					"netmask": "255.255.255.0"
+				}
+			],
+			"dhcp_client_settings": [],
+			"dhcp_server": {
+				"default_lease": "1h",
+				"address_reservation_lease": "1h",
+				"forget_past_clients_after": "30d",
+				"log_requests": false
+			},
+			"dns_server": {
+				"enable": true,
+				"dns_domain": "` + domain + `",
+				"port": 53
+			},
+			"web_ui": {
+				"log_activity": false,
+				"port": 8976,
+				"refresh_interval_sec": 10
+			}
+		}`
+	}
+
+	t.Run("reject local", func(t *testing.T) {
+		var opts AddonOptions
+		opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+		opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
+
+		err := opts.LoadFromJSON([]byte(baseConfig("local")), logger.NewNopCustomLogger("test"))
+		if err == nil {
+			t.Fatal("expected error for dns_domain=local, got none")
+		}
+		if !strings.Contains(strings.ToLower(err.Error()), "reserved for mdns") {
+			t.Fatalf("unexpected error message: %v", err)
+		}
+	})
+
+	t.Run("reject LOCAL case-insensitively", func(t *testing.T) {
+		var opts AddonOptions
+		opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+		opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
+
+		err := opts.LoadFromJSON([]byte(baseConfig("LOCAL")), logger.NewNopCustomLogger("test"))
+		if err == nil {
+			t.Fatal("expected error for dns_domain=LOCAL, got none")
+		}
+	})
+
+	t.Run("accept non-local domain", func(t *testing.T) {
+		var opts AddonOptions
+		opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+		opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
+
+		err := opts.LoadFromJSON([]byte(baseConfig("lan")), logger.NewNopCustomLogger("test"))
+		if err != nil {
+			t.Fatalf("unexpected error for dns_domain=lan: %v", err)
+		}
+	})
+}
+
 func TestAddonOptionsMACInBothLists(t *testing.T) {
-	// A MAC address that appears in both dhcp_ip_address_reservations and
-	// dhcp_clients_friendly_names must be rejected.
+	// A MAC address that appears twice in dhcp_client_settings must be rejected.
 	jsonConfig := `{
 		"dhcp_pools": [
 			{
@@ -139,14 +204,12 @@ func TestAddonOptionsMACInBothLists(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "reserved-host"
-			}
-		],
-		"dhcp_clients_friendly_names": [
+			},
 			{
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "friendly-host"
@@ -171,14 +234,14 @@ func TestAddonOptionsMACInBothLists(t *testing.T) {
 	}`
 
 	var opts AddonOptions
-	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
-	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
-	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+	opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+	opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
 
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	logger := logger.NewNopCustomLogger("test")
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger)
 	if err == nil {
-		t.Error("expected error when the same MAC appears in both lists, but got none")
-	} else if !strings.Contains(err.Error(), "appears in both") {
+		t.Error("expected error when the same MAC appears twice in dhcp_client_settings, but got none")
+	} else if !strings.Contains(err.Error(), "duplicate") {
 		t.Errorf("unexpected error message: %v", err)
 	}
 }
@@ -240,14 +303,12 @@ func TestAddonOptionsUnmarshalJSONWithWhitespace(t *testing.T) {
 				"netmask": " 255.255.255.0 "
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": " 192.168.1.10 ",
+				"reserved_ip": " 192.168.1.10 ",
 				"mac": " aa:bb:cc:dd:ee:ff ",
 				"name": "test-host"
-			}
-		],
-		"dhcp_clients_friendly_names": [
+			},
 			{
 				"mac": " 11:22:33:44:55:66 ",
 				"name": "friendly-host"
@@ -272,21 +333,20 @@ func TestAddonOptionsUnmarshalJSONWithWhitespace(t *testing.T) {
 	}`
 
 	var opts AddonOptions
-	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
-	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
-	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+	opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+	opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
 
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err != nil {
 		t.Fatalf("Failed to unmarshal JSON with whitespace: %v", err)
 	}
 
 	// Verify that the DHCP pool was parsed correctly despite whitespace
-	if len(opts.dhcpRanges) != 1 {
-		t.Fatalf("Expected 1 DHCP range, got %d", len(opts.dhcpRanges))
+	if len(opts.DhcpRanges) != 1 {
+		t.Fatalf("Expected 1 DHCP range, got %d", len(opts.DhcpRanges))
 	}
 
-	dhcpRange := opts.dhcpRanges[0]
+	dhcpRange := opts.DhcpRanges[0]
 
 	// Check that gateway was parsed correctly (whitespace trimmed)
 	expectedGateway := net.ParseIP("192.168.1.1")
@@ -311,13 +371,13 @@ func TestAddonOptionsUnmarshalJSONWithWhitespace(t *testing.T) {
 	}
 
 	// Verify IP address reservation was parsed correctly
-	if len(opts.ipAddressReservationsByIP) != 1 {
-		t.Fatalf("Expected 1 IP reservation, got %d", len(opts.ipAddressReservationsByIP))
+	if len(opts.DhcpClientSettingsByIP) != 1 {
+		t.Fatalf("Expected 1 IP reservation, got %d", len(opts.DhcpClientSettingsByIP))
 	}
 
 	// Verify friendly name was parsed correctly
-	if len(opts.friendlyNames) != 1 {
-		t.Fatalf("Expected 1 friendly name, got %d", len(opts.friendlyNames))
+	if len(opts.DhcpClientSettingsByMAC) != 2 {
+		t.Fatalf("Expected 2 DHCP client settings, got %d", len(opts.DhcpClientSettingsByMAC))
 	}
 }
 
@@ -333,15 +393,13 @@ func TestAddonOptionsUnmarshalJSONWithTags(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "test-host",
 				"tags": ["server", "production"]
-			}
-		],
-		"dhcp_clients_friendly_names": [
+			},
 			{
 				"mac": "11:22:33:44:55:66",
 				"name": "friendly-host",
@@ -367,18 +425,17 @@ func TestAddonOptionsUnmarshalJSONWithTags(t *testing.T) {
 	}`
 
 	var opts AddonOptions
-	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
-	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
-	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+	opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+	opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
 
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err != nil {
 		t.Fatalf("Failed to unmarshal JSON with tags: %v", err)
 	}
 
 	// Verify tags on IP address reservation
 	reservationIP := netip.MustParseAddr("192.168.1.10")
-	reservation, ok := opts.ipAddressReservationsByIP[reservationIP]
+	reservation, ok := opts.DhcpClientSettingsByIP[reservationIP]
 	if !ok {
 		t.Fatalf("Expected IP reservation for 192.168.1.10 not found")
 	}
@@ -393,7 +450,7 @@ func TestAddonOptionsUnmarshalJSONWithTags(t *testing.T) {
 	}
 
 	// Verify tags on friendly name
-	friendlyName, ok := opts.friendlyNames["11:22:33:44:55:66"]
+	friendlyName, ok := opts.DhcpClientSettingsByMAC["11:22:33:44:55:66"]
 	if !ok {
 		t.Fatalf("Expected friendly name for 11:22:33:44:55:66 not found")
 	}
@@ -420,15 +477,13 @@ func TestAddonOptionsUnmarshalJSONWithDescription(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "test-host",
 				"description": "My important server"
-			}
-		],
-		"dhcp_clients_friendly_names": [
+			},
 			{
 				"mac": "11:22:33:44:55:66",
 				"name": "friendly-host",
@@ -454,18 +509,17 @@ func TestAddonOptionsUnmarshalJSONWithDescription(t *testing.T) {
 	}`
 
 	var opts AddonOptions
-	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
-	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
-	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
+	opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+	opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
 
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err != nil {
-		t.Fatalf("Failed to unmarshal JSON with description: %v", err)
+		t.Fatalf("Failed to load JSON with description: %v", err)
 	}
 
 	// Verify description on IP address reservation
 	reservationIP := netip.MustParseAddr("192.168.1.10")
-	reservation, ok := opts.ipAddressReservationsByIP[reservationIP]
+	reservation, ok := opts.DhcpClientSettingsByIP[reservationIP]
 	if !ok {
 		t.Fatalf("Expected IP reservation for 192.168.1.10 not found")
 	}
@@ -474,7 +528,7 @@ func TestAddonOptionsUnmarshalJSONWithDescription(t *testing.T) {
 	}
 
 	// Verify description on friendly name
-	friendlyName, ok := opts.friendlyNames["11:22:33:44:55:66"]
+	friendlyName, ok := opts.DhcpClientSettingsByMAC["11:22:33:44:55:66"]
 	if !ok {
 		t.Fatalf("Expected friendly name for 11:22:33:44:55:66 not found")
 	}
@@ -485,10 +539,9 @@ func TestAddonOptionsUnmarshalJSONWithDescription(t *testing.T) {
 
 func newTestAddonOptions() AddonOptions {
 	var opts AddonOptions
-	opts.ipAddressReservationsByIP = make(map[netip.Addr]IpAddressReservation)
-	opts.ipAddressReservationsByMAC = make(map[string]IpAddressReservation)
-	opts.friendlyNames = make(map[string]DhcpClientFriendlyName)
-	opts.blockedMACs = make(map[string]BlockedDeviceInfo)
+	opts.DhcpClientSettingsByIP = make(map[netip.Addr]DhcpClientSettings)
+	opts.DhcpClientSettingsByMAC = make(map[string]DhcpClientSettings)
+	opts.BlockedMACs = make(map[string]BlockedDeviceInfo)
 	return opts
 }
 
@@ -503,8 +556,7 @@ func baseTestConfig(extraFields string) string {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [],
-		"dhcp_clients_friendly_names": [],
+		"dhcp_client_settings": [],
 		"dhcp_server": {
 			"default_lease": "1h",
 			"address_reservation_lease": "1h",
@@ -538,19 +590,19 @@ func TestAddonOptionsMacBlocklistParsed(t *testing.T) {
 		]`)
 
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	if len(opts.blockedMACs) != 2 {
-		t.Fatalf("Expected 2 blocked MACs, got %d", len(opts.blockedMACs))
+	if len(opts.BlockedMACs) != 2 {
+		t.Fatalf("Expected 2 blocked MACs, got %d", len(opts.BlockedMACs))
 	}
 	// MAC addresses are normalized to lowercase by net.ParseMAC
-	if _, ok := opts.blockedMACs["11:22:33:44:55:66"]; !ok {
+	if _, ok := opts.BlockedMACs["11:22:33:44:55:66"]; !ok {
 		t.Errorf("Expected 11:22:33:44:55:66 to be blocked")
 	}
-	if _, ok := opts.blockedMACs["aa:bb:cc:dd:ee:ff"]; !ok {
+	if _, ok := opts.BlockedMACs["aa:bb:cc:dd:ee:ff"]; !ok {
 		t.Errorf("Expected aa:bb:cc:dd:ee:ff to be blocked")
 	}
 }
@@ -562,7 +614,7 @@ func TestAddonOptionsMacBlocklistInvalidMAC(t *testing.T) {
 		]`)
 
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error for invalid MAC address in blocklist, but got none")
 	}
@@ -579,14 +631,13 @@ func TestAddonOptionsMacBlocklistConflictsWithReservation(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [
+		"dhcp_client_settings": [
 			{
-				"ip": "192.168.1.10",
+				"reserved_ip": "192.168.1.10",
 				"mac": "aa:bb:cc:dd:ee:ff",
 				"name": "reserved-host"
 			}
 		],
-		"dhcp_clients_friendly_names": [],
 		"dhcp_mac_address_blocklist": [
 			{ 
 				"mac": "aa:bb:cc:dd:ee:ff",
@@ -612,10 +663,10 @@ func TestAddonOptionsMacBlocklistConflictsWithReservation(t *testing.T) {
 	}`
 
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error when a MAC appears in both blocklist and reservations, but got none")
-	} else if !strings.Contains(err.Error(), "dhcp_ip_address_reservations") || !strings.Contains(err.Error(), "dhcp_mac_address_blocklist") {
+	} else if !strings.Contains(err.Error(), "dhcp_client_settings") || !strings.Contains(err.Error(), "dhcp_mac_address_blocklist") {
 		t.Errorf("Unexpected error message: %v", err)
 	}
 }
@@ -631,8 +682,7 @@ func TestAddonOptionsMacBlocklistConflictsWithFriendlyNames(t *testing.T) {
 				"netmask": "255.255.255.0"
 			}
 		],
-		"dhcp_ip_address_reservations": [],
-		"dhcp_clients_friendly_names": [
+		"dhcp_client_settings": [
 			{
 				"mac": "11:22:33:44:55:66",
 				"name": "friendly-host"
@@ -663,10 +713,10 @@ func TestAddonOptionsMacBlocklistConflictsWithFriendlyNames(t *testing.T) {
 	}`
 
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error when a MAC appears in both blocklist and friendly names, but got none")
-	} else if !strings.Contains(err.Error(), "dhcp_clients_friendly_names") || !strings.Contains(err.Error(), "dhcp_mac_address_blocklist") {
+	} else if !strings.Contains(err.Error(), "dhcp_client_settings") || !strings.Contains(err.Error(), "dhcp_mac_address_blocklist") {
 		t.Errorf("Unexpected error message: %v", err)
 	}
 }
@@ -730,25 +780,25 @@ func TestAddonOptionsDnsHostsParsed(t *testing.T) {
 		]`)
 
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	if len(opts.dnsCustomHosts) != 2 {
-		t.Fatalf("Expected 2 dns_custom_hosts, got %d", len(opts.dnsCustomHosts))
+	if len(opts.DnsCustomHosts) != 2 {
+		t.Fatalf("Expected 2 dns_custom_hosts, got %d", len(opts.DnsCustomHosts))
 	}
-	if opts.dnsCustomHosts[0].Name != "tapo.lan" {
-		t.Errorf("Expected dnsCustomHosts[0].Name = \"tapo.lan\", got %q", opts.dnsCustomHosts[0].Name)
+	if opts.DnsCustomHosts[0].Name != "tapo.lan" {
+		t.Errorf("Expected dnsCustomHosts[0].Name = \"tapo.lan\", got %q", opts.DnsCustomHosts[0].Name)
 	}
-	if opts.dnsCustomHosts[0].IPv4Address != "192.168.0.65" {
-		t.Errorf("Expected dnsCustomHosts[0].IPv4Address = \"192.168.0.65\", got %q", opts.dnsCustomHosts[0].IPv4Address)
+	if opts.DnsCustomHosts[0].IPv4Address != "192.168.0.65" {
+		t.Errorf("Expected dnsCustomHosts[0].IPv4Address = \"192.168.0.65\", got %q", opts.DnsCustomHosts[0].IPv4Address)
 	}
-	if opts.dnsCustomHosts[1].Name != "myserver" {
-		t.Errorf("Expected dnsCustomHosts[1].Name = \"myserver\", got %q", opts.dnsCustomHosts[1].Name)
+	if opts.DnsCustomHosts[1].Name != "myserver" {
+		t.Errorf("Expected dnsCustomHosts[1].Name = \"myserver\", got %q", opts.DnsCustomHosts[1].Name)
 	}
-	if opts.dnsCustomHosts[1].IPv6Address != "2001:db8::1" {
-		t.Errorf("Expected dnsCustomHosts[1].IPv6Address = \"2001:db8::1\", got %q", opts.dnsCustomHosts[1].IPv6Address)
+	if opts.DnsCustomHosts[1].IPv6Address != "2001:db8::1" {
+		t.Errorf("Expected dnsCustomHosts[1].IPv6Address = \"2001:db8::1\", got %q", opts.DnsCustomHosts[1].IPv6Address)
 	}
 }
 
@@ -770,7 +820,7 @@ func TestAddonOptionsDnsHostsInvalidName(t *testing.T) {
 				}
 			]`)
 			opts := newTestAddonOptions()
-			err := json.Unmarshal([]byte(jsonConfig), &opts)
+			err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 			if err == nil {
 				t.Errorf("Expected error for dns_hosts name %q, but got none", name)
 			}
@@ -788,7 +838,7 @@ func TestAddonOptionsDnsHostsMissingIPAddress(t *testing.T) {
 			}
 		]`)
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error when both ipv4_address and ipv6_address are empty, but got none")
 	}
@@ -804,7 +854,7 @@ func TestAddonOptionsDnsHostsInvalidIPv4(t *testing.T) {
 			}
 		]`)
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error for invalid IPv4 address in dns_hosts, but got none")
 	}
@@ -820,7 +870,7 @@ func TestAddonOptionsDnsHostsInvalidIPv6(t *testing.T) {
 			}
 		]`)
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error for invalid IPv6 address in dns_hosts, but got none")
 	}
@@ -837,8 +887,177 @@ func TestAddonOptionsDnsHostsIPv4AsIPv6Rejected(t *testing.T) {
 			}
 		]`)
 	opts := newTestAddonOptions()
-	err := json.Unmarshal([]byte(jsonConfig), &opts)
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
 	if err == nil {
 		t.Error("Expected error when IPv4 address is given in ipv6_address field, but got none")
+	}
+}
+
+func TestAddonOptionsIPReservationValidDnsAliases(t *testing.T) {
+	// Verify that valid dns_aliases are correctly parsed and stored on an IP reservation
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_client_settings": [
+			{
+				"reserved_ip": "192.168.1.10",
+				"mac": "aa:bb:cc:dd:ee:ff",
+				"name": "myserver",
+				"dns_aliases": ["alias1.lan", "alias2.lan", "my-server-alias.lan"]
+			}
+		],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	opts := newTestAddonOptions()
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	reservationIP := netip.MustParseAddr("192.168.1.10")
+	reservation, ok := opts.DhcpClientSettingsByIP[reservationIP]
+	if !ok {
+		t.Fatalf("Expected IP reservation for 192.168.1.10 not found")
+	}
+	expectedAliases := []string{"alias1.lan", "alias2.lan", "my-server-alias.lan"}
+	if len(reservation.DnsAliases) != len(expectedAliases) {
+		t.Fatalf("Expected %d DNS aliases, got %d", len(expectedAliases), len(reservation.DnsAliases))
+	}
+	for i, alias := range expectedAliases {
+		if reservation.DnsAliases[i] != alias {
+			t.Errorf("Expected DnsAliases[%d]=%q, got %q", i, alias, reservation.DnsAliases[i])
+		}
+	}
+}
+
+func TestAddonOptionsIPReservationNoDnsAliases(t *testing.T) {
+	// Verify that an IP reservation without dns_aliases gets an empty DnsAliases slice
+	jsonConfig := `{
+		"dhcp_pools": [
+			{
+				"interface": "eth0",
+				"start": "192.168.1.50",
+				"end": "192.168.1.100",
+				"gateway": "192.168.1.1",
+				"netmask": "255.255.255.0"
+			}
+		],
+		"dhcp_client_settings": [
+			{
+				"reserved_ip": "192.168.1.10",
+				"mac": "aa:bb:cc:dd:ee:ff",
+				"name": "myserver"
+			}
+		],
+		"dhcp_server": {
+			"default_lease": "1h",
+			"address_reservation_lease": "1h",
+			"forget_past_clients_after": "30d",
+			"log_requests": false
+		},
+		"dns_server": {
+			"enable": false,
+			"dns_domain": "lan",
+			"port": 53
+		},
+		"web_ui": {
+			"log_activity": false,
+			"port": 8976,
+			"refresh_interval_sec": 10
+		}
+	}`
+
+	opts := newTestAddonOptions()
+	err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	reservationIP := netip.MustParseAddr("192.168.1.10")
+	reservation, ok := opts.DhcpClientSettingsByIP[reservationIP]
+	if !ok {
+		t.Fatalf("Expected IP reservation for 192.168.1.10 not found")
+	}
+	if len(reservation.DnsAliases) != 0 {
+		t.Errorf("Expected no DNS aliases, got %d", len(reservation.DnsAliases))
+	}
+}
+
+func TestAddonOptionsIPReservationInvalidDnsAlias(t *testing.T) {
+	// Verify that an invalid dns_alias is rejected
+	invalidAliases := []string{
+		"-bad-start",
+		"bad-end-",
+		"has space",
+		"under_score",
+	}
+	for _, alias := range invalidAliases {
+		t.Run("invalid:"+alias, func(t *testing.T) {
+			jsonConfig := `{
+				"dhcp_pools": [
+					{
+						"interface": "eth0",
+						"start": "192.168.1.50",
+						"end": "192.168.1.100",
+						"gateway": "192.168.1.1",
+						"netmask": "255.255.255.0"
+					}
+				],
+				"dhcp_client_settings": [
+					{
+						"reserved_ip": "192.168.1.10",
+						"mac": "aa:bb:cc:dd:ee:ff",
+						"name": "myserver",
+						"dns_aliases": ["` + alias + `"]
+					}
+				],
+				"dhcp_server": {
+					"default_lease": "1h",
+					"address_reservation_lease": "1h",
+					"forget_past_clients_after": "30d",
+					"log_requests": false
+				},
+				"dns_server": {
+					"enable": false,
+					"dns_domain": "lan",
+					"port": 53
+				},
+				"web_ui": {
+
+					"log_activity": false,
+					"port": 8976,
+					"refresh_interval_sec": 10
+				}
+			}`
+
+			opts := newTestAddonOptions()
+			err := opts.LoadFromJSON([]byte(jsonConfig), logger.NewNopCustomLogger("test"))
+			if err == nil {
+				t.Errorf("Expected error for invalid DNS alias %q, but got none", alias)
+			}
+		})
 	}
 }

@@ -5,6 +5,47 @@ For the full changelog please check https://github.com/f18m/ha-addon-dnsmasq-dhc
 This file mainly contains only migration instructions from a major version to the next major version. A new major version is released each time there is a backward-incompatible change in the config format.
 Additionally some notable new features are also documented here as well.
 
+## Version 5.0.0
+
+> :warning: 💥 Breaking Changes
+
+The `dhcp_ip_address_reservations` and `dhcp_clients_friendly_names` lists have been merged together
+and renamed to `dhcp_client_settings`.
+Now all the DHCP entries configured appear under the same list, instead of two similar but slightly-different lists.
+All entries in the `dhcp_client_settings` list must:
+
+* have a valid DNS hostname specified as `name` parameter (RFC1123 compliant; in short strings containing only letters, digits, dots and dashes)
+* have a parameter named `reserved_ip` in case you want to reserve an IP for them
+
+The upgrade procedure from version 4.x.x consists in:
+
+
+1. In Home Assistant UI go to `Settings->Apps->Dnsmasq-DHCP->Configuration` and click "Edit in YAML" from the more-options menu (3 vertical dots).
+
+2. Use Replace Text (CTRL+F shortcut) and replace `dhcp_ip_address_reservations` with `dhcp_client_settings`
+
+3. Use Replace Text (CTRL+F shortcut) and replace the string `ip: ` with `reserved_ip: ` (all occurrences)
+
+4. Move all entries of the `dhcp_clients_friendly_names` list in the `dhcp_client_settings` list; for each entry make sure to provide a valid hostname (containing only letters, digits and dashes) for its `name`. Entries in this list used to have a relaxed check on the `name` property. Now this is not the case any longer as `name` will be used on the DNS protocol and thus needs to comply with RFC1123 specs.
+If you had spaces, underscores or other characters now invalid in the `name`, please consider now using the `description` field to store such human-friendly string.
+Except for the `name`, no change is needed in remaining parameters for the entries migrated from `dhcp_clients_friendly_names` to `dhcp_client_settings` list.
+
+5. Remove the `dhcp_clients_friendly_names:` string which should be now an empty list.
+
+
+> ✅ New Features
+
+This release adds support for `DNS aliases`; in short these are [DNS CNAME entries](https://en.wikipedia.org/wiki/CNAME_record). 
+
+A CNAME entry is a Canonical Name (CNAME) record that maps one domain name (an alias) to another (the canonical name).
+DNS aliases are specified in the `dhcp_client_settings.<entry>.dns_aliases` key.
+See [DOCS.md](https://github.com/f18m/ha-addon-dnsmasq-dhcp/blob/main/DOCS.md) for more details.
+
+This allows you to configure dnsmasq-DHCP so that a particular DHCP client is resolvable with multiple names inside your network (e.g. have all strings `network-storage.lan`, `my-nas.lan` and `nas.lan` resolve to the same IP address connected with the `nas` device of your network).
+
+DNS Aliases are available both for DHCP clients having a reserved IP and for those having a dynamic IP.
+
+
 
 ## Version 4.3.0
 

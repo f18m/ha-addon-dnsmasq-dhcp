@@ -5,8 +5,6 @@
 # see https://developers.home-assistant.io/docs/add-ons/configuration/
 #
 
-ARG BUILD_FROM
-
 # --- BACKEND BUILD
 # About base image: we need to use a musl-based docker image since the actual HomeAssistant addon
 # base image will be musl-based as well. This is required since we depend from "github.com/mattn/go-sqlite3"
@@ -38,7 +36,7 @@ RUN apk add yarn bash && \
 
 # --- Actual ADDON layer
 
-FROM $BUILD_FROM
+FROM ghcr.io/home-assistant/base:3.23
 
 # Add env
 ENV LANG=C.UTF-8
@@ -49,7 +47,7 @@ RUN apk add --no-cache nginx-debug sqlite socat && mv /etc/nginx /etc/nginx-orig
 # Install dnsmasq
 # A specific version is installed so it's clear what we ship in this HomeAssistant App.
 # Check which version is available using:
-#  docker run -ti --entrypoint=/bin/sh   ghcr.io/home-assistant/amd64-base:3.22
+#  docker run -ti --entrypoint=/bin/sh   ghcr.io/home-assistant/base:3.22
 #  apk search dnsmasq
 # See also https://thekelleys.org.uk/dnsmasq/CHANGELOG
 RUN apk add --no-cache dnsmasq=2.91-r0

@@ -12,24 +12,26 @@ url: https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/tree/main
 #   version: 4.x.y
 #   slug: dnsmasq-dhcp
 #   name: Dnsmasq-DHCP
+#   stage: stable
 #
 # instead on the 'beta' branch you want these 3 fields to be set to:
 #
 #   version: 4.x.y
 #   slug: dnsmasq-dhcp-beta
 #   name: Dnsmasq-DHCP BETA
-version: 4.3.1
-slug: dnsmasq-dhcp
-name: Dnsmasq-DHCP
-# advanced true means that the HA user can see this addon only if it's flagged as 'advanced' in the
-# Home Assistant UI
-advanced: true
+#   stage: experimental
+
+version: beta
+slug: dnsmasq-dhcp-beta
+name: Dnsmasq-DHCP BETA
+stage: experimental
+
 arch:
   - aarch64
   - amd64
 # host network is required to allow dnsmasq to bind to (all) network interfaces specfied in the config
 host_network: true
-image: ghcr.io/f18m/{arch}-addon-dnsmasq-dhcp
+image: ghcr.io/f18m/addon-dnsmasq-dhcp
 # init false because this addon uses s6-overlay
 init: false
 # enable the ingress feature for this addon, see https://developers.home-assistant.io/docs/add-ons/presentation#ingress
@@ -61,21 +63,26 @@ options:
       end: 192.168.1.150
       gateway: 192.168.1.254
       netmask: 255.255.255.0
-  dhcp_ip_address_reservations:
-    - mac: aa:bb:cc:dd:ee:ff
-      name: "hostname-for-this-device"
-      ip: 192.168.1.15
+  dhcp_client_settings:
+    - name: "important-server"
       description: "My important server"
+      mac: aa:bb:cc:dd:ee:ff
+      reserved_ip: 192.168.1.15
       link: "http://{{ .ip }}/landing-page/for/this/host"
       tags:
         - server
-  dhcp_clients_friendly_names:
-    - mac: dd:ee:aa:dd:bb:ee
-      name: "friendly-name-for-this-device"
+      dns_aliases:
+        - "alias-for-this-device"
+        - "another-alias.lan"
+    - name: "work-laptop"
       description: "My laptop"
+      mac: dd:ee:aa:dd:bb:ee
+      reserved_ip: ""
       link: "http://{{ .ip }}/landing-page/for/this/host"
       tags:
         - laptop
+      dns_aliases:
+        - "alias-for-this-friendly-device"
   dhcp_mac_address_blocklist:
     - mac: aa:bb:cc:dd:ee:ff
       description: "This is a blocked MAC address"
@@ -122,24 +129,16 @@ schema:
       end: str
       gateway: str
       netmask: str
-  dhcp_ip_address_reservations:
-    - ip: str
-      mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
-      # the "name" of each DHCP IP address reservation must be a valid hostname as per RFC 1123 since 
-      # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
-      name: match(^[a-zA-Z0-9\-.]*$)
+  dhcp_client_settings:
+      # name must be a string containing only letters, digits and dashes. This is for RFC1123 compliancy.
+    - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$)
       description: "str?"
+      mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
+      reserved_ip: "str?"
       link: "str?"
       tags:
         - "str?"
-  dhcp_clients_friendly_names:
-    - mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)
-      # the friendly "name" associated to a DHCP client can be any string, since it is just used
-      # to label the client in the web UI, but it is not passed to dnsmasq or resolved over network
-      name: str
-      description: "str?"
-      link: "str?"
-      tags:
+      dns_aliases:
         - "str?"
   dhcp_mac_address_blocklist:
     - mac: match(^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$)

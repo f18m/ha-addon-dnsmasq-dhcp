@@ -75,14 +75,15 @@ Check [wikipedia page for private networks](https://en.wikipedia.org/wiki/Privat
 The DHCP server may be configured to provide a specific IP address
 to a specific client (using its [MAC address](https://en.wikipedia.org/wiki/MAC_address) as identifier).
 These are _IP address reservations_.
-Note that static IP addresses do not need to be inside the DHCP range; indeed quite often the
-static IP address reserved lies outside the DHCP range.
+Note that static IP addresses do not need to be inside the DHCP pool; indeed quite often the
+reserved static IP addresses lie outside the DHCP range that defines the DHCP pool.
 
-### DHCP Friendly Names
+### DHCP Friendly Name
 
 Sometimes the hostname provided by the DHCP client to the DHCP server is really awkward and
-non-informative, so `Dnsmasq-DHCP` allow users to override that by specifying a human-friendly
-name for a particular DHCP client (using its MAC address as identifier).
+non-informative (or sometimes even empty), so `Dnsmasq-DHCP` allow users to override that 
+advertised name by specifying a human-friendly
+`name` for a particular DHCP client (using its MAC address as identifier).
 
 ### DHCP MAC Address Blocklist
 
@@ -94,7 +95,7 @@ meaning those devices will not receive an IP address from this DHCP server.
 
 If the DNS server of `Dnsmasq-DHCP` is enabled (by setting `dns_server.enable` to `true`),
 then `Dnsmasq-DHCP` maintains a local cache of DNS resolutions but needs to know which
-external or _upstream_ DNS servers should be contacted when something in the LAN network 
+external or _upstream_ DNS servers should be contacted when some DNS client in the LAN network 
 is asking for a DNS resolution that is not cached.
 The upstream servers typically used are:
 
@@ -105,11 +106,34 @@ but you can actually point `Dnsmasq-DHCP` DNS server to another locally-hosted D
 like e.g. the [AdGuard Home](https://github.com/hassio-addons/addon-adguard-home) DNS server
 to block ADs in your LAN.
 
+### DNS Domain
+
+The DNS domain is a string that is used to inform the DNS server what is the domain that it is 
+allowed to resolve.
+For small LANs, typical DNS domain choices are either `lan`, `home.arpa`.
+The `local` DNS domain should not be used as it is reserved for mDNS protocol.
+
+The DNS domain is also advertised to DHCP clients together with the DNS servers and it is used
+by the DHCP client to understand which names can be resolved by the `Dnsmasq-DHCP` server.
+E.g. imagine you have two devices in your LAN `computer` and `printer` and that you reserved a DHCP static IP address
+for those. If your DNS domain is the string `lan` then your device `computer` will be told during the DHCP lease
+negotiation that for anything ending with `lan` the DNS server to go is the `Dnsmasq-DHCP` server.
+In this way `computer` will be able to route DNS queries for `printer.lan` to the `Dnsmasq-DHCP` server,
+which will answer with the IP address leased to the `printer`.
+
+
 ### HomeAssistant mDNS
 
 HomeAssistant runs an [mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) server on port 5353.
 This is not impacted in any way by the DNS server functionality offered by this app.
+Remember that a DNS server does not answer mDNS queries. mDNS is peer-to-peer.
+mDNS queries are sent in multicast mode and only the device which "owns" the FQDN mentioned in the
+query will answer.
 
+To test mDNS you will need to use tools like `avahi-resolve` vs `dig`.
+So as summary:
+* use `dig` to test `Dnsmasq-DHCP` DNS server
+* use `avahi-resolve` to troubleshoot your mDNS setup (e.g. is a particular host answering mDNS queries about his hostname)
 
 
 ## App Configuration
@@ -157,6 +181,7 @@ dhcp_server:
   log_requests: true
 
   # DNS domain to advertise in DHCP answers
+  # See the "DNS Domain" concept explanation above.
   dns_domain: lan
 
   # DNS servers to advertise in DHCP answers.
@@ -205,10 +230,10 @@ dhcp_server:
 # dhcp_pools is the core config for the DHCP server.
 # Each entry in the list represents a network segment. 
 # You can have multiple entries for the same "interface" (with same "gateway" and "netmask") 
-# to provide disjoint IP address ranges within the same network (e.g. if you want to provide .100-120 and .200-220
-# IP addresses of the same network).
-# You can provide IP ranges of different networks in case e.g. the DHCP server
-# is attached to multiple network interfaces (i.e. attached to different networks).
+# to provide disjoint IP address ranges within the same network (e.g. if you want to provide 
+# .100-120 and .200-220 IP addresses of the same network).
+# You can also provide IP ranges of different networks in case e.g. the DHCP server
+# has multiple network interfaces (i.e. it's attached to different networks).
 #
 # In any case remember that the "gateway" IP address must always be an IP address within the
 # network specified by the "start", "end" and "netmask" properties.
@@ -236,18 +261,29 @@ dhcp_pools:
     gateway: 192.168.1.254
     netmask: 255.255.255.0
 
-# DHCP IP address reservations for special/important devices (identified by MAC address)
-dhcp_ip_address_reservations:
-    # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
-    # which uniquely identifies a particular network interface
-  - mac: aa:bb:cc:dd:ee:ff
-    # the "name" of each DHCP IP address reservation must be a valid hostname as per RFC 1123 since 
-    # it is passed to dnsmasq, that will refuse to start if an invalid hostname format is used
-    name: "important-server"
-    # the IP address to provide whenever the DHCP lease request comes from a matching MAC address
-    ip: 192.168.1.15
+# DHCP client settings: 
+# Configure metadata/attributes for DHCP clients to ease management, inventory and troubleshooting on your network.
+# Most notably, for each DHCP client you can set a static IP reservations.
+# Each entry in this list identifies uniquely a DHCP client by its MAC addres.
+# If the 'reserved_ip' field is set to a non-empty IP address, the client will always receive
+# that static IP address (DHCP reservation). If 'reserved_ip' is empty or omitted, the client
+# will receive a dynamic IP but will still benefit from any friendly name, description, tags,
+# link, and DNS aliases configured here.
+# If a DHCP client MAC address does not appear in this list, it will still be able to get a dynamic
+# IP address from the DHCP server but its entry in the UI will lack any extra metadata/attribute.
+dhcp_client_settings:
+
+    # the "name" of each entry must be a valid hostname as per RFC 1123 since it will be provided
+    # to dnsmasq and used with DNS protocol to resolve hostname queries: this means using only
+    # letters, digits and dashes
+  - name: "important-server"
     # the 'description' property is a free-form string to describe the device (e.g. product model, location)
     description: "My important server - rack 3"
+    # the MAC address that uniquely identifies a whole device or, for devices having multiple network interfaces,
+    # which uniquely identifies a particular network interface
+    mac: aa:bb:cc:dd:ee:ff
+    # set reserved_ip to assign a static IP address to this client; leave it empty for a dynamic IP
+    reserved_ip: 192.168.1.15
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page". It is used to render a link into the "current DHCP clients" tab of the UI.
     link: "http://{{ .ip }}/landing-page/for/this/host"
@@ -257,21 +293,29 @@ dhcp_ip_address_reservations:
       - server
       - critical
       - fixed_ip
+    # the 'dns_aliases' property is an optional list of DNS CNAME aliases for this device.
+    # Each alias must be a valid RFC 1123 DNS name (labels separated by dots).
+    # Each alias must end with a dot followed by the 'dhcp_server.dns_domain' string ('lan' by default);
+    # if you forget the <.dns_domain> suffix, it will be appended automatically.
+    # dnsmasq will return a CNAME record pointing each alias to the primary hostname ('name' field).
+    # This means that for this example IP address reservation both `important-server.lan`, 
+    # `myserver.lan` and `the-important-one.lan` names will all resolve to the `192.168.1.15` IP address.
+    dns_aliases:
+      - "myserver.lan"
+      - "the-important-one.lan"
 
-# DHCP friendly name mappings
-# Sometimes DHCP client devices will report an incomprehensible hostname to the DHCP server.
-# This option can be used to remap the hostnames to human-friendly names, via the DHCP protocol.
-# E.g. my Macbook Pro reports itself just as "Mac" to the DHCP server; with this feature you can 
-# remap it to appear as e.g. "My Work Macbook Pro".
-# Please note that a MAC address cannot appear in both the "dhcp_ip_address_reservations" list and 
-# in the "dhcp_clients_friendly_names" list
-dhcp_clients_friendly_names:
-  - mac: dd:ee:aa:dd:bb:ee
-    # similarly to DHCP IP address reservations, the "name" of each DHCP friendly name mapping
-    # must be a valid hostname as per RFC 1123
-    name: "work-laptop"
+  # Entry without reserved_ip: the client gets a dynamic IP but still has a friendly name,
+  # description, tags, a link and DNS aliases configured.
+  # E.g. my Macbook Pro DHCP client reports itself with hostname="Mac" to the DHCP server; 
+  #      with this feature you can remap it to appear as e.g. "work-laptop", provide 
+  #      tag "laptop" and alias that to mylaptop.lan
+  - name: "work-laptop"
     # the 'description' property is a free-form string to describe the device (e.g. product model, location)
     description: "My personal laptop - living room"
+    # MAC address for the DHCP client
+    mac: dd:ee:aa:dd:bb:ee
+    # reserved_ip is empty: this client receives a dynamic IP
+    reserved_ip: ""
     # the 'link' property accepts a basic golang template. Available variables are 'mac', 'name' and 'ip'
     # e.g. "http://{{ ip }}/landing/page/for/this/dynamic/host"
     link: "http://{{ .ip }}/landing-page/for/this/host"
@@ -280,12 +324,18 @@ dhcp_clients_friendly_names:
       # search them in the web UI
       - laptop
       - dynamic_ip
+    # the 'dns_aliases' property is an optional list of DNS CNAME aliases for this device.
+    # Each alias must be a valid RFC 1123 DNS name (labels separated by dots).
+    # Each alias must end with a dot followed by the 'dhcp_server.dns_domain' string ('lan' by default);
+    # if you forget the <.dns_domain> suffix, it will be appended automatically.
+    dns_aliases:
+      - "mylaptop.lan"
+
 
 # DHCP MAC address blocklist
 # Any MAC address added to this list will be ignored by the DHCP server.
 # This means that devices with these MAC addresses will not receive an IP address from this DHCP server.
-# Please note that a MAC address cannot appear in both this list and either
-# "dhcp_ip_address_reservations" or "dhcp_clients_friendly_names".
+# Please note that a MAC address cannot appear in both this list and in "dhcp_client_settings".
 dhcp_mac_address_blocklist:
   - mac: 11:22:33:44:55:66
     description: A reminder about why this device is in the blocklist
@@ -302,6 +352,8 @@ dns_server:
   # log_requests will enable logging all DNS requests... which results in a very verbose log!!
   log_requests: false
   # DNS domain to resolve locally
+  # Unless you're trying to achieve some advanced configuration, you want this to always match
+  # the dhcp_server.dns_domain configuration key
   dns_domain: lan
   # Upstream servers to which queries are forwarded when the answer is not cached locally
   upstream_servers:
@@ -318,10 +370,18 @@ dns_custom_hosts:
   # the "name" must be a valid FQDN according to RFC1123; typical format is "hostname.domain.tld" 
   # where "tld" is the top-level domain; typically this should match the dns_server.dns_domain 
   # but is not strictly required.
-  - name: match(^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$)
+  - name: my-custom-dns-entry.lan
     # you can associate both an IPv4 and IPv6; at least one of the two is required
-    ipv4_address: "str?"
-    ipv6_address: "str?"
+    ipv4_address: "192.168.1.2"
+    ipv6_address: "fe80::3141:f56c:be2d:4116"
+  # typical usecase for this feature is to inject into dnsmasq-dhcp a resolvable name
+  # for the HomeAssistant server itself: the server has to use a static IP address
+  # (you cannot use DHCP to configure the IP address of the DHCP server itself!)
+  # so it's not normally present in the list of hosts known by dnsmasq-dhcp DNS server;
+  # you can use this feature to fix that:
+  - name: homeassistant.lan
+    # replace this with the static IP of the HomeAssistant instance:
+    ipv4_address: "192.168.1.30"
 
 # All settings related to the web UI
 web_ui:
@@ -420,13 +480,12 @@ ping <hostname>.<DNS domain configured>
 The _beta_ version of `Dnsmasq-DHCP` is where most bugfixes are first deployed and tested.
 Only if they are working fine, they will be merged in the _stable_ version.
 
-Please note that as of now the Beta version is provided only for the `amd64` architecture.
-
-Since the _beta_ version of `Dnsmasq-DHCP` does not use a real version scheme, to make sure you're running
-the latest build of the _beta_, please run:
+Since the _beta_ version of `Dnsmasq-DHCP` does not use a real version scheme (the version is
+always set to the string `beta`), to make sure you're running
+the latest build, please run:
 
 ```sh
-docker pull ghcr.io/f18m/amd64-addon-dnsmasq-dhcp:beta
+docker pull ghcr.io/f18m/addon-dnsmasq-dhcp:beta
 ```
 
 on your HomeAssistant server. 
@@ -435,7 +494,7 @@ To switch from the _stable_ version to the _beta_ version, without loosing the l
 DHCP clients, their lease times and the list of the old DHCP clients, just use:
 
 ```sh
-docker pull ghcr.io/f18m/amd64-addon-dnsmasq-dhcp:beta
+docker pull ghcr.io/f18m/addon-dnsmasq-dhcp:beta
 cd /usr/share/hassio/addons/data/79957c2e_dnsmasq-dhcp && sudo cp -av * ../79957c2e_dnsmasq-dhcp-beta/
 ```
 

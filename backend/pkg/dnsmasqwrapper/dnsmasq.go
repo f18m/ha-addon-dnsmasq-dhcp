@@ -20,7 +20,7 @@ import (
 
 // DnsmasqWrapper provides dnsmasq stats queries via CHAOS TXT records.
 type DnsmasqWrapper struct {
-	logger *logger.CustomLogger
+	logger logger.CustomLogger
 
 	// counters for notable dnsmasq log messages, updated by the log-watcher goroutine
 	logCounters     DnsmasqLogCounters
@@ -79,7 +79,7 @@ var dnsmasqLogWarnings = []dnsmasqLogWarning{
 }
 
 // NewDnsmasqWrapper returns an empty DnsmasqWrapper with the provided logger.
-func NewDnsmasqWrapper(logger *logger.CustomLogger) *DnsmasqWrapper {
+func NewDnsmasqWrapper(logger logger.CustomLogger) *DnsmasqWrapper {
 	d := DnsmasqWrapper{
 		logger: logger,
 	}

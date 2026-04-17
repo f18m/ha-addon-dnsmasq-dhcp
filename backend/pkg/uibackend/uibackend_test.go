@@ -1,6 +1,7 @@
 package uibackend
 
 import (
+	"dnsmasq-dhcp-backend/pkg/config"
 	"dnsmasq-dhcp-backend/pkg/ippool"
 	"dnsmasq-dhcp-backend/pkg/logger"
 	"dnsmasq-dhcp-backend/pkg/trackerdb"
@@ -61,31 +62,31 @@ func getMockUIBackend() *UIBackend {
 	//  * IP address reservations
 	//  * friendly names for dynamic clients
 	//  * DHCP range
-	backendopts := AddonOptions{
-		friendlyNames: map[string]DhcpClientFriendlyName{
+	backendopts := config.AddonOptions{
+		DhcpClientSettingsByMAC: map[string]config.DhcpClientSettings{
 			"00:11:22:33:44:55": { // this is the MAC of 'client1'
-				MacAddress:   MustParseMAC("00:11:22:33:44:55"),
-				FriendlyName: "FriendlyClient1",
-				Link:         MustParseTemplate("https://{{ .ip }}/client1-page"),
+				MacAddress: MustParseMAC("00:11:22:33:44:55"),
+				Name:       "FriendlyClient1",
+				Link:       MustParseTemplate("https://{{ .ip }}/client1-page"),
 			},
 			"aa:bb:cc:dd:ee:ff": { // this is the MAC of 'client4'
-				MacAddress:   MustParseMAC("aa:bb:CC:DD:ee:FF"),
-				FriendlyName: "FriendlyClient4",
-				Link:         MustParseTemplate("https://{{ .hostname }}/client4-page"),
+				MacAddress: MustParseMAC("aa:bb:CC:DD:ee:FF"),
+				Name:       "FriendlyClient4",
+				Link:       MustParseTemplate("https://{{ .hostname }}/client4-page"),
 			},
 		},
-		ipAddressReservationsByIP: map[netip.Addr]IpAddressReservation{
+		DhcpClientSettingsByIP: map[netip.Addr]config.DhcpClientSettings{
 			netip.MustParseAddr("192.168.0.3"): {
-				Name: "test-friendly-name",
-				Mac:  MustParseMAC("00:11:22:33:44:56"), // this is the MAC of 'client2'
-				IP:   netip.MustParseAddr("192.168.0.3"),
-				Link: MustParseTemplate("https://{{ .ip }}"),
+				Name:       "test-friendly-name",
+				MacAddress: MustParseMAC("00:11:22:33:44:56"), // this is the MAC of 'client2'
+				IP:         netip.MustParseAddr("192.168.0.3"),
+				Link:       MustParseTemplate("https://{{ .ip }}"),
 			},
 		},
-		dhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
+		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	return &UIBackend{
-		logger:    logger.NewCustomLogger("unit tests"),
+		logger:    logger.NewNopCustomLogger("unit tests"),
 		options:   backendopts,
 		trackerDB: trackerdb.NewTestDB(),
 	}
@@ -93,34 +94,32 @@ func getMockUIBackend() *UIBackend {
 
 // TestGetDescriptionFor tests that getDescriptionFor() correctly returns descriptions for a given MAC address.
 func TestGetDescriptionFor(t *testing.T) {
-	backendopts := AddonOptions{
-		friendlyNames: map[string]DhcpClientFriendlyName{
+	backendopts := config.AddonOptions{
+		DhcpClientSettingsByMAC: map[string]config.DhcpClientSettings{
 			"00:11:22:33:44:55": {
-				MacAddress:   MustParseMAC("00:11:22:33:44:55"),
-				FriendlyName: "FriendlyClient1",
-				Description:  "My laptop",
+				MacAddress:  MustParseMAC("00:11:22:33:44:55"),
+				Name:        "FriendlyClient1",
+				Description: "My laptop",
 			},
-		},
-		ipAddressReservationsByIP: map[netip.Addr]IpAddressReservation{
-			netip.MustParseAddr("192.168.0.3"): {
-				Name:        "client2",
-				Mac:         MustParseMAC("00:11:22:33:44:56"),
-				IP:          netip.MustParseAddr("192.168.0.3"),
-				Description: "My server",
-			},
-		},
-		ipAddressReservationsByMAC: map[string]IpAddressReservation{
 			"00:11:22:33:44:56": {
 				Name:        "client2",
-				Mac:         MustParseMAC("00:11:22:33:44:56"),
+				MacAddress:  MustParseMAC("00:11:22:33:44:56"),
 				IP:          netip.MustParseAddr("192.168.0.3"),
 				Description: "My server",
 			},
 		},
-		dhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
+		DhcpClientSettingsByIP: map[netip.Addr]config.DhcpClientSettings{
+			netip.MustParseAddr("192.168.0.3"): {
+				Name:        "client2",
+				MacAddress:  MustParseMAC("00:11:22:33:44:56"),
+				IP:          netip.MustParseAddr("192.168.0.3"),
+				Description: "My server",
+			},
+		},
+		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	backend := &UIBackend{
-		logger:    logger.NewCustomLogger("unit tests"),
+		logger:    logger.NewNopCustomLogger("unit tests"),
 		options:   backendopts,
 		trackerDB: trackerdb.NewTestDB(),
 	}
@@ -159,34 +158,32 @@ func TestGetDescriptionFor(t *testing.T) {
 
 // TestGetTagsFor tests that getTagsFor() correctly returns tags for a given MAC address.
 func TestGetTagsFor(t *testing.T) {
-	backendopts := AddonOptions{
-		friendlyNames: map[string]DhcpClientFriendlyName{
+	backendopts := config.AddonOptions{
+		DhcpClientSettingsByMAC: map[string]config.DhcpClientSettings{
 			"00:11:22:33:44:55": {
-				MacAddress:   MustParseMAC("00:11:22:33:44:55"),
-				FriendlyName: "FriendlyClient1",
-				Tags:         []string{"server", "production"},
+				MacAddress: MustParseMAC("00:11:22:33:44:55"),
+				Name:       "FriendlyClient1",
+				Tags:       []string{"server", "production"},
 			},
-		},
-		ipAddressReservationsByIP: map[netip.Addr]IpAddressReservation{
-			netip.MustParseAddr("192.168.0.3"): {
-				Name: "client2",
-				Mac:  MustParseMAC("00:11:22:33:44:56"),
-				IP:   netip.MustParseAddr("192.168.0.3"),
-				Tags: []string{"iot"},
-			},
-		},
-		ipAddressReservationsByMAC: map[string]IpAddressReservation{
 			"00:11:22:33:44:56": {
-				Name: "client2",
-				Mac:  MustParseMAC("00:11:22:33:44:56"),
-				IP:   netip.MustParseAddr("192.168.0.3"),
-				Tags: []string{"iot"},
+				Name:       "client2",
+				MacAddress: MustParseMAC("00:11:22:33:44:56"),
+				IP:         netip.MustParseAddr("192.168.0.3"),
+				Tags:       []string{"iot"},
 			},
 		},
-		dhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
+		DhcpClientSettingsByIP: map[netip.Addr]config.DhcpClientSettings{
+			netip.MustParseAddr("192.168.0.3"): {
+				Name:       "client2",
+				MacAddress: MustParseMAC("00:11:22:33:44:56"),
+				IP:         netip.MustParseAddr("192.168.0.3"),
+				Tags:       []string{"iot"},
+			},
+		},
+		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
 	}
 	backend := &UIBackend{
-		logger:    logger.NewCustomLogger("unit tests"),
+		logger:    logger.NewNopCustomLogger("unit tests"),
 		options:   backendopts,
 		trackerDB: trackerdb.NewTestDB(),
 	}

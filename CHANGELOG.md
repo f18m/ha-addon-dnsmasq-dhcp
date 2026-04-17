@@ -19,18 +19,25 @@ All entries in the `dhcp_client_settings` list must:
 
 The upgrade procedure from version 4.x.x consists in:
 
+1. In Home Assistant UI go to `Settings->Apps->Dnsmasq-DHCP`; you should have a screen indicating that version 5.0.0 is now available; click "Stop" to stop the addon and then click the "Update" button to download v5.
 
-1. In Home Assistant UI go to `Settings->Apps->Dnsmasq-DHCP->Configuration` and click "Edit in YAML" from the more-options menu (3 vertical dots).
+2. In Home Assistant UI go to `Configuration` tab for the Dnsmasq-DHCP App and click "Edit in YAML" from the more-options menu (3 vertical dots).
+Then copy and paste the whole config somewhere as backup in case you ever need to rollback to version 4.x.y
 
-2. Use Replace Text (CTRL+F shortcut) and replace `dhcp_ip_address_reservations` with `dhcp_client_settings`
+3. Use Replace Text (CTRL+F shortcut) and replace `dhcp_ip_address_reservations` with `dhcp_client_settings`
 
-3. Use Replace Text (CTRL+F shortcut) and replace the string `ip: ` with `reserved_ip: ` (all occurrences)
+4. Use Replace Text (CTRL+F shortcut) and replace the string `ip: ` with `reserved_ip: ` (all occurrences)
 
-4. Move all entries of the `dhcp_clients_friendly_names` list in the `dhcp_client_settings` list; for each entry make sure to provide a valid hostname (containing only letters, digits and dashes) for its `name`. Entries in this list used to have a relaxed check on the `name` property. Now this is not the case any longer as `name` will be used on the DNS protocol and thus needs to comply with RFC1123 specs.
+5. Move all entries of the `dhcp_clients_friendly_names` list in the `dhcp_client_settings` list; for each entry make sure to provide a valid hostname (containing only letters, digits and dashes) for its `name`. Entries in this list used to have a relaxed check on the `name` property. Now this is not the case any longer as `name` will be used on the DNS protocol and thus needs to comply with RFC1123 specs.
 If you had spaces, underscores or other characters now invalid in the `name`, please consider now using the `description` field to store such human-friendly string.
 Except for the `name`, no change is needed in remaining parameters for the entries migrated from `dhcp_clients_friendly_names` to `dhcp_client_settings` list.
 
-5. Remove the `dhcp_clients_friendly_names:` string which should be now an empty list.
+6. Remove the `dhcp_clients_friendly_names:` string which should be now an empty list.
+
+7. Your configuration is now migrated correctly! Hit "Save" (bottom of the `Configuration` tab) then go back to
+`Info` tab and click "Start". 
+
+8. Click on the `Log` tab and check the log for errors. If you see the app restarting continuously then look carefully in the log for an error. Typically you just have a syntax error in the YAML config file (fix that and save the update configuration till the App stops complaining and runs in a stable way).
 
 
 > ✅ New Features

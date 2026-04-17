@@ -127,25 +127,27 @@ jobs:
           fi
             
       - name: Check coherency between tag and config.yaml
+        if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
         run: |
-          git_tag=${GITHUB_REF##*/}
+          set -euo pipefail
+
+          git_tag="${GITHUB_REF##*/}"
           echo "Git tag is [${git_tag}]"
 
-          # now get the version declared in config.yaml
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && \
-            chmod +x /usr/bin/yq
-          config_tag=$(yq .version ./myaddon/config.yaml)
+          # Install yq in a writable location
+          sudo wget -q https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+
+          # Read version from the actual addon config file in this repo
+          config_tag="$(/usr/local/bin/yq -r '.version' ./config.yaml)"
           echo "Config YAML tag is [${config_tag}]"
-          
-          # compare
+
           if [[ "${git_tag}" != "${config_tag}" ]]; then
-            echo "MISMATCH DETECTED between Git and config.yaml. Please remember to bump the version"
-            echo "inside config.yaml before releasing a new tag."
+            echo "MISMATCH DETECTED between Git and config.yaml. Please remember to bump the version inside config.yaml before releasing a new tag."
             exit 123
-          else
-            echo "Git and config.yaml are coherent! Proceeding."
           fi
-        if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
+
+          echo "Git and config.yaml are coherent! Proceeding."
 
       - name: Get build matrix
         id: matrix

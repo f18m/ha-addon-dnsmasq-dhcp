@@ -228,7 +228,7 @@ function initCurrentTable() {
                 { title: 'IP Address', type: 'ip-address', render: renderWithCopyButton },
                 { title: 'MAC Address', type: 'string', render: renderWithCopyButton },
                 { title: 'Expires in', 'orderDataType': 'custom-date-order' },
-                { title: 'Static IP?', type: 'string', width: '8%' },
+                { title: 'Reserved IP?', type: 'string', width: '8%' },
                 { title: 'Tags', type: 'string', width: '15%' }
             ],
             data: [],
@@ -265,7 +265,7 @@ function initPastTable() {
                 { title: 'Hostname', type: 'string' },
                 { title: 'Description', type: 'string' },
                 { title: 'MAC Address', type: 'string', render: renderWithCopyButton },
-                { title: 'Static IP?', type: 'string', width: '8%' },
+                { title: 'Reserved IP?', type: 'string', width: '8%' },
                 { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order', width: '10%' },
                 { title: 'Notes', type: 'string', width: '25%' },
                 { title: 'Tags', type: 'string', width: '20%' }
@@ -561,7 +561,7 @@ function updateDHCPStatus(data, dhcp_static_ip, dhcp_addresses_used, messageElem
 
     // update the message
     messageElem.innerHTML = "<span class='boldText'>" + data.current_clients.length + " clients</span> currently hold a DHCP lease.<br/>" + 
-                        dhcp_static_ip + " clients have a static IP address configuration.<br/>" +
+                        dhcp_static_ip + " clients have a reserved IP address.<br/>" +
                         usage_str +
                         past_client_str +
                         counters_str;

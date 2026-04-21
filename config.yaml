@@ -83,7 +83,7 @@ options:
       dns_aliases:
         - "alias-for-this-friendly-device"
   dhcp_mac_address_blocklist:
-    - mac: aa:bb:cc:dd:ee:ff
+    - mac: aa:bb:cc:dd:ee:fa
       description: "This is a blocked MAC address"
   dns_server:
     enable: true

@@ -9,7 +9,7 @@ on:
 
 env:
   ARCHITECTURES: '["amd64", "aarch64"]'
-  IMAGE_NAME: my-image
+  IMAGE_NAME: addon-dnsmasq-dhcp
 
 permissions:
   contents: read

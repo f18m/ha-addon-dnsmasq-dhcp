@@ -122,7 +122,6 @@ jobs:
           if [[ -z "${sanitized_branch_name}" ]]; then
             sanitized_branch_name="branch"
           fi
-          echo "GITHUB_REF is: ${GITHUB_REF}; git_tag is [${git_tag}]; branch_name is [${branch_name}]; sanitized_branch_name is [${sanitized_branch_name}]"
           if [[ -n "${GITHUB_REF##*refs/tags/*}" ]]; then
             echo "This looks like a non-TAG build"
             echo "is_tag=false" >> $GITHUB_ENV
@@ -134,6 +133,7 @@ jobs:
             echo "is_tag=true" >> $GITHUB_OUTPUT
             echo "tag=${git_tag}" >> $GITHUB_OUTPUT
           fi
+          echo "GITHUB_REF is [${GITHUB_REF}]; is_tag=${is_tag}; git_tag is [${git_tag}]; branch_name is [${branch_name}]; sanitized_branch_name is [${sanitized_branch_name}]; docker tag selected as [${tag}]"
             
       - name: Check coherency between tag and config.yaml
         if: ${{ needs.check_tag.outputs.is_tag == 'true' }}

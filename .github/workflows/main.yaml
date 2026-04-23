@@ -1,6 +1,9 @@
 name: Build
 
 on:
+  push:
+    branches:
+      - '**'
   release:
     types: [published]
 

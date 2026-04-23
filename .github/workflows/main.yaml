@@ -1,162 +1,24 @@
-#
-# This pipeline is testing and building the addon for the Home Assistant
-# and publishing its docker image to the GHCR registry
-#
-name: "Main CI"
+name: Build
 
-on: 
-  push:
-    branches:
-      - '**'
-    tags:
-      - '*'
-  # add a cron job to run every month -- ensure there's a valid CI build every month
-  # this is also useful to check if something breaks e.g. due to infrastructure changes (e.g. Ubuntu OS)
-  # and there are no commits for a long time on the project
-  schedule:
-    - cron: '0 0 1 * *'
+on:
+  release:
+    types: [published]
 
 env:
   ARCHITECTURES: '["amd64", "aarch64"]'
-  IMAGE_NAME: addon-dnsmasq-dhcp
+  IMAGE_NAME: my-image
 
 permissions:
   contents: read
 
 jobs:
-  unit_tests:
-    name: Golang Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v6
-
-      - name: Build golang code
-        run: |
-          cd backend
-          go build -o uibackend main.go
-
-      - name: Install test dependencies
-        run: |
-          sudo apt install -y dnsmasq
-
-      - name: Run unit tests
-        run: |
-          cd backend
-          go test -v ./...
-
-  golangci:
-    name: Linter
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          # we need to pin the go-version because we also pin the golangci-lint version 
-          # and we need to ensure compatibility between the two
-          # IMPORTANT: this should be kept in sync with the version of the "golang" image
-          # used in the build step of the Dockerfile 
-          go-version: '1.26.2'
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.11.4
-          working-directory: backend
-        
-  check_tag:
-    name: Check if Tag Build
-    runs-on: ubuntu-latest
-    outputs:
-      is_tag: ${{ steps.check.outputs.is_tag }}
-    steps:
-    - name: Check if it's a tagged release
-      id: check
-      run: |
-        git_tag=${GITHUB_REF##*/}
-        echo "GITHUB_REF is: ${GITHUB_REF}; git_tag is [${git_tag}]; branch_name is [${branch_name}]"
-        if [[ -n "${GITHUB_REF##*refs/tags/*}" ]]; then
-          echo "This looks like a non-TAG build"
-          echo "is_tag=false" >> $GITHUB_ENV
-          echo "is_tag=false" >> $GITHUB_OUTPUT
-        else
-          echo "This looks like a TAG build"
-          echo "is_tag=true" >> $GITHUB_ENV
-          echo "is_tag=true" >> $GITHUB_OUTPUT
-        fi
-    - run: |
-        echo "This is a TAG build"
-      if: ${{ steps.check.outputs.is_tag == 'true' }}
-    - run: |
-        echo "This is a non-TAG build"
-      if: ${{ steps.check.outputs.is_tag == 'false' }}
-
-
-    # -------------------------------------------------------------------------- #
-    #                                  PUBLISH                                   #
-    # -------------------------------------------------------------------------- #
-
-  publish_init:
+  init:
     name: Initialize build
     runs-on: ubuntu-latest
-    needs:
-      - unit_tests
-      - check_tag
-      - golangci
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
-      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
-
-      - name: Choose Docker image tag
-        id: tag
-        run: |
-          git_tag=${GITHUB_REF##*/}
-          branch_name="${GITHUB_REF_NAME:-${GITHUB_REF#refs/heads/}}"
-          sanitized_branch_name="$(
-            echo "${branch_name}" \
-              | tr '[:upper:]' '[:lower:]' \
-              | sed -E 's|[^a-z0-9_.-]+|-|g; s|^[.-]+||; s|-+$||'
-          )"
-          sanitized_branch_name="${sanitized_branch_name:0:128}"
-          if [[ -z "${sanitized_branch_name}" ]]; then
-            sanitized_branch_name="branch"
-          fi
-          if [[ -n "${GITHUB_REF##*refs/tags/*}" ]]; then
-            echo "This looks like a non-TAG build"
-            echo "is_tag=false" >> $GITHUB_ENV
-            echo "is_tag=false" >> $GITHUB_OUTPUT
-            echo "tag=${sanitized_branch_name}" >> $GITHUB_OUTPUT
-          else
-            echo "This looks like a TAG build"
-            echo "is_tag=true" >> $GITHUB_ENV
-            echo "is_tag=true" >> $GITHUB_OUTPUT
-            echo "tag=${git_tag}" >> $GITHUB_OUTPUT
-          fi
-          echo "GITHUB_REF is [${GITHUB_REF}]; is_tag=${is_tag}; git_tag is [${git_tag}]; branch_name is [${branch_name}]; sanitized_branch_name is [${sanitized_branch_name}]; docker tag selected as [${tag}]"
-            
-      - name: Check coherency between tag and config.yaml
-        if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
-        run: |
-          set -euo pipefail
-
-          git_tag="${GITHUB_REF##*/}"
-          echo "Git tag is [${git_tag}]"
-
-          # Install yq in a writable location
-          sudo wget -q https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
-          sudo chmod +x /usr/local/bin/yq
-
-          # Read version from the actual addon config file in this repo
-          config_tag="$(/usr/local/bin/yq -r '.version' ./config.yaml)"
-          echo "Config YAML tag is [${config_tag}]"
-
-          if [[ "${git_tag}" != "${config_tag}" ]]; then
-            echo "MISMATCH DETECTED between Git and config.yaml. Please remember to bump the version inside config.yaml before releasing a new tag."
-            exit 123
-          fi
-
-          echo "Git and config.yaml are coherent! Proceeding."
 
       - name: Get build matrix
         id: matrix
@@ -165,12 +27,9 @@ jobs:
           architectures: ${{ env.ARCHITECTURES }}
           image-name: ${{ env.IMAGE_NAME }}
 
-
-  publish_build:
+  build:
     name: Build ${{ matrix.arch }} image
-    needs:
-      - publish_init
-      - check_tag
+    needs: init
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read # To check out the code
@@ -178,7 +37,7 @@ jobs:
       packages: write # To push built images to GitHub Container Registry
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.publish_init.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.init.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -189,17 +48,14 @@ jobs:
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           image: ${{ matrix.image }}
           image-tags: |
-            ${{ needs.publish_init.outputs.tag }}
+            ${{ github.event.release.tag_name }}
+            latest
           push: "true"
-          version: ${{ needs.publish_init.outputs.tag }}
+          version: ${{ github.event.release.tag_name }}
 
-
-  publish_manifest:
+  manifest:
     name: Publish multi-arch manifest
-    needs:
-      - publish_init
-      - publish_build
-      - check_tag
+    needs: [init, build]
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Write needed for Cosign signing (issue OIDC token for signing)
@@ -212,17 +68,5 @@ jobs:
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           image-name: ${{ env.IMAGE_NAME }}
           image-tags: |
-            ${{ needs.publish_init.outputs.tag }}
-
-
-
-    #   # -------------------------------------------------------------------------- #
-    #   #                                 Job summary                                #
-    #   # -------------------------------------------------------------------------- #
-
-    #   - name: Emit Job Summary
-    #     run: |
-    #       echo "### Published Docker Image :rocket:" >> $GITHUB_STEP_SUMMARY
-    #       echo '```' >> $GITHUB_STEP_SUMMARY
-    #       echo "ghcr.io/f18m/${{ github.repository }}:${{ needs.publish_init.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-    #       echo '```' >> $GITHUB_STEP_SUMMARY
+            ${{ github.event.release.tag_name }}
+            latest

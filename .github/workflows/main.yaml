@@ -113,12 +113,21 @@ jobs:
         run: |
           git_tag=${GITHUB_REF##*/}
           branch_name="${GITHUB_REF_NAME:-${GITHUB_REF#refs/heads/}}"
-          echo "GITHUB_REF is: ${GITHUB_REF}; git_tag is [${git_tag}]; branch_name is [${branch_name}]"
+          sanitized_branch_name="$(
+            echo "${branch_name}" \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed -E 's|[^a-z0-9_.-]+|-|g; s|^[.-]+||; s|-+$||'
+          )"
+          sanitized_branch_name="${sanitized_branch_name:0:128}"
+          if [[ -z "${sanitized_branch_name}" ]]; then
+            sanitized_branch_name="branch"
+          fi
+          echo "GITHUB_REF is: ${GITHUB_REF}; git_tag is [${git_tag}]; branch_name is [${branch_name}]; sanitized_branch_name is [${sanitized_branch_name}]"
           if [[ -n "${GITHUB_REF##*refs/tags/*}" ]]; then
             echo "This looks like a non-TAG build"
             echo "is_tag=false" >> $GITHUB_ENV
             echo "is_tag=false" >> $GITHUB_OUTPUT
-            echo "tag=${branch_name}" >> $GITHUB_OUTPUT
+            echo "tag=${sanitized_branch_name}" >> $GITHUB_OUTPUT
           else
             echo "This looks like a TAG build"
             echo "is_tag=true" >> $GITHUB_ENV
@@ -157,12 +166,11 @@ jobs:
           image-name: ${{ env.IMAGE_NAME }}
 
 
-  publish_tagged_build:
+  publish_build:
     name: Build ${{ matrix.arch }} image
     needs:
       - publish_init
       - check_tag
-    # if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read # To check out the code
@@ -190,9 +198,8 @@ jobs:
     name: Publish multi-arch manifest
     needs:
       - publish_init
-      - publish_tagged_build
+      - publish_build
       - check_tag
-    # if: ${{ needs.check_tag.outputs.is_tag == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Write needed for Cosign signing (issue OIDC token for signing)

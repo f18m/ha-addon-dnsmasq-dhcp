@@ -11,6 +11,7 @@ var config = { // this global variable is initialized via setConfig()
     "dhcpServerStartTime": null,
     "dhcpPoolSize": null,
     "dnsCustomHosts": null,
+    "numRows": null,
 }
 var global_objects = {
     // Datatables.net instances:
@@ -232,7 +233,7 @@ function initCurrentTable() {
                 { title: 'Tags', type: 'string', width: '15%' }
             ],
             data: [],
-            pageLength: 20,
+            pageLength: config["numRows"],
             responsive: true,
             className: 'data-table',
             layout: {
@@ -271,7 +272,7 @@ function initPastTable() {
                 { title: 'Tags', type: 'string', width: '20%' }
             ],
             data: [],
-            pageLength: 20,
+            pageLength: config["numRows"],
             responsive: true,
             className: 'data-table',
             layout: {
@@ -297,6 +298,7 @@ function initdnsCustomHostsTable(dnsCustomHosts) {
                 { title: 'IPv6 Address', type: 'string' },
             ],
             data: [],
+            pageLength: config["numRows"],
             responsive: true,
             className: 'data-table',
             layout: {
@@ -331,6 +333,7 @@ function initDnsUpstreamServersTable() {
                 { title: 'Queries failed', type: 'num' },
             ],
             data: [],
+            pageLength: config["numRows"],
             responsive: true,
             className: 'data-table',
             layout: {
@@ -360,13 +363,19 @@ function initAll() {
     initTableDarkOrLightTheme()
 }
 
-function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize, dnsCustomHosts) {
+function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize, dnsCustomHosts, numRows) {
+    var parsedNumRows = parseInt(numRows, 10);
+    if (!Number.isInteger(parsedNumRows) || parsedNumRows <= 0) {
+        parsedNumRows = 20;
+    }
+
     // update the global config variable
     config = {
         "webSocketURI": webSocketURI,
         "dhcpServerStartTime": dhcpServerStartTime,
         "dhcpPoolSize": dhcpPoolSize,
-        "dnsCustomHosts": dnsCustomHosts
+        "dnsCustomHosts": dnsCustomHosts,
+        "numRows": parsedNumRows
     }
 
     // now that we have the URI of the websocket server, we can open the connection

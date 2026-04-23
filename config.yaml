@@ -102,6 +102,7 @@ options:
     log_activity: false
     port: 8976
     refresh_interval_sec: 10
+    data_tables_num_rows: 20
 schema:
   interfaces:
     # we expect a list of valid network interfaces; the character "@" which typically appears in
@@ -158,6 +159,7 @@ schema:
     log_activity: bool
     port: int
     refresh_interval_sec: int
+    data_tables_num_rows: int
 # categorize this addon as a "system" addon
 startup: system
 privileged:

@@ -443,7 +443,8 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		LogCounters: b.dnsmasq.GetLogCounters(),
 
 		// misc
-		AddonVersion: b.config.Version,
+		AddonVersion:      b.config.Version,
+		DataTablesNumRows: b.options.DataTablesNumRows,
 	}
 
 	err := b.htmlTemplate.Execute(w, templateData)

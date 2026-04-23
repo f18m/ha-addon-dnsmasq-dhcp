@@ -393,6 +393,8 @@ web_ui:
   # defines how frequently the tables in the web UI will refresh;
   # if set to zero, table refresh is disabled
   refresh_interval_sec: 10
+  # default number of entries that will show up in each table
+  data_tables_num_rows: 20
 ```
 
 In case you want to enable the DNS server, you probably want to configure in the `dhcp_server`

@@ -45,8 +45,15 @@
         var templated_webSocketURI = {{ .WebSocketURI }}
         var templated_dhcpServerStartTime = {{ .DHCPServerStartTime }}
         var templated_dnsCustomHosts = {{ .DnsCustomHostsJSON }};
+        var templated_dataTablesNumRows = {{ .DataTablesNumRows }};
 
-        setConfig(templated_webSocketURI, templated_dhcpServerStartTime, templated_dhcpPoolSize, templated_dnsCustomHosts);
+        setConfig(
+            templated_webSocketURI, 
+            templated_dhcpServerStartTime, 
+            templated_dhcpPoolSize, 
+            templated_dnsCustomHosts,
+            templated_dataTablesNumRows
+        );
     </script>
 </head>
 <body>

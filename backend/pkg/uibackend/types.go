@@ -152,5 +152,6 @@ type HtmlTemplate struct {
 	JavascriptFileContent htmltemplate.JS
 
 	// misc
-	AddonVersion string
+	AddonVersion      string
+	DataTablesNumRows int
 }

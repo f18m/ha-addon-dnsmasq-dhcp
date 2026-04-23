@@ -43,6 +43,7 @@ type AddonOptions struct {
 	// web UI
 	WebUIPort            int
 	WebUIRefreshInterval time.Duration
+	DataTablesNumRows    int
 
 	// Lease times
 	DefaultLease            string
@@ -234,6 +235,7 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 			Log                bool `json:"log_activity"`
 			Port               int  `json:"port"`
 			RefreshIntervalSec int  `json:"refresh_interval_sec"`
+			DataTablesNumRows  int  `json:"data_tables_num_rows"`
 		} `json:"web_ui"`
 	}
 	err := json.Unmarshal(data, &cfg)
@@ -414,6 +416,7 @@ func (o *AddonOptions) LoadFromJSON(data []byte, logger logger.CustomLogger) err
 	o.LogDHCP = cfg.DhcpServer.LogDHCP
 	o.LogWebUI = cfg.WebUI.Log
 	o.WebUIPort = cfg.WebUI.Port
+	o.DataTablesNumRows = cfg.WebUI.DataTablesNumRows
 	o.DefaultLease = cfg.DhcpServer.DefaultLease
 	o.AddressReservationLease = cfg.DhcpServer.AddressReservationLease
 	o.DnsEnable = cfg.DnsServer.Enable

@@ -86,6 +86,9 @@ function copyToClipboard(btn) {
 // SVG clipboard icon used by copy buttons
 var COPY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 
+// SVG globe/DNS icon used by the DNS names info button
+var DNS_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+
 // Render a table cell value with a small inline copy-to-clipboard button.
 // The "type" parameter is the DataTables rendering context; the button is
 // only injected for the 'display' type so that sorting and filtering still
@@ -97,6 +100,45 @@ function renderWithCopyButton(data, type) {
     // Escape special HTML characters to prevent injection via the attribute value and cell content
     var escaped = data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     return '<span class="mono-address">' + escaped + '</span><button class="copy-btn" onclick="copyToClipboard(this)" data-copy="' + escaped + '" title="Copy to clipboard">' + COPY_ICON_SVG + '</button>';
+}
+
+// Open the DNS names dialog for the given device, showing all its DNS-resolvable names.
+function showDnsNamesDialog(deviceName, dnsNames) {
+    var dialog = document.getElementById('dns_names_dialog');
+    var title = document.getElementById('dns_names_dialog_title');
+    var list = document.getElementById('dns_names_dialog_list');
+
+    title.textContent = 'DNS Names for ' + deviceName;
+    list.innerHTML = '';
+    dnsNames.forEach(function(name) {
+        var li = document.createElement('li');
+        li.className = 'dns-name-entry';
+        li.textContent = name;
+        list.appendChild(li);
+    });
+
+    dialog.showModal();
+}
+
+// Render the hostname cell, appending a small DNS-info button when dns_names are available.
+// The "type" parameter is the DataTables rendering context; the button is
+// only injected for the 'display' type so that sorting and filtering still
+// operate on the plain text value.
+function renderHostnameWithDnsInfo(hostname, dnsNames, type) {
+    if (type !== 'display') {
+        return hostname;
+    }
+    var escaped = (hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    if (!dnsNames || dnsNames.length === 0) {
+        return escaped;
+    }
+    var namesAttr = JSON.stringify(dnsNames).replace(/"/g, '&quot;');
+    var deviceLabel = escaped || 'this device';
+    return escaped +
+        '<button class="dns-names-btn" ' +
+        'onclick="showDnsNamesDialog(\'' + deviceLabel.replace(/'/g, "\\'") + '\', JSON.parse(this.getAttribute(\'data-dns-names\')))" ' +
+        'data-dns-names="' + namesAttr + '" ' +
+        'title="Show all DNS names">' + DNS_ICON_SVG + '</button>';
 }
 
 // Generate a consistent color for a tag based on its string
@@ -468,8 +510,9 @@ function processWebSocketDHCPCurrentClients(data) {
         time_left_str = formatTimeLeft(item.lease.expires)
         tags_str = formatTags(item.tags)
         description_str = (item.description && item.description.length > 0) ? item.description : 'N/A'
+        hostname_str = renderHostnameWithDnsInfo(item.lease.hostname, item.dns_names, 'display')
         newData.push([index + 1,
-            item.friendly_name, item.lease.hostname, description_str, link_str,
+            item.friendly_name, hostname_str, description_str, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
             time_left_str, static_ip_str, tags_str]);
         newTimeLeftColumn.push(time_left_str);
@@ -512,8 +555,9 @@ function processWebSocketDHCPPastClients(data) {
         last_seen_str = formatTimeSince(item.past_info.last_seen)
         tags_str = formatTags(item.tags)
         description_str = (item.description && item.description.length > 0) ? item.description : 'N/A'
+        hostname_str = renderHostnameWithDnsInfo(item.past_info.hostname, item.dns_names, 'display')
         newData.push([index + 1,
-            item.friendly_name, item.past_info.hostname, description_str,
+            item.friendly_name, hostname_str, description_str,
             item.past_info.mac_addr, static_ip_str, 
             last_seen_str, item.notes, tags_str]);
         newLastSeenColumn.push(last_seen_str);

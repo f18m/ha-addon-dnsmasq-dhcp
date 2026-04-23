@@ -164,5 +164,16 @@
             <a href="https://github.com/f18m/ha-addon-dnsmasq-dhcp/" target="_blank">Project Homepage</a>
         </div>
     </div>
+
+    <!-- Dialog for displaying all DNS-resolvable names of a DHCP client -->
+    <dialog id="dns_names_dialog">
+        <div class="dialog-header">
+            <span id="dns_names_dialog_title">DNS Names</span>
+            <button class="dialog-close-btn" onclick="document.getElementById('dns_names_dialog').close()" title="Close">✕</button>
+        </div>
+        <div class="dialog-body">
+            <ul id="dns_names_dialog_list"></ul>
+        </div>
+    </dialog>
 </body>
 </html>

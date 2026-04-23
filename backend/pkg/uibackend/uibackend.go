@@ -228,6 +228,7 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 
 		pastClients[i].Tags = b.getTagsFor(deadC.MacAddr)
 		pastClients[i].Description = b.getDescriptionFor(deadC.MacAddr)
+		pastClients[i].DnsNames = b.getDnsNamesFor(deadC.MacAddr, deadC.Hostname)
 
 		// create note field
 		if deadC.DhcpServerStartEpoch < b.startEpoch { //nolint:gocritic
@@ -498,6 +499,21 @@ func (b *UIBackend) getDescriptionFor(mac net.HardwareAddr) string {
 	return ""
 }
 
+func (b *UIBackend) getDnsNamesFor(mac net.HardwareAddr, hostname string) []string {
+	var names []string
+	metadata, ok := b.options.GetDhcpClientSettingsByMAC(mac)
+	if ok {
+		// Use the configured name as the primary DNS-resolvable name
+		names = append(names, fmt.Sprintf("%s.%s", metadata.Name, b.options.DnsDomain))
+		// Append any configured CNAME aliases
+		names = append(names, metadata.DnsAliases...)
+	} else if hostname != dnsmasqMarkerForMissingHostname && hostname != "" {
+		// Fall back to the DHCP-reported hostname
+		names = append(names, fmt.Sprintf("%s.%s", hostname, b.options.DnsDomain))
+	}
+	return names
+}
+
 func (b *UIBackend) hasIpAddressReservationByIP(ip netip.Addr, macExpected net.HardwareAddr) bool {
 	res, hasReservation := b.options.GetDhcpClientSettingsByIP(ip)
 	if hasReservation {
@@ -584,6 +600,7 @@ func (b *UIBackend) processLeaseUpdatesFromArray(updatedLeases []*dnsmasq.Lease)
 		d.EvaluatedLink = b.evaluateLink(lease.Hostname, lease.IPAddr, lease.MacAddr)
 		d.Tags = b.getTagsFor(lease.MacAddr)
 		d.Description = b.getDescriptionFor(lease.MacAddr)
+		d.DnsNames = b.getDnsNamesFor(lease.MacAddr, lease.Hostname)
 
 		// processing complete:
 		b.dhcpClientData = append(b.dhcpClientData, d)

@@ -133,12 +133,31 @@ function renderHostnameWithDnsInfo(hostname, dnsNames, type) {
         return escaped;
     }
     var namesAttr = JSON.stringify(dnsNames).replace(/"/g, '&quot;');
-    var deviceLabel = escaped || 'this device';
+    // Use data attributes only; the click handler is set up via event delegation (see initDnsNamesDialogHandler).
+    // This avoids putting JS-escaped values into inline onclick attributes.
     return escaped +
         '<button class="dns-names-btn" ' +
-        'onclick="showDnsNamesDialog(\'' + deviceLabel.replace(/'/g, "\\'") + '\', JSON.parse(this.getAttribute(\'data-dns-names\')))" ' +
         'data-dns-names="' + namesAttr + '" ' +
+        'data-device-name="' + escaped + '" ' +
         'title="Show all DNS names">' + DNS_ICON_SVG + '</button>';
+}
+
+// Set up a single delegated click handler for all DNS-names buttons.
+// Called once during initAll() so that dynamically-rendered table rows are covered.
+function initDnsNamesDialogHandler() {
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.dns-names-btn');
+        if (!btn) return;
+        var deviceName = btn.getAttribute('data-device-name') || 'this device';
+        var rawNames = btn.getAttribute('data-dns-names');
+        if (!rawNames) return;
+        try {
+            var dnsNames = JSON.parse(rawNames);
+            showDnsNamesDialog(deviceName, dnsNames);
+        } catch (err) {
+            console.error('Failed to parse dns-names attribute:', err);
+        }
+    });
 }
 
 // Generate a consistent color for a tag based on its string
@@ -403,6 +422,7 @@ function initAll() {
     initDnsUpstreamServersTable()
     initTabs()
     initTableDarkOrLightTheme()
+    initDnsNamesDialogHandler()
 }
 
 function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize, dnsCustomHosts, numRows) {

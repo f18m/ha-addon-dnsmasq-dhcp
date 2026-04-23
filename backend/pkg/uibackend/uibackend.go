@@ -504,12 +504,20 @@ func (b *UIBackend) getDnsNamesFor(mac net.HardwareAddr, hostname string) []stri
 	metadata, ok := b.options.GetDhcpClientSettingsByMAC(mac)
 	if ok {
 		// Use the configured name as the primary DNS-resolvable name
-		names = append(names, fmt.Sprintf("%s.%s", metadata.Name, b.options.DnsDomain))
+		if b.options.DnsDomain != "" {
+			names = append(names, fmt.Sprintf("%s.%s", metadata.Name, b.options.DnsDomain))
+		} else {
+			names = append(names, metadata.Name)
+		}
 		// Append any configured CNAME aliases
 		names = append(names, metadata.DnsAliases...)
 	} else if hostname != dnsmasqMarkerForMissingHostname && hostname != "" {
 		// Fall back to the DHCP-reported hostname
-		names = append(names, fmt.Sprintf("%s.%s", hostname, b.options.DnsDomain))
+		if b.options.DnsDomain != "" {
+			names = append(names, fmt.Sprintf("%s.%s", hostname, b.options.DnsDomain))
+		} else {
+			names = append(names, hostname)
+		}
 	}
 	return names
 }

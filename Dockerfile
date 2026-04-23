@@ -11,8 +11,6 @@
 # which is a CGO library; so that's why we select the -alpine variant
 FROM golang:1.26-alpine AS builder
 
-ARG TARGETPLATFORM
-
 # build go backend
 WORKDIR /app/backend
 COPY backend .
@@ -67,4 +65,8 @@ COPY frontend/images/*.png /opt/web/static/
 # Copy backend binary
 COPY --from=builder /backend /opt/bin/
 
-LABEL org.opencontainers.image.source=https://github.com/f18m/ha-addon-dnsmasq-dhcp-server
+LABEL \
+    org.opencontainers.image.title="Dnsmasq-DHCP App" \
+    org.opencontainers.image.description="An Home Assistant app that runs dnsmasq both as DHCP server and DNS server." \
+    org.opencontainers.image.source="https://github.com/f18m/ha-addon-dnsmasq-dhcp-server" \
+    org.opencontainers.image.licenses="Apache License 2.0"

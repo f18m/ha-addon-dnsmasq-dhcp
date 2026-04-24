@@ -86,8 +86,8 @@ function copyToClipboard(btn) {
 // SVG clipboard icon used by copy buttons
 var COPY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 
-// SVG globe/DNS icon used by the DNS names info button
-var DNS_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+// SVG information icon used by the info button
+var INFO_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
 
 // Render a table cell value with a small inline copy-to-clipboard button.
 // The "type" parameter is the DataTables rendering context; the button is
@@ -103,12 +103,14 @@ function renderWithCopyButton(data, type) {
 }
 
 // Open the DNS names dialog for the given device, showing all its DNS-resolvable names.
-function showDnsNamesDialog(deviceName, dnsNames) {
-    var dialog = document.getElementById('dns_names_dialog');
-    var title = document.getElementById('dns_names_dialog_title');
-    var list = document.getElementById('dns_names_dialog_list');
+function showInfoDialog(friendlyname, hostname, dnsNames) {
+    var dialog = document.getElementById('info_dialog');
+    var title = document.getElementById('info_dialog_title');
+    var list = document.getElementById('info_dialog_list');
 
-    title.textContent = 'DNS Names for ' + deviceName;
+    var bestName = friendlyname || hostname || 'N/A';
+
+    title.textContent = 'Information for [' + bestName + ']';
     list.innerHTML = '';
     dnsNames.forEach(function(name) {
         var li = document.createElement('li');
@@ -124,36 +126,46 @@ function showDnsNamesDialog(deviceName, dnsNames) {
 // The "type" parameter is the DataTables rendering context; the button is
 // only injected for the 'display' type so that sorting and filtering still
 // operate on the plain text value.
-function renderHostnameWithDnsInfo(hostname, dnsNames, type) {
+function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, type) {
     if (type !== 'display') {
+        if (friendlyname && friendlyname.length > 0) {
+            return friendlyname;
+        }
         return hostname;
     }
-    var escaped = (hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    // guard against XSS: escape special chars
+    var escaped = (friendlyname || hostname).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     if (!dnsNames || dnsNames.length === 0) {
         return escaped;
     }
     var namesAttr = JSON.stringify(dnsNames).replace(/"/g, '&quot;');
-    // Use data attributes only; the click handler is set up via event delegation (see initDnsNamesDialogHandler).
+    var escapedFriendlyname = (friendlyname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    var escapedHostname = (hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    // Use data attributes only; the click handler is set up via event delegation (see InitInfoDialogHandler).
     // This avoids putting JS-escaped values into inline onclick attributes.
     return escaped +
-        '<button class="dns-names-btn" ' +
+        '<button class="info-btn" ' +
+        'data-friendly-name="' + escapedFriendlyname + '" ' +
+        'data-hostname="' + escapedHostname + '" ' +
         'data-dns-names="' + namesAttr + '" ' +
-        'data-device-name="' + escaped + '" ' +
-        'title="Show all DNS names">' + DNS_ICON_SVG + '</button>';
+        'title="Info">' + INFO_ICON_SVG + '</button>';
 }
 
 // Set up a single delegated click handler for all DNS-names buttons.
 // Called once during initAll() so that dynamically-rendered table rows are covered.
-function initDnsNamesDialogHandler() {
+function InitInfoDialogHandler() {
     document.addEventListener('click', function(e) {
-        var btn = e.target.closest('.dns-names-btn');
-        if (!btn) return;
-        var deviceName = btn.getAttribute('data-device-name') || 'this device';
+        var btn = e.target.closest('.info-btn');
+        if (!btn) 
+            return;
+
+        // get the data specific to the clicked DHCP client:
+        var friendlyName = btn.getAttribute('data-friendly-name') || 'N/A';
+        var hostname = btn.getAttribute('data-hostname') || 'N/A';
         var rawNames = btn.getAttribute('data-dns-names');
-        if (!rawNames) return;
         try {
             var dnsNames = JSON.parse(rawNames);
-            showDnsNamesDialog(deviceName, dnsNames);
+            showInfoDialog(friendlyName, hostname, dnsNames);
         } catch (err) {
             console.error('Failed to parse dns-names attribute:', err);
         }
@@ -181,7 +193,8 @@ function formatTags(tags) {
     
     return tags.map(tag => {
         const color = getTagColor(tag);
-        return `<span class="tag-label" style="background-color: ${color};">${tag}</span>`;
+        const escapedTag = tag.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        return `<span class="tag-label" style="background-color: ${color};">${escapedTag}</span>`;
     }).join(' ');
 }
 
@@ -283,13 +296,12 @@ function initCurrentTable() {
     global_objects.table_current = new DataTable('#current_table', {
             columns: [
                 { title: '#', type: 'num' },
-                { title: 'Friendly Name', type: 'string' },
-                { title: 'Hostname', type: 'string' },
+                { title: 'Name', type: 'string' },
                 { title: 'Description', type: 'string' },
                 { title: 'Link', type: 'string' },
                 { title: 'IP Address', type: 'ip-address', render: renderWithCopyButton },
                 { title: 'MAC Address', type: 'string', render: renderWithCopyButton },
-                { title: 'Expires in', 'orderDataType': 'custom-date-order' },
+                { title: 'Expires in', 'orderDataType': 'custom-time-order' },
                 { title: 'Reserved IP?', type: 'string', width: '8%' },
                 { title: 'Tags', type: 'string', width: '15%' }
             ],
@@ -323,12 +335,11 @@ function initPastTable() {
     global_objects.table_past = new DataTable('#past_table', {
             columns: [
                 { title: '#', type: 'num' },
-                { title: 'Friendly Name', type: 'string' },
-                { title: 'Hostname', type: 'string' },
+                { title: 'Name', type: 'string' },
                 { title: 'Description', type: 'string' },
                 { title: 'MAC Address', type: 'string', render: renderWithCopyButton },
                 { title: 'Reserved IP?', type: 'string', width: '8%' },
-                { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-date-order', width: '10%' },
+                { title: 'Last Seen hh:mm:ss ago', 'orderDataType': 'custom-time-order', width: '10%' },
                 { title: 'Notes', type: 'string', width: '25%' },
                 { title: 'Tags', type: 'string', width: '20%' }
             ],
@@ -348,7 +359,7 @@ function initPastTable() {
         });
 }
 
-function initdnsCustomHostsTable(dnsCustomHosts) {
+function initDnsCustomHostsTable(dnsCustomHosts) {
     console.log("Initializing table for custom DNS host records");
 
     global_objects.table_dns_hosts = new DataTable('#dns_hosts_table', {
@@ -418,11 +429,11 @@ function initTableDarkOrLightTheme() {
 function initAll() {
     initCurrentTable()
     initPastTable()
-    initdnsCustomHostsTable(config["dnsCustomHosts"])
+    initDnsCustomHostsTable(config["dnsCustomHosts"])
     initDnsUpstreamServersTable()
     initTabs()
     initTableDarkOrLightTheme()
-    initDnsNamesDialogHandler()
+    InitInfoDialogHandler()
 }
 
 function setConfig(webSocketURI, dhcpServerStartTime, dhcpPoolSize, dnsCustomHosts, numRows) {
@@ -498,17 +509,17 @@ function processWebSocketDHCPCurrentClients(data) {
     console.log("Websocket connection: received " + data.current_clients.length + " current DHCP clients from websocket");
 
     // rerender the CURRENT table
-    newData = [];
-    newTimeLeftColumn = [];
-    dhcp_addresses_used = 0;
-    dhcp_static_ip = 0;
+    var newData = [];
+    var newTimeLeftColumn = [];
+    var dhcp_addresses_used = 0;
+    var dhcp_static_ip = 0;
     data.current_clients.forEach(function (item, index) {
         // console.log(`CurrentItem ${index + 1}:`, item);
 
         if (item.is_inside_dhcp_pool)
             dhcp_addresses_used += 1;
 
-        static_ip_str = "NO";
+        var static_ip_str = "NO";
         if (item.has_static_ip) {
             static_ip_str = "YES";
             dhcp_static_ip += 1;
@@ -519,26 +530,28 @@ function processWebSocketDHCPCurrentClients(data) {
         //external_link_symbol="🡕" // https://www.compart.com/en/unicode/U+1F855
 
         // hopefully the U+29C9 symbol is more commonly supported:
-        external_link_symbol="⧉" // https://www.compart.com/en/unicode/U+29C9
+        var external_link_symbol="⧉"; // https://www.compart.com/en/unicode/U+29C9
+        var link_str;
         if (item.evaluated_link) {
-            link_str = "<a href=\"" + item.evaluated_link + "\" target=\"_blank\">" + item.evaluated_link + " " + external_link_symbol + "</a>"
+            var escapedLink = item.evaluated_link.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            link_str = "<a href=\"" + escapedLink + "\" target=\"_blank\">" + escapedLink + " " + external_link_symbol + "</a>";
         } else {
-            link_str = "N/A"
+            link_str = "N/A";
         }
 
         // append new row
-        time_left_str = formatTimeLeft(item.lease.expires)
-        tags_str = formatTags(item.tags)
-        description_str = (item.description && item.description.length > 0) ? item.description : 'N/A'
-        hostname_str = renderHostnameWithDnsInfo(item.lease.hostname, item.dns_names, 'display')
+        var time_left_str = formatTimeLeft(item.lease.expires);
+        var tags_str = formatTags(item.tags);
+        var description_str = (item.description && item.description.length > 0) ? item.description : 'N/A';
+        var hostname_str = renderNameWithInfoBtn(item.friendly_name, item.lease.hostname, item.dns_names, 'display');
         newData.push([index + 1,
-            item.friendly_name, hostname_str, description_str, link_str,
+            hostname_str, description_str, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
             time_left_str, static_ip_str, tags_str]);
         newTimeLeftColumn.push(time_left_str);
     });
 
-    var index_of_time_left_column = 7;
+    var index_of_time_left_column = 6;
     var currentData = global_objects.table_current.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_left_column])) {
         console.log("No change in current DHCP clients, updating only the time-left column");
@@ -561,29 +574,29 @@ function processWebSocketDHCPPastClients(data) {
     console.log("Websocket connection: received " + data.past_clients.length + " past DHCP clients from websocket");
 
     // rerender the PAST table
-    newData = [];
-    newLastSeenColumn = [];
+    var newData = [];
+    var newLastSeenColumn = [];
     data.past_clients.forEach(function (item, index) {
         // console.log(`PastItem ${index + 1}:`, item);
 
-        static_ip_str = "NO";
+        var static_ip_str = "NO";
         if (item.has_static_ip) {
             static_ip_str = "YES";
         }
 
         // append new row
-        last_seen_str = formatTimeSince(item.past_info.last_seen)
-        tags_str = formatTags(item.tags)
-        description_str = (item.description && item.description.length > 0) ? item.description : 'N/A'
-        hostname_str = renderHostnameWithDnsInfo(item.past_info.hostname, item.dns_names, 'display')
+        var last_seen_str = formatTimeSince(item.past_info.last_seen);
+        var tags_str = formatTags(item.tags);
+        var description_str = (item.description && item.description.length > 0) ? item.description : 'N/A';
+        var hostname_str = renderNameWithInfoBtn(item.friendly_name, item.past_info.hostname, item.dns_names, 'display');
         newData.push([index + 1,
-            item.friendly_name, hostname_str, description_str,
+            hostname_str, description_str,
             item.past_info.mac_addr, static_ip_str, 
             last_seen_str, item.notes, tags_str]);
         newLastSeenColumn.push(last_seen_str);
     });
 
-    var index_of_time_last_seen_column = 6;
+    var index_of_time_last_seen_column = 5;
     var currentData = global_objects.table_past.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_last_seen_column])) {
         console.log("No change in past DHCP clients, updating only the last-seen column");
@@ -617,8 +630,8 @@ function updateDHCPStatus(data, dhcp_static_ip, dhcp_addresses_used, messageElem
     }
 
     // past clients string
-    uptime_str = formatTimeSince(config["dhcpServerStartTime"])
-    past_client_str = "<span class='boldText'>" + data.past_clients.length + " past clients</span> contacted the server some time ago but failed to do so since last DHCP server restart, " + 
+    var uptime_str = formatTimeSince(config["dhcpServerStartTime"])
+    var past_client_str = "<span class='boldText'>" + data.past_clients.length + " past clients</span> contacted the server some time ago but failed to do so since last DHCP server restart, " + 
                         uptime_str + " hh:mm:ss ago.<br/>"
 
     // build warning message if some clients are not using their configured address
@@ -644,7 +657,7 @@ function updateDNSStatus(data, messageElem) {
     console.log(`DnsStats:`, data.dns_stats);
 
     // rerender the UPSTREAM SERVERS table
-    tableData = [];
+    var tableData = [];
     if (data.dns_stats.upstream_servers_stats != null) {
         data.dns_stats.upstream_servers_stats.forEach(function (item, index) {
             console.log(`Upstream ${index + 1}:`, item);
@@ -682,6 +695,7 @@ function processWebSocketEvent(event) {
         var data = JSON.parse(event.data);
     } catch (error) {
         console.error('Error while parsing JSON:', error);
+        return;
     }
 
     var dhcpMsgElem = document.getElementById("dhcp_stats_message");
@@ -717,7 +731,7 @@ function processWebSocketEvent(event) {
         console.log("****** Update " + global_objects.num_updates + " ******");
 
         // process DHCP 
-        [dhcp_static_ip, dhcp_addresses_used] = processWebSocketDHCPCurrentClients(data)
+        var [dhcp_static_ip, dhcp_addresses_used] = processWebSocketDHCPCurrentClients(data)
         processWebSocketDHCPPastClients(data)
         updateDHCPStatus(data, dhcp_static_ip, dhcp_addresses_used, dhcpMsgElem)
 

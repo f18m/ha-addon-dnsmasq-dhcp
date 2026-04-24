@@ -141,10 +141,10 @@ test-docker-image-live:
 #   that are not defined in the options.json (so they have no reserved IP and no metadata)
 test-current-dhcp-leases:
 	@expiry=$$(date -d '+10 minutes' +%s); \
-	printf "%s aa:bb:cc:dd:ee:00 192.168.1.101 hostname1 *\n" "$$expiry" > test-leases.leases; \
-	printf "%s aa:bb:cc:dd:ee:01 192.168.1.102 hostname2 *\n" "$$expiry" >> test-leases.leases; \
-	printf "%s aa:bb:cc:dd:ee:02 192.168.1.103 hostname3 *\n" "$$expiry" >> test-leases.leases; \
-	printf "%s aa:bb:cc:dd:ee:03 192.168.1.104 hostname4 *\n" "$$expiry" >> test-leases.leases
+	printf "%s aa:bb:cc:dd:ee:00 192.168.1.15 hostname1 *\n" "$$expiry" > test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:01 192.168.1.55 hostname2 *\n" "$$expiry" >> test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:02 192.168.1.56 hostname3 *\n" "$$expiry" >> test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:03 192.168.1.57 hostname4 *\n" "$$expiry" >> test-leases.leases
 
 test-database-show:
 	sqlite3 test-db.sqlite3 'select * from dhcp_clients;' | column -t -s'|'

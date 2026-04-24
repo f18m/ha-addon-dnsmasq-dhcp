@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DHCP Clients</title>
+    <title>Dnsmasq-DHCP</title>
 
     <!-- Note all javascript and CSS is local to the webserver to avoid Internet dependencies,
          see https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/issues/68 -->
@@ -165,14 +165,14 @@
         </div>
     </div>
 
-    <!-- Dialog for displaying all DNS-resolvable names of a DHCP client -->
-    <dialog id="dns_names_dialog">
+    <!-- Dialog for displaying several info about a DHCP client -->
+    <dialog id="info_dialog">
         <div class="dialog-header">
-            <span id="dns_names_dialog_title">DNS Names</span>
-            <button class="dialog-close-btn" onclick="document.getElementById('dns_names_dialog').close()" title="Close">✕</button>
+            <span id="info_dialog_title">Info</span>
+            <button class="dialog-close-btn" onclick="document.getElementById('info_dialog').close()" title="Close">✕</button>
         </div>
         <div class="dialog-body">
-            <ul id="dns_names_dialog_list"></ul>
+            <ul id="info_dialog_list"></ul>
         </div>
     </dialog>
 </body>

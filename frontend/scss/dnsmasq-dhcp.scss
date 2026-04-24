@@ -448,8 +448,8 @@ table.dataTable tbody tr:hover {
   }
 }
 
-/* DNS names info button that appears inline next to the hostname cell value */
-.dns-names-btn {
+/* Info button that appears inline next to the hostname cell value */
+.info-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -471,8 +471,8 @@ table.dataTable tbody tr:hover {
   }
 }
 
-/* Dialog for displaying DNS names */
-#dns_names_dialog {
+/* Dialog for displaying all sort of info about a DHCP client */
+#info_dialog {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--card-background);

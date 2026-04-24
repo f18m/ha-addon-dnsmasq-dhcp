@@ -1,4 +1,4 @@
-1777069338 aa:bb:cc:dd:ee:00 192.168.1.101 hostname1 *
-1777069338 aa:bb:cc:dd:ee:01 192.168.1.102 hostname2 *
-1777069338 aa:bb:cc:dd:ee:02 192.168.1.103 hostname3 *
-1777069338 aa:bb:cc:dd:ee:03 192.168.1.104 hostname4 *
+1777070768 aa:bb:cc:dd:ee:03 192.168.1.57 hostname4 *
+1777070768 aa:bb:cc:dd:ee:02 192.168.1.56 dynamic1 *
+1777070768 aa:bb:cc:dd:ee:01 192.168.1.55 second-reserved *
+1777070768 aa:bb:cc:dd:ee:00 192.168.1.15 first-reserved *

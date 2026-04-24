@@ -407,8 +407,8 @@ table.dataTable tbody tr:hover {
   border-color: #ef4444;
 }
 
-/* DNS names info button that appears inline next to the hostname cell value */
-.dns-names-btn {
+/* Info button that appears inline next to the hostname cell value */
+.info-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -423,14 +423,14 @@ table.dataTable tbody tr:hover {
   transition: opacity 120ms ease-in-out, color 120ms ease-in-out, background-color 120ms ease-in-out;
   vertical-align: middle;
 }
-.dns-names-btn:hover {
+.info-btn:hover {
   opacity: 1;
   background-color: var(--btn-text-hover);
   color: var(--btn-text-active);
 }
 
-/* Dialog for displaying DNS names */
-#dns_names_dialog {
+/* Dialog for displaying all sort of info about a DHCP client */
+#info_dialog {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--card-background);
@@ -440,10 +440,10 @@ table.dataTable tbody tr:hover {
   min-width: 320px;
   max-width: 520px;
 }
-#dns_names_dialog::backdrop {
+#info_dialog::backdrop {
   background: rgba(0, 0, 0, 0.4);
 }
-#dns_names_dialog .dialog-header {
+#info_dialog .dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -452,7 +452,7 @@ table.dataTable tbody tr:hover {
   font-weight: 600;
   font-size: 15px;
 }
-#dns_names_dialog .dialog-close-btn {
+#info_dialog .dialog-close-btn {
   background: transparent;
   border: none;
   cursor: pointer;
@@ -462,19 +462,19 @@ table.dataTable tbody tr:hover {
   border-radius: 4px;
   transition: background-color 120ms ease-in-out, color 120ms ease-in-out;
 }
-#dns_names_dialog .dialog-close-btn:hover {
+#info_dialog .dialog-close-btn:hover {
   background-color: var(--btn-text-hover);
   color: var(--btn-text-active);
 }
-#dns_names_dialog .dialog-body {
+#info_dialog .dialog-body {
   padding: 14px 16px;
 }
-#dns_names_dialog .dialog-body ul {
+#info_dialog .dialog-body ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-#dns_names_dialog .dns-name-entry {
+#info_dialog .dns-name-entry {
   font-family: "Courier New", "Consolas", "Monaco", monospace;
   font-size: 13px;
   padding: 6px 8px;

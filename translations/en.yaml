@@ -143,4 +143,7 @@ configuration:
       refresh_interval_sec:
         name: Refresh interval
         description: How often to refresh data in the web UI (in seconds)
+      data_tables_num_rows:
+        name: Default number of rows
+        description: Default number of rows to show in data tables in the web UI (for current and past DHCP clients)
   

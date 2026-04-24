@@ -44,6 +44,11 @@ type DhcpClientData struct {
 
 	// Description is an optional free-form string provided in the configuration to describe the device.
 	Description string
+
+	// DnsNames is the list of all DNS-resolvable names for this client.
+	// It includes the primary FQDN (derived from the configured name or DHCP hostname plus the DNS domain)
+	// and any DNS CNAME aliases configured via dns_aliases.
+	DnsNames []string
 }
 
 // MarshalJSON customizes the JSON serialization for DhcpClientData
@@ -61,6 +66,7 @@ func (d DhcpClientData) MarshalJSON() ([]byte, error) {
 		EvaluatedLink    string   `json:"evaluated_link"`
 		Tags             []string `json:"tags"`
 		Description      string   `json:"description"`
+		DnsNames         []string `json:"dns_names"`
 	}{
 		Lease: struct {
 			Expires  int64  `json:"expires"`
@@ -79,6 +85,7 @@ func (d DhcpClientData) MarshalJSON() ([]byte, error) {
 		EvaluatedLink:    d.EvaluatedLink,
 		Tags:             d.Tags,
 		Description:      d.Description,
+		DnsNames:         d.DnsNames,
 	})
 }
 
@@ -90,6 +97,7 @@ type PastDhcpClientData struct {
 	Notes        string               `json:"notes"`
 	Tags         []string             `json:"tags"`
 	Description  string               `json:"description"`
+	DnsNames     []string             `json:"dns_names"`
 }
 
 // WebSocketMessage defines which contents get transmitted over the websocket in the

@@ -70,28 +70,11 @@ IMAGETAG:=$(shell yq .image config.yaml  | sed 's@{arch}@amd64@g')
 BACKEND_SOURCE_CODE_FILES:=$(shell find backend/ -type f -name '*.go')
 ROOTFS_FILES:=$(shell find rootfs/ -type f)
 
-# go to https://github.com/home-assistant/builder/pkgs/container/amd64-builder to see available versions
-HOME_ASSISTANT_BUILDER_VERSION:=2026.02.1
-
-build-docker-image: $(BACKEND_SOURCE_CODE_FILES) $(ROOTFS_FILES)
-	docker run \
-		--rm \
-		--privileged \
-		-v ~/.docker:/root/.docker \
-		-v /var/run/docker.sock:/var/run/docker.sock:ro \
-		-v $(shell pwd):/data \
-		ghcr.io/home-assistant/amd64-builder:$(HOME_ASSISTANT_BUILDER_VERSION) \
-		$(ARCH) \
-		--target /data \
-		--version localtest \
-		--self-cache \
-		--test
-
-build-docker-image-raw:
-	# do not use the HomeAssistant builder -- this helps debugging some docker build issues
-	# see https://github.com/home-assistant/builder/blob/master/build.yaml
-	sudo docker build \
-		--build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22 \
+build-docker-image:
+	# The new HomeAssistant Github actions since 2026 are basically equivalent to a 
+	# "docker buildx build --platform linux/amd64,linux/arm64" command, so we can use 
+	# a single-arch image for a quick local test:
+	sudo docker buildx build \
 		-t $(IMAGETAG):localtest \
 		.
 

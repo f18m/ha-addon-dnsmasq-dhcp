@@ -3,20 +3,24 @@
   "dhcp_client_settings": [
     {
       "mac": "aa:bb:cc:dd:ee:00",
-      "name": "static-ip-important-host",
+      "name": "first-reserved",
+      "description": "A static IP reservation for an important host, with a link to its landing page.",
       "reserved_ip": "192.168.1.15",
       "link": "https://{{ .ip }}/important-host-land-page"
     },
     {
       "mac": "aa:bb:cc:dd:ee:01",
-      "name": "static-ip-within-dhcp-range",
+      "name": "second-reserved",
+      "description": "Another test. This DHCP client has a reserved IP within the DHCP range",
       "reserved_ip": "192.168.1.55",
       "link": "https://{{ .ip }}/less-important"
     },
     {
-      "name": "a-human-friendly-name-for-a-dhcp-client-with-dynamic-ip",
-      "mac": "4c:50:77:cf:3c:35",
-      "link": "https://{{ .ip }}/page-{{ .hostname }}"
+      "mac": "aa:bb:cc:dd:ee:02",
+      "name": "dynamic1",
+      "description": "Metadata for a DHCP client without a reserved IP.",
+      "link": "https://{{ .ip }}/page-{{ .hostname }}",
+      "dns_aliases": [ "alias1", "alias2" ]
     }
   ],
   "dhcp_mac_address_blocklist": [
@@ -35,6 +39,7 @@
     "forget_past_clients_after": "1w",
     "log_requests": true,
     "reset_dhcp_lease_database_on_reboot": false,
+    "dns_domain": "lan",
     "dns_servers": [
       "0.0.0.0", 
       "8.8.8.8",
@@ -93,8 +98,9 @@
     }
   ],
   "web_ui": {
-    "log_requests": true,
+    "log_activity": true,
     "port": 8976,
-    "refresh_interval_sec": 5
+    "refresh_interval_sec": 5,
+    "data_tables_num_rows": 10
   }
 }

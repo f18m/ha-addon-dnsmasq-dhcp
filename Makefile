@@ -84,7 +84,6 @@ DOCKER_RUN_OPTIONS:= \
 	-v $(shell pwd)/config.yaml:/opt/bin/addon-config.yaml \
 	-v $(shell pwd)/test-leases.leases:/data/dnsmasq.leases \
 	-v $(shell pwd)/test-db.sqlite3:/data/trackerdb.sqlite3 \
-	-v $(shell pwd)/test-startepoch:/data/startepoch \
 	-v $(shell pwd)/backend:/app \
 	-v $(shell pwd)/frontend/index.templ.html:/opt/web/templates/index.templ.html \
 	-v $(shell pwd)/frontend/libs/dnsmasq-dhcp.js:/opt/web/static/dnsmasq-dhcp.js \
@@ -131,8 +130,21 @@ test-docker-image-live:
 
 
 #####################################################################################
-# More (manual) testing targts
+# More (manual) testing targets
 #####################################################################################
+
+# overwrite test-leases.leases with 3 dnsmasq-compliant entries expiring in 10 minutes
+# NOTE:
+# - the first 3 DHCP clients are those defined in test-options.json, so the app should
+#   show the reserved IPs and the metadata for those 3 entries
+# - the 4th entry is just a random one, to test how the app behaves with DHCP clients
+#   that are not defined in the options.json (so they have no reserved IP and no metadata)
+test-current-dhcp-leases:
+	@expiry=$$(date -d '+10 minutes' +%s); \
+	printf "%s aa:bb:cc:dd:ee:00 192.168.1.101 hostname1 *\n" "$$expiry" > test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:01 192.168.1.102 hostname2 *\n" "$$expiry" >> test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:02 192.168.1.103 hostname3 *\n" "$$expiry" >> test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:03 192.168.1.104 hostname4 *\n" "$$expiry" >> test-leases.leases
 
 test-database-show:
 	sqlite3 test-db.sqlite3 'select * from dhcp_clients;' | column -t -s'|'

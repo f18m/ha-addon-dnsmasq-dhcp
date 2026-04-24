@@ -474,14 +474,75 @@ table.dataTable tbody tr:hover {
   padding: 0;
   margin: 0;
 }
-#info_dialog .dns-name-entry {
+#info_dialog .dialog-section {
+  margin-bottom: 16px;
+}
+#info_dialog .dialog-section:last-child {
+  margin-bottom: 0;
+}
+#info_dialog .dialog-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--subtle-text);
+  margin: 0 0 8px 0;
+}
+#info_dialog .dialog-name-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#info_dialog .dialog-mac-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#info_dialog .dialog-mac-row .dialog-name-value {
+  flex: 1;
+}
+#info_dialog .dialog-mac-row .copy-btn {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+#info_dialog .dialog-name-value {
+  display: block;
   font-family: "Courier New", "Consolas", "Monaco", monospace;
   font-size: 13px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 6px;
+  word-break: break-all;
+  background: var(--background-mono-text);
+}
+#info_dialog .dialog-name-source {
+  font-size: 12px;
+  color: var(--subtle-text);
+  font-style: italic;
+}
+#info_dialog .dialog-no-dns {
+  font-size: 13px;
+  color: var(--subtle-text);
+  margin: 0;
+}
+#info_dialog .dns-name-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 6px 8px;
   border-radius: 6px;
   margin-bottom: 4px;
   background: var(--background-mono-text);
+}
+#info_dialog .dns-name-entry .dns-name-text {
+  font-family: "Courier New", "Consolas", "Monaco", monospace;
+  font-size: 13px;
   word-break: break-all;
+  flex: 1;
+}
+#info_dialog .dns-name-entry .copy-btn {
+  flex-shrink: 0;
 }
 
 /*# sourceMappingURL=dnsmasq-dhcp.css.map */

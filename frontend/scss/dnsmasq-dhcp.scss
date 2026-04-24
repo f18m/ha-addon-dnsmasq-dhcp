@@ -522,13 +522,86 @@ table.dataTable tbody tr:hover {
     }
   }
 
-  .dns-name-entry {
+  .dialog-section {
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .dialog-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--subtle-text);
+    margin: 0 0 8px 0;
+  }
+
+  .dialog-name-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .dialog-mac-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .dialog-name-value {
+      flex: 1;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+      margin-left: 0;
+    }
+  }
+
+  .dialog-name-value {
+    display: block;
     font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
     font-size: 13px;
+    font-weight: 600;
+    padding: 6px 8px;
+    border-radius: 6px;
+    word-break: break-all;
+    background: var(--background-mono-text);
+  }
+
+  .dialog-name-source {
+    font-size: 12px;
+    color: var(--subtle-text);
+    font-style: italic;
+  }
+
+  .dialog-no-dns {
+    font-size: 13px;
+    color: var(--subtle-text);
+    margin: 0;
+  }
+
+  .dns-name-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     padding: 6px 8px;
     border-radius: 6px;
     margin-bottom: 4px;
     background: var(--background-mono-text);
-    word-break: break-all;
+
+    .dns-name-text {
+      font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+    }
   }
 }

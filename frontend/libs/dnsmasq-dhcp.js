@@ -102,22 +102,73 @@ function renderWithCopyButton(data, type) {
     return '<span class="mono-address">' + escaped + '</span><button class="copy-btn" onclick="copyToClipboard(this)" data-copy="' + escaped + '" title="Copy to clipboard">' + COPY_ICON_SVG + '</button>';
 }
 
-// Open the DNS names dialog for the given device, showing all its DNS-resolvable names.
-function showInfoDialog(friendlyname, hostname, dnsNames) {
+// Open the DNS names dialog for the given device.
+function showInfoDialog(friendlyname, hostname, dnsNames, macAddr) {
     var dialog = document.getElementById('info_dialog');
     var title = document.getElementById('info_dialog_title');
+    var nameElem = document.getElementById('info_dialog_name');
+    var nameSourceElem = document.getElementById('info_dialog_name_source');
+    var macElem = document.getElementById('info_dialog_mac');
+    var macCopyBtn = document.getElementById('info_dialog_mac_copy');
     var list = document.getElementById('info_dialog_list');
+    var noDnsElem = document.getElementById('info_dialog_no_dns');
 
-    var bestName = friendlyname || hostname || 'N/A';
+    title.textContent = 'DHCP Client Information';
 
-    title.textContent = 'Information for [' + bestName + ']';
+    // Populate the name row and explain the source
+    var bestName;
+    if (friendlyname && friendlyname.length > 0) {
+        bestName = friendlyname;
+        nameSourceElem.textContent = 'Friendly name — defined in \'dhcp_client_settings\' in App configuration';
+    } else if (hostname && hostname.length > 0) {
+        bestName = hostname;
+        nameSourceElem.textContent = 'No friendly name defined in App configuration for MAC address ' + (macAddr || 'N/A') + '; showing the DHCP hostname provided by the client via DHCP protocol';
+    } else {
+        bestName = "N/A";
+        nameSourceElem.textContent = 'No name available';
+    }
+    nameElem.textContent = bestName;
+
+    // Populate MAC address section
+    var displayedMac = macAddr || 'N/A';
+    macElem.textContent = displayedMac;
+    if (macAddr) {
+        macCopyBtn.style.display = '';
+        macCopyBtn.setAttribute('data-copy', macAddr);
+        macCopyBtn.innerHTML = COPY_ICON_SVG;
+    } else {
+        macCopyBtn.style.display = 'none';
+        macCopyBtn.removeAttribute('data-copy');
+    }
+
+    // Populate DNS names list
     list.innerHTML = '';
-    dnsNames.forEach(function(name) {
-        var li = document.createElement('li');
-        li.className = 'dns-name-entry';
-        li.textContent = name;
-        list.appendChild(li);
-    });
+    if (dnsNames && dnsNames.length > 0) {
+        noDnsElem.style.display = 'none';
+        list.style.display = '';
+        dnsNames.forEach(function(name) {
+            var li = document.createElement('li');
+            li.className = 'dns-name-entry';
+
+            var nameSpan = document.createElement('span');
+            nameSpan.className = 'dns-name-text';
+            nameSpan.textContent = name;
+
+            var copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.title = 'Copy to clipboard';
+            copyBtn.setAttribute('data-copy', name);
+            copyBtn.setAttribute('onclick', 'copyToClipboard(this)');
+            copyBtn.innerHTML = COPY_ICON_SVG;
+
+            li.appendChild(nameSpan);
+            li.appendChild(copyBtn);
+            list.appendChild(li);
+        });
+    } else {
+        list.style.display = 'none';
+        noDnsElem.style.display = '';
+    }
 
     dialog.showModal();
 }
@@ -126,7 +177,7 @@ function showInfoDialog(friendlyname, hostname, dnsNames) {
 // The "type" parameter is the DataTables rendering context; the button is
 // only injected for the 'display' type so that sorting and filtering still
 // operate on the plain text value.
-function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, type) {
+function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, macAddr, type) {
     if (type !== 'display') {
         if (friendlyname && friendlyname.length > 0) {
             return friendlyname;
@@ -141,12 +192,14 @@ function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, type) {
     var namesAttr = JSON.stringify(dnsNames).replace(/"/g, '&quot;');
     var escapedFriendlyname = (friendlyname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     var escapedHostname = (hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    var escapedMac = (macAddr || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     // Use data attributes only; the click handler is set up via event delegation (see InitInfoDialogHandler).
     // This avoids putting JS-escaped values into inline onclick attributes.
     return escaped +
         '<button class="info-btn" ' +
         'data-friendly-name="' + escapedFriendlyname + '" ' +
         'data-hostname="' + escapedHostname + '" ' +
+        'data-mac="' + escapedMac + '" ' +
         'data-dns-names="' + namesAttr + '" ' +
         'title="Info">' + INFO_ICON_SVG + '</button>';
 }
@@ -160,12 +213,13 @@ function InitInfoDialogHandler() {
             return;
 
         // get the data specific to the clicked DHCP client:
-        var friendlyName = btn.getAttribute('data-friendly-name') || 'N/A';
-        var hostname = btn.getAttribute('data-hostname') || 'N/A';
+        var friendlyName = btn.getAttribute('data-friendly-name');
+        var hostname = btn.getAttribute('data-hostname');
+        var macAddr = btn.getAttribute('data-mac');
         var rawNames = btn.getAttribute('data-dns-names');
         try {
             var dnsNames = JSON.parse(rawNames);
-            showInfoDialog(friendlyName, hostname, dnsNames);
+            showInfoDialog(friendlyName, hostname, dnsNames, macAddr);
         } catch (err) {
             console.error('Failed to parse dns-names attribute:', err);
         }
@@ -514,7 +568,7 @@ function processWebSocketDHCPCurrentClients(data) {
     var dhcp_addresses_used = 0;
     var dhcp_static_ip = 0;
     data.current_clients.forEach(function (item, index) {
-        // console.log(`CurrentItem ${index + 1}:`, item);
+        console.log(`CurrentItem ${index + 1}:`, item);
 
         if (item.is_inside_dhcp_pool)
             dhcp_addresses_used += 1;
@@ -543,7 +597,7 @@ function processWebSocketDHCPCurrentClients(data) {
         var time_left_str = formatTimeLeft(item.lease.expires);
         var tags_str = formatTags(item.tags);
         var description_str = (item.description && item.description.length > 0) ? item.description : 'N/A';
-        var hostname_str = renderNameWithInfoBtn(item.friendly_name, item.lease.hostname, item.dns_names, 'display');
+        var hostname_str = renderNameWithInfoBtn(item.friendly_name, item.lease.hostname, item.dns_names, item.lease.mac_addr, 'display');
         newData.push([index + 1,
             hostname_str, description_str, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
@@ -588,7 +642,7 @@ function processWebSocketDHCPPastClients(data) {
         var last_seen_str = formatTimeSince(item.past_info.last_seen);
         var tags_str = formatTags(item.tags);
         var description_str = (item.description && item.description.length > 0) ? item.description : 'N/A';
-        var hostname_str = renderNameWithInfoBtn(item.friendly_name, item.past_info.hostname, item.dns_names, 'display');
+        var hostname_str = renderNameWithInfoBtn(item.friendly_name, item.past_info.hostname, item.dns_names, item.past_info.mac_addr, 'display');
         newData.push([index + 1,
             hostname_str, description_str,
             item.past_info.mac_addr, static_ip_str, 

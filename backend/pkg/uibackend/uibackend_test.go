@@ -295,7 +295,7 @@ func TestProcessLeaseUpdatesFromArray(t *testing.T) {
 				IPAddr:   netip.MustParseAddr("192.168.0.3"),
 				Hostname: "client2",
 			},
-			FriendlyName:     "client2",
+			FriendlyName:     "",   // no friendly name configured
 			HasStaticIP:      true, // check the IP address reservation has been recognized successfully
 			IsInsideDHCPPool: true,
 			EvaluatedLink:    "https://192.168.0.3",
@@ -319,7 +319,7 @@ func TestProcessLeaseUpdatesFromArray(t *testing.T) {
 				IPAddr:   netip.MustParseAddr("192.168.0.101"),
 				Hostname: "client3",
 			},
-			FriendlyName:     "client3",
+			FriendlyName:     "", // no friendly name configured
 			HasStaticIP:      false,
 			IsInsideDHCPPool: false,                   // check if the condition "outside DHCP pool" has been recognized successfully
 			EvaluatedLink:    "",                      // no "link" can be rendered since this client is not in configuration

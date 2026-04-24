@@ -165,14 +165,32 @@
         </div>
     </div>
 
-    <!-- Dialog for displaying several info about a DHCP client -->
+    <!-- Dialog for displaying info about a DHCP client -->
     <dialog id="info_dialog">
         <div class="dialog-header">
             <span id="info_dialog_title">Info</span>
             <button class="dialog-close-btn" onclick="document.getElementById('info_dialog').close()" title="Close">✕</button>
         </div>
         <div class="dialog-body">
-            <ul id="info_dialog_list"></ul>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">Name</h3>
+                <div class="dialog-name-row">
+                    <span id="info_dialog_name" class="dialog-name-value"></span>
+                    <span id="info_dialog_name_source" class="dialog-name-source"></span>
+                </div>
+            </section>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">MAC address</h3>
+                <div class="dialog-mac-row">
+                    <span id="info_dialog_mac" class="dialog-name-value"></span>
+                    <button id="info_dialog_mac_copy" class="copy-btn" title="Copy to clipboard" onclick="copyToClipboard(this)"></button>
+                </div>
+            </section>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">DNS-resolvable names</h3>
+                <ul id="info_dialog_list"></ul>
+                <p id="info_dialog_no_dns" class="dialog-no-dns">No DNS names available for this client.</p>
+            </section>
         </div>
     </dialog>
 </body>

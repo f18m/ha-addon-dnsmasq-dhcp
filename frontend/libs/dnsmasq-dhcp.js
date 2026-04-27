@@ -87,7 +87,7 @@ function copyToClipboard(btn) {
 var COPY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 
 // SVG information icon used by the info button
-var INFO_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+var INFO_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
 
 // Icons used to indicate if a DHCP client has a reserved IP.
 var RESERVED_IP_YES_ICON_SVG = '<img src="static/locked_ip2.png" width="20" height="20" alt="Reserved IP" title="Reserved IP">';
@@ -120,7 +120,6 @@ function showInfoDialog(friendlyname, hostname, dnsNames, macAddr, description, 
     var reservedIconElem = document.getElementById('info_dialog_reserved_icon');
     var reservedTextElem = document.getElementById('info_dialog_reserved_text');
     var expiryElem = document.getElementById('info_dialog_expiry');
-    //var expirySectionElem = document.getElementById('info_dialog_expiry_section');
     var descriptionElem = document.getElementById('info_dialog_description');
     var linkElem = document.getElementById('info_dialog_link');
     var noLinkElem = document.getElementById('info_dialog_no_link');
@@ -183,9 +182,8 @@ function showInfoDialog(friendlyname, hostname, dnsNames, macAddr, description, 
     // Populate lease expiry section
     if (leaseExpires && leaseExpires !== '0' && leaseExpires !== 0) {
         expiryElem.textContent = formatTimeLeft(parseInt(leaseExpires, 10));
-        expiryElem.style.display = '';
     } else {
-        expiryElem.style.display = 'none';
+        expiryElem.textContent = 'N/A';
     }
 
     // Populate description section

@@ -1,7 +1,13 @@
 ![Supports aarch64 Architecture][aarch64-shield]
 ![Supports amd64 Architecture][amd64-shield]
 
-# Home Assistant App: flexible DNS and DHCP servers for your LAN
+# Dnsmasq-DHCP: add flexible DNS and DHCP servers to your LAN
+
+<div align="center">
+
+⭐ If you find this App useful, please star this repo - it helps others discover the project! ⭐
+
+</div>
 
 - [About](#about)
 - [Why should I use a DHCP/DNS server](#why-should-i-use-a-dhcpdns-server)
@@ -11,8 +17,6 @@
 - [Similar Apps](#similar-apps)
 - [Other Noteworthy Projects](#other-noteworthy-projects)
 - [Development](#development)
-
-⭐ If you find this App useful, please star this repo - it helps others discover the project!
 
 <a id="about"></a>
 

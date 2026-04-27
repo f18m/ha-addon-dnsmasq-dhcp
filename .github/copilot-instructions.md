@@ -81,7 +81,7 @@ The linter configuration lives in `backend/.golangci.yaml`. The enabled linter s
 - **Context propagation**: pass `context.Context` through call chains; do not use `noctx`-violating HTTP requests.
 - **Formatting**: code must pass `gofmt` and `gofumpt` (extra rules enabled). Run `make fmt-backend` before committing.
 - **Tests**: place tests in `_test.go` files next to the package under test, using the `github.com/stretchr/testify` assertion helpers already in `go.mod`.
-- **Config changes**: when adding or changing add-on configuration options, update all three of: `config.yaml` (options + schema), `DOCS.md` (user-facing documentation), and the relevant Go struct in `backend/pkg/uibackend/`.
+- **Config changes**: when adding or changing add-on configuration options, update all four of: `config.yaml` (options + schema), `translations/en.yaml`, `DOCS.md` (user-facing documentation), and the relevant Go struct in `backend/pkg/uibackend/`.
 
 ## Release Process
 

@@ -407,4 +407,201 @@ table.dataTable tbody tr:hover {
   border-color: #ef4444;
 }
 
+/* Info button that appears inline next to the hostname cell value */
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  padding: 2px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--subtle-text);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 120ms ease-in-out, color 120ms ease-in-out, background-color 120ms ease-in-out;
+  vertical-align: middle;
+}
+.info-btn:hover {
+  opacity: 1;
+  background-color: var(--btn-text-hover);
+  color: var(--btn-text-active);
+}
+
+/* Dialog for displaying all sort of info about a DHCP client */
+#info_dialog {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--card-background);
+  color: var(--text-color);
+  box-shadow: var(--shadow-soft);
+  padding: 0;
+  min-width: 320px;
+  max-width: 520px;
+}
+#info_dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+#info_dialog .dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  font-size: 15px;
+}
+#info_dialog .dialog-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--subtle-text);
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background-color 120ms ease-in-out, color 120ms ease-in-out;
+}
+#info_dialog .dialog-close-btn:hover {
+  background-color: var(--btn-text-hover);
+  color: var(--btn-text-active);
+}
+#info_dialog .dialog-body {
+  padding: 14px 16px;
+}
+#info_dialog .dialog-body ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#info_dialog .dialog-section {
+  margin-bottom: 16px;
+}
+#info_dialog .dialog-section:last-child {
+  margin-bottom: 0;
+}
+#info_dialog .dialog-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--subtle-text);
+  margin: 0 0 8px 0;
+}
+#info_dialog .dialog-name-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#info_dialog .dialog-mac-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#info_dialog .dialog-mac-row .dialog-name-value {
+  flex: 1;
+}
+#info_dialog .dialog-mac-row .copy-btn {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+#info_dialog .dialog-name-value {
+  display: block;
+  font-family: "Courier New", "Consolas", "Monaco", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 6px;
+  word-break: break-all;
+  background: var(--background-mono-text);
+}
+#info_dialog .dialog-name-source {
+  font-size: 12px;
+  color: var(--subtle-text);
+  font-style: italic;
+}
+#info_dialog .dialog-description-value {
+  margin: 0;
+  white-space: pre-wrap;
+}
+#info_dialog .dialog-link {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--btn-text-active);
+  word-break: break-all;
+}
+#info_dialog .dialog-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#info_dialog .dialog-expiry-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+#info_dialog .dialog-reserved-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+#info_dialog .dialog-reserved-state .dialog-reserved-ip {
+  display: inline-block;
+  min-width: 140px;
+  margin: 0;
+}
+#info_dialog .dialog-reserved-state .dialog-reserved-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+#info_dialog .dialog-reserved-state .dialog-reserved-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+#info_dialog .dialog-reserved-state.has-reserved-ip .dialog-reserved-status {
+  color: #0f6b2d;
+  background: rgba(15, 107, 45, 0.12);
+  border-color: rgba(15, 107, 45, 0.35);
+}
+#info_dialog .dialog-reserved-state.has-dynamic-ip .dialog-reserved-status {
+  color: var(--subtle-text);
+  background: var(--background-mono-text);
+  border-color: var(--border-color);
+}
+#info_dialog .dialog-no-dns {
+  font-size: 13px;
+  color: var(--subtle-text);
+  margin: 0;
+}
+#info_dialog .dns-name-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  background: var(--background-mono-text);
+}
+#info_dialog .dns-name-entry .dns-name-text {
+  font-family: "Courier New", "Consolas", "Monaco", monospace;
+  font-size: 13px;
+  word-break: break-all;
+  flex: 1;
+}
+#info_dialog .dns-name-entry .copy-btn {
+  flex-shrink: 0;
+}
+
 /*# sourceMappingURL=dnsmasq-dhcp.css.map */

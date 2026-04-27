@@ -393,6 +393,8 @@ web_ui:
   # defines how frequently the tables in the web UI will refresh;
   # if set to zero, table refresh is disabled
   refresh_interval_sec: 10
+  # default number of entries that will show up in each table
+  data_tables_num_rows: 20
 ```
 
 In case you want to enable the DNS server, you probably want to configure in the `dhcp_server`
@@ -521,10 +523,15 @@ make test-docker-image-live
 ```
 
 and then launch a browser on http://localhost:8976 to verify the look&feel of the UI.
-In such mode, there are no real DHCP clients but you can simulate a past DHCP client with
+
+To add synthetic DHCP clients to a docker container started with `make test-docker-image[-live]` you can run:
 
 ```sh
-make test-database-add-entry
+make test-current-dhcp-leases   # to add 3 dummy DHCP clients to dnsmasq DB as "current clients"
+make test-database-add-entry1   # to add a past DHCP client
+make test-database-add-entry2   # to add a past DHCP client
+make test-database-add-entry3   # to add a past DHCP client
+make test-database-add-entry4   # to add a past DHCP client
 ```
 
 

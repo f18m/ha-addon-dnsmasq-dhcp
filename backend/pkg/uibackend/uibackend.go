@@ -209,7 +209,7 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 
 		// fill additional metadata
 		pastClients[i].HasStaticIP = b.hasIpAddressReservationByMAC(deadC.MacAddr)
-		pastClients[i].FriendlyName = b.getFriendlyNameFor(deadC.MacAddr, deadC.Hostname)
+		pastClients[i].FriendlyName = b.getFriendlyNameFor(deadC.MacAddr)
 		if pastClients[i].FriendlyName == deadC.Hostname {
 			// look also in the static IP reservation metadata
 			if pastClients[i].HasStaticIP {
@@ -228,6 +228,7 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 
 		pastClients[i].Tags = b.getTagsFor(deadC.MacAddr)
 		pastClients[i].Description = b.getDescriptionFor(deadC.MacAddr)
+		pastClients[i].DnsNames = b.getDnsNamesFor(deadC.MacAddr, deadC.Hostname)
 
 		// create note field
 		if deadC.DhcpServerStartEpoch < b.startEpoch { //nolint:gocritic
@@ -443,7 +444,8 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 		LogCounters: b.dnsmasq.GetLogCounters(),
 
 		// misc
-		AddonVersion: b.config.Version,
+		AddonVersion:      b.config.Version,
+		DataTablesNumRows: b.options.DataTablesNumRows,
 	}
 
 	err := b.htmlTemplate.Execute(w, templateData)
@@ -470,17 +472,18 @@ func (b *UIBackend) processLeaseUpdates() {
 	}
 }
 
-func (b *UIBackend) getFriendlyNameFor(mac net.HardwareAddr, hostname string) string {
+func (b *UIBackend) getFriendlyNameFor(mac net.HardwareAddr) string {
 	// do we have configured metadata for this MAC address?
 	metadata, ok := b.options.GetDhcpClientSettingsByMAC(mac)
 	if ok {
 		// yes: enrich with configured metadata
 		return metadata.Name
-	} else if hostname != dnsmasqMarkerForMissingHostname {
-		// no: user didn't provide a name but dnsmasq received one via DHCP
-		return hostname
+	} else {
+		// no: user didn't provide a (friendly) name for this client;
+		// return empty string so the UI knows about that
+		// (the UI receives also the DHCP hostname so has a name to show)
+		return ""
 	}
-	return ""
 }
 
 func (b *UIBackend) getTagsFor(mac net.HardwareAddr) []string {
@@ -495,6 +498,29 @@ func (b *UIBackend) getDescriptionFor(mac net.HardwareAddr) string {
 		return r.Description
 	}
 	return ""
+}
+
+func (b *UIBackend) getDnsNamesFor(mac net.HardwareAddr, hostname string) []string {
+	var names []string
+	metadata, ok := b.options.GetDhcpClientSettingsByMAC(mac)
+	if ok {
+		// Use the configured name as the primary DNS-resolvable name
+		if b.options.DnsDomain != "" {
+			names = append(names, fmt.Sprintf("%s.%s", metadata.Name, b.options.DnsDomain))
+		} else {
+			names = append(names, metadata.Name)
+		}
+		// Append any configured CNAME aliases
+		names = append(names, metadata.DnsAliases...)
+	} else if hostname != dnsmasqMarkerForMissingHostname && hostname != "" {
+		// Fall back to the DHCP-reported hostname
+		if b.options.DnsDomain != "" {
+			names = append(names, fmt.Sprintf("%s.%s", hostname, b.options.DnsDomain))
+		} else {
+			names = append(names, hostname)
+		}
+	}
+	return names
 }
 
 func (b *UIBackend) hasIpAddressReservationByIP(ip netip.Addr, macExpected net.HardwareAddr) bool {
@@ -577,12 +603,13 @@ func (b *UIBackend) processLeaseUpdatesFromArray(updatedLeases []*dnsmasq.Lease)
 		d := DhcpClientData{Lease: *lease}
 
 		// fill metadata
-		d.FriendlyName = b.getFriendlyNameFor(lease.MacAddr, lease.Hostname)
+		d.FriendlyName = b.getFriendlyNameFor(lease.MacAddr)
 		d.HasStaticIP = b.hasIpAddressReservationByIP(lease.IPAddr, lease.MacAddr)
 		d.IsInsideDHCPPool = b.options.DhcpPool.Contains(lease.IPAddr)
 		d.EvaluatedLink = b.evaluateLink(lease.Hostname, lease.IPAddr, lease.MacAddr)
 		d.Tags = b.getTagsFor(lease.MacAddr)
 		d.Description = b.getDescriptionFor(lease.MacAddr)
+		d.DnsNames = b.getDnsNamesFor(lease.MacAddr, lease.Hostname)
 
 		// processing complete:
 		b.dhcpClientData = append(b.dhcpClientData, d)

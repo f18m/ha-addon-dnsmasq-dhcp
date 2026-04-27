@@ -70,28 +70,11 @@ IMAGETAG:=$(shell yq .image config.yaml  | sed 's@{arch}@amd64@g')
 BACKEND_SOURCE_CODE_FILES:=$(shell find backend/ -type f -name '*.go')
 ROOTFS_FILES:=$(shell find rootfs/ -type f)
 
-# go to https://github.com/home-assistant/builder/pkgs/container/amd64-builder to see available versions
-HOME_ASSISTANT_BUILDER_VERSION:=2026.02.1
-
-build-docker-image: $(BACKEND_SOURCE_CODE_FILES) $(ROOTFS_FILES)
-	docker run \
-		--rm \
-		--privileged \
-		-v ~/.docker:/root/.docker \
-		-v /var/run/docker.sock:/var/run/docker.sock:ro \
-		-v $(shell pwd):/data \
-		ghcr.io/home-assistant/amd64-builder:$(HOME_ASSISTANT_BUILDER_VERSION) \
-		$(ARCH) \
-		--target /data \
-		--version localtest \
-		--self-cache \
-		--test
-
-build-docker-image-raw:
-	# do not use the HomeAssistant builder -- this helps debugging some docker build issues
-	# see https://github.com/home-assistant/builder/blob/master/build.yaml
-	sudo docker build \
-		--build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22 \
+build-docker-image:
+	# The new HomeAssistant Github actions since 2026 are basically equivalent to a 
+	# "docker buildx build --platform linux/amd64,linux/arm64" command, so we can use 
+	# a single-arch image for a quick local test:
+	sudo docker buildx build \
 		-t $(IMAGETAG):localtest \
 		.
 
@@ -101,7 +84,6 @@ DOCKER_RUN_OPTIONS:= \
 	-v $(shell pwd)/config.yaml:/opt/bin/addon-config.yaml \
 	-v $(shell pwd)/test-leases.leases:/data/dnsmasq.leases \
 	-v $(shell pwd)/test-db.sqlite3:/data/trackerdb.sqlite3 \
-	-v $(shell pwd)/test-startepoch:/data/startepoch \
 	-v $(shell pwd)/backend:/app \
 	-v $(shell pwd)/frontend/index.templ.html:/opt/web/templates/index.templ.html \
 	-v $(shell pwd)/frontend/libs/dnsmasq-dhcp.js:/opt/web/static/dnsmasq-dhcp.js \
@@ -127,6 +109,7 @@ test-docker-image:
 	@echo "Point your browser at http://localhost:8976"
 	@echo
 	@echo "Starting container of image ${IMAGETAG}:localtest" 
+	-docker stop $(TEST_CONTAINER_NAME) 2>/dev/null || true
 	docker run \
 		--rm \
 		--name $(TEST_CONTAINER_NAME) \
@@ -148,8 +131,21 @@ test-docker-image-live:
 
 
 #####################################################################################
-# More (manual) testing targts
+# More (manual) testing targets
 #####################################################################################
+
+# overwrite test-leases.leases with 3 dnsmasq-compliant entries expiring in 10 minutes
+# NOTE:
+# - the first 3 DHCP clients are those defined in test-options.json, so the app should
+#   show the reserved IPs and the metadata for those 3 entries
+# - the 4th entry is just a random one, to test how the app behaves with DHCP clients
+#   that are not defined in the options.json (so they have no reserved IP and no metadata)
+test-current-dhcp-leases:
+	@expiry=$$(date -d '+10 minutes' +%s); \
+	printf "%s aa:bb:cc:dd:ee:00 192.168.1.15 hostname1 *\n" "$$expiry" > test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:01 192.168.1.55 hostname2 *\n" "$$expiry" >> test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:02 192.168.1.56 hostname3 *\n" "$$expiry" >> test-leases.leases; \
+	printf "%s aa:bb:cc:dd:ee:03 192.168.1.57 hostname4 *\n" "$$expiry" >> test-leases.leases
 
 test-database-show:
 	sqlite3 test-db.sqlite3 'select * from dhcp_clients;' | column -t -s'|'

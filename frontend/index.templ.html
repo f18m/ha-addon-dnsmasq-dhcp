@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DHCP Clients</title>
+    <title>Dnsmasq-DHCP</title>
 
     <!-- Note all javascript and CSS is local to the webserver to avoid Internet dependencies,
          see https://github.com/f18m/ha-addon-dnsmasq-dhcp-server/issues/68 -->
@@ -45,8 +45,15 @@
         var templated_webSocketURI = {{ .WebSocketURI }}
         var templated_dhcpServerStartTime = {{ .DHCPServerStartTime }}
         var templated_dnsCustomHosts = {{ .DnsCustomHostsJSON }};
+        var templated_dataTablesNumRows = {{ .DataTablesNumRows }};
 
-        setConfig(templated_webSocketURI, templated_dhcpServerStartTime, templated_dhcpPoolSize, templated_dnsCustomHosts);
+        setConfig(
+            templated_webSocketURI, 
+            templated_dhcpServerStartTime, 
+            templated_dhcpPoolSize, 
+            templated_dnsCustomHosts,
+            templated_dataTablesNumRows
+        );
     </script>
 </head>
 <body>
@@ -157,5 +164,64 @@
             <a href="https://github.com/f18m/ha-addon-dnsmasq-dhcp/" target="_blank">Project Homepage</a>
         </div>
     </div>
+
+    <!-- Dialog for displaying info about a DHCP client -->
+    <dialog id="info_dialog">
+        <div class="dialog-header">
+            <span id="info_dialog_title">Info</span>
+            <button class="dialog-close-btn" onclick="document.getElementById('info_dialog').close()" title="Close">✕</button>
+        </div>
+        <div class="dialog-body">
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">Name</h3>
+                <div class="dialog-name-row">
+                    <span id="info_dialog_name" class="dialog-name-value"></span>
+                    <span id="info_dialog_name_source" class="dialog-name-source"></span>
+                </div>
+            </section>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">MAC address</h3>
+                <div class="dialog-mac-row">
+                    <span id="info_dialog_mac" class="dialog-name-value"></span>
+                    <button id="info_dialog_mac_copy" class="copy-btn" title="Copy to clipboard" onclick="copyToClipboard(this)"></button>
+                </div>
+            </section>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">IP address</h3>
+                <div id="info_dialog_reserved" class="dialog-reserved-state">
+                    <div class="dialog-mac-row">
+                        <span id="info_dialog_ip" class="dialog-name-value dialog-reserved-ip"></span>
+                        <button id="info_dialog_ip_copy" class="copy-btn" title="Copy to clipboard" onclick="copyToClipboard(this)"></button>
+                    </div>
+                    <span id="info_dialog_reserved_status" class="dialog-reserved-status">
+                        <span id="info_dialog_reserved_icon" class="dialog-reserved-icon"></span>
+                        <span id="info_dialog_reserved_text"></span>
+                    </span>
+                    <div class="dialog-expiry-row">
+                        <span class="dialog-name-source">Next DHCP renewal in:</span>
+                        <span id="info_dialog_expiry" class="dialog-name-source">N/A</span>
+                    </div>
+                </div>
+            </section>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">Description</h3>
+                <p id="info_dialog_description" class="dialog-name-value dialog-description-value"></p>
+            </section>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">Link</h3>
+                <a id="info_dialog_link" class="dialog-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+                <p id="info_dialog_no_link" class="dialog-no-dns">N/A</p>
+            </section>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">Tags</h3>
+                <div id="info_dialog_tags" class="dialog-tags"></div>
+            </section>
+            <section class="dialog-section">
+                <h3 class="dialog-section-title">DNS-resolvable names</h3>
+                <ul id="info_dialog_list"></ul>
+                <p id="info_dialog_no_dns" class="dialog-no-dns">No DNS names available for this client.</p>
+            </section>
+        </div>
+    </dialog>
 </body>
 </html>

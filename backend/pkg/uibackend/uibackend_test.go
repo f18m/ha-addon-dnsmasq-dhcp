@@ -63,6 +63,7 @@ func getMockUIBackend() *UIBackend {
 	//  * friendly names for dynamic clients
 	//  * DHCP range
 	backendopts := config.AddonOptions{
+		DnsDomain: "lan",
 		DhcpClientSettingsByMAC: map[string]config.DhcpClientSettings{
 			"00:11:22:33:44:55": { // this is the MAC of 'client1'
 				MacAddress: MustParseMAC("00:11:22:33:44:55"),
@@ -286,6 +287,7 @@ func TestProcessLeaseUpdatesFromArray(t *testing.T) {
 			HasStaticIP:      false,
 			IsInsideDHCPPool: true,
 			EvaluatedLink:    "https://192.168.0.2/client1-page",
+			DnsNames:         []string{"FriendlyClient1.lan"}, // config name + DNS domain
 		},
 		{
 			Lease: dnsmasq.Lease{
@@ -293,10 +295,11 @@ func TestProcessLeaseUpdatesFromArray(t *testing.T) {
 				IPAddr:   netip.MustParseAddr("192.168.0.3"),
 				Hostname: "client2",
 			},
-			FriendlyName:     "client2",
+			FriendlyName:     "",   // no friendly name configured
 			HasStaticIP:      true, // check the IP address reservation has been recognized successfully
 			IsInsideDHCPPool: true,
 			EvaluatedLink:    "https://192.168.0.3",
+			DnsNames:         []string{"client2.lan"}, // DHCP hostname + DNS domain (no MAC config entry)
 		},
 		{
 			Lease: dnsmasq.Lease{
@@ -308,6 +311,7 @@ func TestProcessLeaseUpdatesFromArray(t *testing.T) {
 			HasStaticIP:      false,
 			IsInsideDHCPPool: true,
 			EvaluatedLink:    "https://client4/client4-page",
+			DnsNames:         []string{"FriendlyClient4.lan"}, // config name + DNS domain
 		},
 		{
 			Lease: dnsmasq.Lease{
@@ -315,15 +319,81 @@ func TestProcessLeaseUpdatesFromArray(t *testing.T) {
 				IPAddr:   netip.MustParseAddr("192.168.0.101"),
 				Hostname: "client3",
 			},
-			FriendlyName:     "client3",
+			FriendlyName:     "", // no friendly name configured
 			HasStaticIP:      false,
-			IsInsideDHCPPool: false, // check if the condition "outside DHCP pool" has been recognized successfully
-			EvaluatedLink:    "",    // no "link" can be rendered since this client is not in configuration
+			IsInsideDHCPPool: false,                   // check if the condition "outside DHCP pool" has been recognized successfully
+			EvaluatedLink:    "",                      // no "link" can be rendered since this client is not in configuration
+			DnsNames:         []string{"client3.lan"}, // DHCP hostname + DNS domain (no config)
 		},
 	}
 
 	// Validate that the state is updated as expected
 	if diff := cmp.Diff(backend.dhcpClientData, expectedClientData, cmpopts.EquateComparable(netip.Addr{})); diff != "" {
 		t.Errorf("Mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestGetDnsNamesFor tests that getDnsNamesFor() builds the correct list of DNS-resolvable names.
+func TestGetDnsNamesFor(t *testing.T) {
+	backendopts := config.AddonOptions{
+		DnsDomain: "lan",
+		DhcpClientSettingsByMAC: map[string]config.DhcpClientSettings{
+			"00:11:22:33:44:55": {
+				MacAddress: MustParseMAC("00:11:22:33:44:55"),
+				Name:       "myserver",
+				DnsAliases: []string{"alias1.lan", "alias2.lan"},
+			},
+			"00:11:22:33:44:56": {
+				MacAddress: MustParseMAC("00:11:22:33:44:56"),
+				Name:       "printer",
+			},
+		},
+		DhcpPool: ippool.NewPoolFromString("192.168.0.1", "192.168.0.100"),
+	}
+	backend := &UIBackend{
+		logger:    logger.NewNopCustomLogger("unit tests"),
+		options:   backendopts,
+		trackerDB: trackerdb.NewTestDB(),
+	}
+
+	tests := []struct {
+		name     string
+		mac      net.HardwareAddr
+		hostname string
+		expected []string
+	}{
+		{
+			name:     "config entry with aliases",
+			mac:      MustParseMAC("00:11:22:33:44:55"),
+			hostname: "myserver",
+			expected: []string{"myserver.lan", "alias1.lan", "alias2.lan"},
+		},
+		{
+			name:     "config entry without aliases",
+			mac:      MustParseMAC("00:11:22:33:44:56"),
+			hostname: "printer",
+			expected: []string{"printer.lan"},
+		},
+		{
+			name:     "no config entry, uses DHCP hostname",
+			mac:      MustParseMAC("aa:bb:cc:dd:ee:ff"),
+			hostname: "laptop",
+			expected: []string{"laptop.lan"},
+		},
+		{
+			name:     "no config entry, missing DHCP hostname",
+			mac:      MustParseMAC("aa:bb:cc:dd:ee:ff"),
+			hostname: dnsmasqMarkerForMissingHostname,
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := backend.getDnsNamesFor(tt.mac, tt.hostname)
+			if diff := cmp.Diff(tt.expected, result); diff != "" {
+				t.Errorf("getDnsNamesFor() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

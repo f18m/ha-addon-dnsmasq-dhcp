@@ -187,10 +187,20 @@
                 </div>
             </section>
             <section class="dialog-section">
-                <h3 class="dialog-section-title">Reserved IP</h3>
+                <h3 class="dialog-section-title">IP address</h3>
                 <div id="info_dialog_reserved" class="dialog-reserved-state">
-                    <span id="info_dialog_reserved_icon" class="dialog-reserved-icon"></span>
-                    <span id="info_dialog_reserved_text"></span>
+                    <div class="dialog-mac-row">
+                        <span id="info_dialog_ip" class="dialog-name-value dialog-reserved-ip"></span>
+                        <button id="info_dialog_ip_copy" class="copy-btn" title="Copy to clipboard" onclick="copyToClipboard(this)"></button>
+                    </div>
+                    <span id="info_dialog_reserved_status" class="dialog-reserved-status">
+                        <span id="info_dialog_reserved_icon" class="dialog-reserved-icon"></span>
+                        <span id="info_dialog_reserved_text"></span>
+                    </span>
+                    <div class="dialog-expiry-row">
+                        <span class="dialog-name-source">Next DHCP renewal in:</span>
+                        <span id="info_dialog_expiry" class="dialog-name-source"></span>
+                    </div>
                 </div>
             </section>
             <section class="dialog-section">
@@ -200,7 +210,7 @@
             <section class="dialog-section">
                 <h3 class="dialog-section-title">Link</h3>
                 <a id="info_dialog_link" class="dialog-link" href="#" target="_blank" rel="noopener noreferrer"></a>
-                <p id="info_dialog_no_link" class="dialog-no-dns">No link available for this client.</p>
+                <p id="info_dialog_no_link" class="dialog-no-dns">N/A</p>
             </section>
             <section class="dialog-section">
                 <h3 class="dialog-section-title">Tags</h3>

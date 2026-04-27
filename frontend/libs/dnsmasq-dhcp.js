@@ -89,9 +89,9 @@ var COPY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="
 // SVG information icon used by the info button
 var INFO_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
 
-// SVG icons used to indicate if a DHCP client has a reserved IP.
-var RESERVED_IP_YES_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>';
-var RESERVED_IP_NO_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>';
+// Icons used to indicate if a DHCP client has a reserved IP.
+var RESERVED_IP_YES_ICON_SVG = '<img src="static/locked_ip2.png" width="20" height="20" alt="Reserved IP" title="Reserved IP">';
+var RESERVED_IP_NO_ICON_SVG = '<img src="static/unlocked_ip2.png" width="20" height="20" alt="Dynamic IP" title="Dynamic IP">';
 
 // Render a table cell value with a small inline copy-to-clipboard button.
 // The "type" parameter is the DataTables rendering context; the button is
@@ -107,7 +107,7 @@ function renderWithCopyButton(data, type) {
 }
 
 // Open the DHCP client details dialog for the given device.
-function showInfoDialog(friendlyname, hostname, dnsNames, macAddr, description, link, tags, hasStaticIP) {
+function showInfoDialog(friendlyname, hostname, dnsNames, macAddr, description, link, tags, hasStaticIP, currentIP, leaseExpires) {
     var dialog = document.getElementById('info_dialog');
     var title = document.getElementById('info_dialog_title');
     var nameElem = document.getElementById('info_dialog_name');
@@ -115,8 +115,12 @@ function showInfoDialog(friendlyname, hostname, dnsNames, macAddr, description, 
     var macElem = document.getElementById('info_dialog_mac');
     var macCopyBtn = document.getElementById('info_dialog_mac_copy');
     var reservedElem = document.getElementById('info_dialog_reserved');
+    var currentIpElem = document.getElementById('info_dialog_ip');
+    var ipCopyBtn = document.getElementById('info_dialog_ip_copy');
     var reservedIconElem = document.getElementById('info_dialog_reserved_icon');
     var reservedTextElem = document.getElementById('info_dialog_reserved_text');
+    var expiryElem = document.getElementById('info_dialog_expiry');
+    //var expirySectionElem = document.getElementById('info_dialog_expiry_section');
     var descriptionElem = document.getElementById('info_dialog_description');
     var linkElem = document.getElementById('info_dialog_link');
     var noLinkElem = document.getElementById('info_dialog_no_link');
@@ -153,16 +157,35 @@ function showInfoDialog(friendlyname, hostname, dnsNames, macAddr, description, 
     }
 
     // Populate reserved IP section
-    if (hasStaticIP) {
-        reservedElem.classList.add('is-reserved');
-        reservedElem.classList.remove('is-dynamic');
-        reservedIconElem.innerHTML = RESERVED_IP_YES_ICON_SVG;
-        reservedTextElem.textContent = 'This client has an IP reservation';
+    var displayedIP = (currentIP && currentIP.length > 0) ? currentIP : 'N/A';
+    currentIpElem.textContent = displayedIP;
+    if (currentIP && currentIP.length > 0 && currentIP !== 'N/A') {
+        ipCopyBtn.style.display = '';
+        ipCopyBtn.setAttribute('data-copy', currentIP);
+        ipCopyBtn.innerHTML = COPY_ICON_SVG;
     } else {
-        reservedElem.classList.add('is-dynamic');
-        reservedElem.classList.remove('is-reserved');
+        ipCopyBtn.style.display = 'none';
+        ipCopyBtn.removeAttribute('data-copy');
+    }
+
+    if (hasStaticIP) {
+        reservedElem.classList.add('has-reserved-ip');
+        reservedElem.classList.remove('has-dynamic-ip');
+        reservedIconElem.innerHTML = RESERVED_IP_YES_ICON_SVG;
+        reservedTextElem.textContent = 'Reserved IP address';
+    } else {
+        reservedElem.classList.add('has-dynamic-ip');
+        reservedElem.classList.remove('has-reserved-ip');
         reservedIconElem.innerHTML = RESERVED_IP_NO_ICON_SVG;
-        reservedTextElem.textContent = 'This client uses dynamic DHCP addresses';
+        reservedTextElem.textContent = 'Dynamic IP address';
+    }
+
+    // Populate lease expiry section
+    if (leaseExpires && leaseExpires !== '0' && leaseExpires !== 0) {
+        expiryElem.textContent = formatTimeLeft(parseInt(leaseExpires, 10));
+        expiryElem.style.display = '';
+    } else {
+        expiryElem.style.display = 'none';
     }
 
     // Populate description section
@@ -216,20 +239,8 @@ function showInfoDialog(friendlyname, hostname, dnsNames, macAddr, description, 
     dialog.showModal();
 }
 
-// Render the hostname cell, appending a small info button.
-// The "type" parameter is the DataTables rendering context; the button is
-// only injected for the 'display' type so that sorting and filtering still
-// operate on the plain text value.
-function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, macAddr, description, evaluatedLink, tags, hasStaticIP, type) {
-    if (type !== 'display') {
-        if (friendlyname && friendlyname.length > 0) {
-            return friendlyname;
-        }
-        return hostname;
-    }
-    // guard against XSS: escape special chars
-    var displayedName = friendlyname || hostname || 'N/A';
-    var escaped = displayedName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// Build the metadata-only info button for a DHCP client.
+function renderInfoBtnForClient(friendlyname, hostname, dnsNames, macAddr, description, evaluatedLink, tags, hasStaticIP, currentIP, leaseExpires) {
     var namesAttr = JSON.stringify(dnsNames || []).replace(/"/g, '&quot;');
     var tagsAttr = JSON.stringify(tags || []).replace(/"/g, '&quot;');
     var escapedFriendlyname = (friendlyname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -237,11 +248,13 @@ function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, macAddr, descri
     var escapedMac = (macAddr || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     var escapedDescription = (description || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     var escapedLink = (evaluatedLink || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    var escapedIP = (currentIP || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     var hasStaticIPAttr = hasStaticIP ? 'true' : 'false';
+    var expiresAttr = leaseExpires ? String(leaseExpires) : '0';
+
     // Use data attributes only; the click handler is set up via event delegation (see InitInfoDialogHandler).
     // This avoids putting JS-escaped values into inline onclick attributes.
-    return escaped +
-        '<button class="info-btn" ' +
+    return '<button class="info-btn" ' +
         'data-friendly-name="' + escapedFriendlyname + '" ' +
         'data-hostname="' + escapedHostname + '" ' +
         'data-mac="' + escapedMac + '" ' +
@@ -249,8 +262,24 @@ function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, macAddr, descri
         'data-description="' + escapedDescription + '" ' +
         'data-link="' + escapedLink + '" ' +
         'data-tags="' + tagsAttr + '" ' +
+        'data-ip="' + escapedIP + '" ' +
         'data-has-static-ip="' + hasStaticIPAttr + '" ' +
+        'data-expires="' + expiresAttr + '" ' +
         'title="Info">' + INFO_ICON_SVG + '</button>';
+}
+
+// Render the hostname cell.
+function renderName(friendlyname, hostname, dnsNames, macAddr, description, evaluatedLink, tags, hasStaticIP, type) {
+    if (type !== 'display') {
+        if (friendlyname && friendlyname.length > 0) {
+            return friendlyname;
+        }
+        return hostname;
+    }
+
+    // guard against XSS: escape special chars
+    var displayedName = friendlyname || hostname || 'N/A';
+    return displayedName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // Set up a single delegated click handler for all DNS-names buttons.
@@ -269,11 +298,13 @@ function InitInfoDialogHandler() {
         var description = btn.getAttribute('data-description');
         var link = btn.getAttribute('data-link');
         var rawTags = btn.getAttribute('data-tags');
+        var currentIP = btn.getAttribute('data-ip');
         var hasStaticIP = btn.getAttribute('data-has-static-ip') === 'true';
+        var leaseExpires = btn.getAttribute('data-expires');
         try {
             var dnsNames = JSON.parse(rawNames);
             var tags = JSON.parse(rawTags || '[]');
-            showInfoDialog(friendlyName, hostname, dnsNames, macAddr, description, link, tags, hasStaticIP);
+            showInfoDialog(friendlyName, hostname, dnsNames, macAddr, description, link, tags, hasStaticIP, currentIP, leaseExpires);
         } catch (err) {
             console.error('Failed to parse info dialog attributes:', err);
         }
@@ -404,6 +435,7 @@ function initCurrentTable() {
     global_objects.table_current = new DataTable('#current_table', {
             columns: [
                 { title: '#', type: 'num' },
+                { title: 'Info', type: 'string', width: '4%', orderable: false, searchable: false },
                 { title: 'Name', type: 'string' },
                 { title: 'Description', type: 'string' },
                 { title: 'Link', type: 'string' },
@@ -443,6 +475,7 @@ function initPastTable() {
     global_objects.table_past = new DataTable('#past_table', {
             columns: [
                 { title: '#', type: 'num' },
+                { title: 'Info', type: 'string', width: '4%', orderable: false, searchable: false },
                 { title: 'Name', type: 'string' },
                 { title: 'Description', type: 'string' },
                 { title: 'MAC Address', type: 'string', render: renderWithCopyButton },
@@ -651,7 +684,18 @@ function processWebSocketDHCPCurrentClients(data) {
         var time_left_str = formatTimeLeft(item.lease.expires);
         var tags_str = formatTags(item.tags);
         var description_str = (item.description && item.description.length > 0) ? item.description : 'N/A';
-        var hostname_str = renderNameWithInfoBtn(
+        var info_btn = renderInfoBtnForClient(
+            item.friendly_name,
+            item.lease.hostname,
+            item.dns_names,
+            item.lease.mac_addr,
+            item.description,
+            item.evaluated_link,
+            item.tags,
+            item.has_static_ip,
+            item.lease.ip_addr,
+            item.lease.expires);
+        var hostname_str = renderName(
             item.friendly_name,
             item.lease.hostname,
             item.dns_names,
@@ -662,13 +706,13 @@ function processWebSocketDHCPCurrentClients(data) {
             item.has_static_ip,
             'display');
         newData.push([index + 1,
-            hostname_str, description_str, link_str,
+            info_btn, hostname_str, description_str, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
             time_left_str, static_ip_str, tags_str]);
         newTimeLeftColumn.push(time_left_str);
     });
 
-    var index_of_time_left_column = 6;
+    var index_of_time_left_column = 7;
     var currentData = global_objects.table_current.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_left_column])) {
         console.log("No change in current DHCP clients, updating only the time-left column");
@@ -705,7 +749,18 @@ function processWebSocketDHCPPastClients(data) {
         var last_seen_str = formatTimeSince(item.past_info.last_seen);
         var tags_str = formatTags(item.tags);
         var description_str = (item.description && item.description.length > 0) ? item.description : 'N/A';
-        var hostname_str = renderNameWithInfoBtn(
+        var info_btn = renderInfoBtnForClient(
+            item.friendly_name,
+            item.past_info.hostname,
+            item.dns_names,
+            item.past_info.mac_addr,
+            item.description,
+            item.evaluated_link,
+            item.tags,
+            item.has_static_ip,
+            'N/A',
+            0);
+        var hostname_str = renderName(
             item.friendly_name,
             item.past_info.hostname,
             item.dns_names,
@@ -716,13 +771,13 @@ function processWebSocketDHCPPastClients(data) {
             item.has_static_ip,
             'display');
         newData.push([index + 1,
-            hostname_str, description_str,
+            info_btn, hostname_str, description_str,
             item.past_info.mac_addr, static_ip_str, 
             last_seen_str, item.notes, tags_str]);
         newLastSeenColumn.push(last_seen_str);
     });
 
-    var index_of_time_last_seen_column = 5;
+    var index_of_time_last_seen_column = 6;
     var currentData = global_objects.table_past.data().toArray();
     if (compareArraysIgnoringColumns(currentData, newData, [index_of_time_last_seen_column])) {
         console.log("No change in past DHCP clients, updating only the last-seen column");

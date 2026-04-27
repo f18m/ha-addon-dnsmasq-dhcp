@@ -109,6 +109,7 @@ test-docker-image:
 	@echo "Point your browser at http://localhost:8976"
 	@echo
 	@echo "Starting container of image ${IMAGETAG}:localtest" 
+	-docker stop $(TEST_CONTAINER_NAME) 2>/dev/null || true
 	docker run \
 		--rm \
 		--name $(TEST_CONTAINER_NAME) \

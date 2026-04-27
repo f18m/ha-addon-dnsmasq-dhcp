@@ -6,14 +6,16 @@
       "name": "first-reserved",
       "description": "A static IP reservation for an important host, with a link to its landing page.",
       "reserved_ip": "192.168.1.15",
-      "link": "https://{{ .ip }}/important-host-land-page"
+      "link": "https://{{ .ip }}/important-host-land-page",
+      "tags": [ "important", "static-reservation" ]
     },
     {
       "mac": "aa:bb:cc:dd:ee:01",
       "name": "second-reserved",
       "description": "Another test. This DHCP client has a reserved IP within the DHCP range",
       "reserved_ip": "192.168.1.55",
-      "link": "https://{{ .ip }}/less-important"
+      "link": "https://{{ .ip }}/less-important",
+      "tags": [ "static-reservation" ]
     },
     {
       "mac": "aa:bb:cc:dd:ee:02",

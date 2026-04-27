@@ -595,15 +595,36 @@ table.dataTable tbody tr:hover {
     gap: 6px;
   }
 
-  .dialog-reserved-state {
-    display: inline-flex;
+  .dialog-expiry-row {
+    width: 100%;
+    display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: 1px solid transparent;
+    margin-top: 4px;
+  }
+
+  .dialog-reserved-state {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    .dialog-reserved-ip {
+      display: inline-block;
+      min-width: 140px;
+      margin: 0;
+    }
+
+    .dialog-reserved-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+    }
 
     .dialog-reserved-icon {
       display: inline-flex;
@@ -612,13 +633,13 @@ table.dataTable tbody tr:hover {
       line-height: 0;
     }
 
-    &.is-reserved {
+    &.has-reserved-ip .dialog-reserved-status {
       color: #0f6b2d;
       background: rgba(15, 107, 45, 0.12);
       border-color: rgba(15, 107, 45, 0.35);
     }
 
-    &.is-dynamic {
+    &.has-dynamic-ip .dialog-reserved-status {
       color: var(--subtle-text);
       background: var(--background-mono-text);
       border-color: var(--border-color);

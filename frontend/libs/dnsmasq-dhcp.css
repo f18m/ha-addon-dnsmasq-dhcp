@@ -520,6 +520,47 @@ table.dataTable tbody tr:hover {
   color: var(--subtle-text);
   font-style: italic;
 }
+#info_dialog .dialog-description-value {
+  margin: 0;
+  white-space: pre-wrap;
+}
+#info_dialog .dialog-link {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--btn-text-active);
+  word-break: break-all;
+}
+#info_dialog .dialog-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#info_dialog .dialog-reserved-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+#info_dialog .dialog-reserved-state .dialog-reserved-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+#info_dialog .dialog-reserved-state.is-reserved {
+  color: #0f6b2d;
+  background: rgba(15, 107, 45, 0.12);
+  border-color: rgba(15, 107, 45, 0.35);
+}
+#info_dialog .dialog-reserved-state.is-dynamic {
+  color: var(--subtle-text);
+  background: var(--background-mono-text);
+  border-color: var(--border-color);
+}
 #info_dialog .dialog-no-dns {
   font-size: 13px;
   color: var(--subtle-text);

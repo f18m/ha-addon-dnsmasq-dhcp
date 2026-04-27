@@ -89,6 +89,10 @@ var COPY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="
 // SVG information icon used by the info button
 var INFO_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
 
+// SVG icons used to indicate if a DHCP client has a reserved IP.
+var RESERVED_IP_YES_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>';
+var RESERVED_IP_NO_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>';
+
 // Render a table cell value with a small inline copy-to-clipboard button.
 // The "type" parameter is the DataTables rendering context; the button is
 // only injected for the 'display' type so that sorting and filtering still
@@ -102,14 +106,21 @@ function renderWithCopyButton(data, type) {
     return '<span class="mono-address">' + escaped + '</span><button class="copy-btn" onclick="copyToClipboard(this)" data-copy="' + escaped + '" title="Copy to clipboard">' + COPY_ICON_SVG + '</button>';
 }
 
-// Open the DNS names dialog for the given device.
-function showInfoDialog(friendlyname, hostname, dnsNames, macAddr) {
+// Open the DHCP client details dialog for the given device.
+function showInfoDialog(friendlyname, hostname, dnsNames, macAddr, description, link, tags, hasStaticIP) {
     var dialog = document.getElementById('info_dialog');
     var title = document.getElementById('info_dialog_title');
     var nameElem = document.getElementById('info_dialog_name');
     var nameSourceElem = document.getElementById('info_dialog_name_source');
     var macElem = document.getElementById('info_dialog_mac');
     var macCopyBtn = document.getElementById('info_dialog_mac_copy');
+    var reservedElem = document.getElementById('info_dialog_reserved');
+    var reservedIconElem = document.getElementById('info_dialog_reserved_icon');
+    var reservedTextElem = document.getElementById('info_dialog_reserved_text');
+    var descriptionElem = document.getElementById('info_dialog_description');
+    var linkElem = document.getElementById('info_dialog_link');
+    var noLinkElem = document.getElementById('info_dialog_no_link');
+    var tagsElem = document.getElementById('info_dialog_tags');
     var list = document.getElementById('info_dialog_list');
     var noDnsElem = document.getElementById('info_dialog_no_dns');
 
@@ -140,6 +151,38 @@ function showInfoDialog(friendlyname, hostname, dnsNames, macAddr) {
         macCopyBtn.style.display = 'none';
         macCopyBtn.removeAttribute('data-copy');
     }
+
+    // Populate reserved IP section
+    if (hasStaticIP) {
+        reservedElem.classList.add('is-reserved');
+        reservedElem.classList.remove('is-dynamic');
+        reservedIconElem.innerHTML = RESERVED_IP_YES_ICON_SVG;
+        reservedTextElem.textContent = 'This client has an IP reservation';
+    } else {
+        reservedElem.classList.add('is-dynamic');
+        reservedElem.classList.remove('is-reserved');
+        reservedIconElem.innerHTML = RESERVED_IP_NO_ICON_SVG;
+        reservedTextElem.textContent = 'This client uses dynamic DHCP addresses';
+    }
+
+    // Populate description section
+    descriptionElem.textContent = (description && description.length > 0) ? description : 'N/A';
+
+    // Populate link section
+    if (link && link.length > 0) {
+        linkElem.style.display = '';
+        noLinkElem.style.display = 'none';
+        linkElem.href = link;
+        linkElem.textContent = link;
+    } else {
+        linkElem.style.display = 'none';
+        linkElem.removeAttribute('href');
+        linkElem.textContent = '';
+        noLinkElem.style.display = '';
+    }
+
+    // Populate tags section
+    tagsElem.innerHTML = formatTags(tags);
 
     // Populate DNS names list
     list.innerHTML = '';
@@ -173,11 +216,11 @@ function showInfoDialog(friendlyname, hostname, dnsNames, macAddr) {
     dialog.showModal();
 }
 
-// Render the hostname cell, appending a small DNS-info button when dns_names are available.
+// Render the hostname cell, appending a small info button.
 // The "type" parameter is the DataTables rendering context; the button is
 // only injected for the 'display' type so that sorting and filtering still
 // operate on the plain text value.
-function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, macAddr, type) {
+function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, macAddr, description, evaluatedLink, tags, hasStaticIP, type) {
     if (type !== 'display') {
         if (friendlyname && friendlyname.length > 0) {
             return friendlyname;
@@ -185,14 +228,16 @@ function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, macAddr, type) 
         return hostname;
     }
     // guard against XSS: escape special chars
-    var escaped = (friendlyname || hostname).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    if (!dnsNames || dnsNames.length === 0) {
-        return escaped;
-    }
-    var namesAttr = JSON.stringify(dnsNames).replace(/"/g, '&quot;');
+    var displayedName = friendlyname || hostname || 'N/A';
+    var escaped = displayedName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    var namesAttr = JSON.stringify(dnsNames || []).replace(/"/g, '&quot;');
+    var tagsAttr = JSON.stringify(tags || []).replace(/"/g, '&quot;');
     var escapedFriendlyname = (friendlyname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     var escapedHostname = (hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     var escapedMac = (macAddr || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    var escapedDescription = (description || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    var escapedLink = (evaluatedLink || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    var hasStaticIPAttr = hasStaticIP ? 'true' : 'false';
     // Use data attributes only; the click handler is set up via event delegation (see InitInfoDialogHandler).
     // This avoids putting JS-escaped values into inline onclick attributes.
     return escaped +
@@ -201,6 +246,10 @@ function renderNameWithInfoBtn(friendlyname, hostname, dnsNames, macAddr, type) 
         'data-hostname="' + escapedHostname + '" ' +
         'data-mac="' + escapedMac + '" ' +
         'data-dns-names="' + namesAttr + '" ' +
+        'data-description="' + escapedDescription + '" ' +
+        'data-link="' + escapedLink + '" ' +
+        'data-tags="' + tagsAttr + '" ' +
+        'data-has-static-ip="' + hasStaticIPAttr + '" ' +
         'title="Info">' + INFO_ICON_SVG + '</button>';
 }
 
@@ -217,11 +266,16 @@ function InitInfoDialogHandler() {
         var hostname = btn.getAttribute('data-hostname');
         var macAddr = btn.getAttribute('data-mac');
         var rawNames = btn.getAttribute('data-dns-names');
+        var description = btn.getAttribute('data-description');
+        var link = btn.getAttribute('data-link');
+        var rawTags = btn.getAttribute('data-tags');
+        var hasStaticIP = btn.getAttribute('data-has-static-ip') === 'true';
         try {
             var dnsNames = JSON.parse(rawNames);
-            showInfoDialog(friendlyName, hostname, dnsNames, macAddr);
+            var tags = JSON.parse(rawTags || '[]');
+            showInfoDialog(friendlyName, hostname, dnsNames, macAddr, description, link, tags, hasStaticIP);
         } catch (err) {
-            console.error('Failed to parse dns-names attribute:', err);
+            console.error('Failed to parse info dialog attributes:', err);
         }
     });
 }
@@ -597,7 +651,16 @@ function processWebSocketDHCPCurrentClients(data) {
         var time_left_str = formatTimeLeft(item.lease.expires);
         var tags_str = formatTags(item.tags);
         var description_str = (item.description && item.description.length > 0) ? item.description : 'N/A';
-        var hostname_str = renderNameWithInfoBtn(item.friendly_name, item.lease.hostname, item.dns_names, item.lease.mac_addr, 'display');
+        var hostname_str = renderNameWithInfoBtn(
+            item.friendly_name,
+            item.lease.hostname,
+            item.dns_names,
+            item.lease.mac_addr,
+            item.description,
+            item.evaluated_link,
+            item.tags,
+            item.has_static_ip,
+            'display');
         newData.push([index + 1,
             hostname_str, description_str, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
@@ -642,7 +705,16 @@ function processWebSocketDHCPPastClients(data) {
         var last_seen_str = formatTimeSince(item.past_info.last_seen);
         var tags_str = formatTags(item.tags);
         var description_str = (item.description && item.description.length > 0) ? item.description : 'N/A';
-        var hostname_str = renderNameWithInfoBtn(item.friendly_name, item.past_info.hostname, item.dns_names, item.past_info.mac_addr, 'display');
+        var hostname_str = renderNameWithInfoBtn(
+            item.friendly_name,
+            item.past_info.hostname,
+            item.dns_names,
+            item.past_info.mac_addr,
+            item.description,
+            item.evaluated_link,
+            item.tags,
+            item.has_static_ip,
+            'display');
         newData.push([index + 1,
             hostname_str, description_str,
             item.past_info.mac_addr, static_ip_str, 

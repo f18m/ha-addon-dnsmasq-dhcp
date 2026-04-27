@@ -577,6 +577,54 @@ table.dataTable tbody tr:hover {
     font-style: italic;
   }
 
+  .dialog-description-value {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+
+  .dialog-link {
+    display: inline-block;
+    max-width: 100%;
+    color: var(--btn-text-active);
+    word-break: break-all;
+  }
+
+  .dialog-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .dialog-reserved-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+
+    .dialog-reserved-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+    }
+
+    &.is-reserved {
+      color: #0f6b2d;
+      background: rgba(15, 107, 45, 0.12);
+      border-color: rgba(15, 107, 45, 0.35);
+    }
+
+    &.is-dynamic {
+      color: var(--subtle-text);
+      background: var(--background-mono-text);
+      border-color: var(--border-color);
+    }
+  }
+
   .dialog-no-dns {
     font-size: 13px;
     color: var(--subtle-text);

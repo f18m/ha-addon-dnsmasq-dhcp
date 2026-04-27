@@ -267,17 +267,11 @@ function renderInfoBtnForClient(friendlyname, hostname, dnsNames, macAddr, descr
 }
 
 // Render the hostname cell.
-function renderName(friendlyname, hostname, dnsNames, macAddr, description, evaluatedLink, tags, hasStaticIP, type) {
-    if (type !== 'display') {
-        if (friendlyname && friendlyname.length > 0) {
-            return friendlyname;
-        }
-        return hostname;
+function renderName(friendlyname, hostname) {
+    if (friendlyname && friendlyname.length > 0) {
+        return friendlyname;
     }
-
-    // guard against XSS: escape special chars
-    var displayedName = friendlyname || hostname || 'N/A';
-    return displayedName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return hostname;
 }
 
 // Set up a single delegated click handler for all DNS-names buttons.
@@ -653,7 +647,7 @@ function processWebSocketDHCPCurrentClients(data) {
     var dhcp_addresses_used = 0;
     var dhcp_static_ip = 0;
     data.current_clients.forEach(function (item, index) {
-        console.log(`CurrentItem ${index + 1}:`, item);
+        // console.log(`CurrentItem ${index + 1}:`, item);
 
         if (item.is_inside_dhcp_pool)
             dhcp_addresses_used += 1;
@@ -693,16 +687,7 @@ function processWebSocketDHCPCurrentClients(data) {
             item.has_static_ip,
             item.lease.ip_addr,
             item.lease.expires);
-        var hostname_str = renderName(
-            item.friendly_name,
-            item.lease.hostname,
-            item.dns_names,
-            item.lease.mac_addr,
-            item.description,
-            item.evaluated_link,
-            item.tags,
-            item.has_static_ip,
-            'display');
+        var hostname_str = renderName(item.friendly_name, item.lease.hostname);
         newData.push([index + 1,
             info_btn, hostname_str, description_str, link_str,
             item.lease.ip_addr, item.lease.mac_addr, 
@@ -758,16 +743,7 @@ function processWebSocketDHCPPastClients(data) {
             item.has_static_ip,
             'N/A',
             0);
-        var hostname_str = renderName(
-            item.friendly_name,
-            item.past_info.hostname,
-            item.dns_names,
-            item.past_info.mac_addr,
-            item.description,
-            item.evaluated_link,
-            item.tags,
-            item.has_static_ip,
-            'display');
+        var hostname_str = renderName(item.friendly_name, item.past_info.hostname);
         newData.push([index + 1,
             info_btn, hostname_str, description_str,
             item.past_info.mac_addr, static_ip_str, 

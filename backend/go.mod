@@ -8,7 +8,7 @@ require (
 	github.com/b0ch3nski/go-dnsmasq-utils v0.1.2
 	github.com/davidbanham/human_duration/v3 v3.4.0
 	github.com/google/go-cmp v0.7.0
-	github.com/mattn/go-sqlite3 v1.14.42
+	github.com/mattn/go-sqlite3 v1.14.44
 	github.com/miekg/dns v1.1.72
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1

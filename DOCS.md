@@ -18,6 +18,7 @@ Follow these steps to get the `Dnsmasq-DHCP` App installed on your system:
 1. Add the HomeAssistant app store for this app by clicking here: [![Open your Home Assistant instance and show the add App repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Ff18m%2Fha-addons-repo)
 
 By doing so you should get to your HomeAssistant "Manage app repositories" dialog window and you should be asked to add `https://github.com/f18m/ha-addons-repo` to the list. Click "Add".
+If you don't get any popup window and instead you just see the "App Store" then just click on the top-right 3 dots menu and choose "Repositories" and then click "Add" and copy-paste the `https://github.com/f18m/ha-addons-repo` URL there.
 
 2. In the list of Apps, search for "Francesco Montorsi addons" and then the `Dnsmasq-DHCP` App and click on that. There is also a "BETA" version available, skip it unless you want to try the latest bugfixes and developments.
 

@@ -111,8 +111,8 @@ to block ADs in your LAN.
 
 The DNS domain is a string that is used to inform the DNS server what is the domain that it is 
 allowed to resolve.
-For small LANs, typical DNS domain choices are either `lan`, `home.arpa`.
-The `local` DNS domain should not be used as it is reserved for mDNS protocol.
+For small LANs, typical DNS domain choices are either `lan`, `home.arpa` or `internal`.
+The `local` DNS domain should not be used as it is reserved for mDNS protocol (RFC 8375).
 
 The DNS domain is also advertised to DHCP clients together with the DNS servers and it is used
 by the DHCP client to understand which names can be resolved by the `Dnsmasq-DHCP` server.
@@ -538,4 +538,5 @@ make test-database-add-entry4   # to add a past DHCP client
 
 ## Links
 
-- [dnsmasq manual page](https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html)
+- [dnsmasq manual page](https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html): reference page for the underlying DNS/DHCP server used by this App.
+- [DNS for home networks](https://www.sandon.it/2024/04/28/dns-for-home-networks/): a nice article to better understand DNS for local area networks

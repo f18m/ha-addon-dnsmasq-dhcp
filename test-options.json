@@ -22,7 +22,7 @@
       "name": "dynamic1",
       "description": "Metadata for a DHCP client without a reserved IP.",
       "link": "https://{{ .ip }}/page-{{ .hostname }}",
-      "dns_aliases": [ "alias1", "alias2" ]
+      "dns_aliases": [ "dynamic1.lan" ]
     }
   ],
   "dhcp_mac_address_blocklist": [

@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Build golang code
         run: |
@@ -49,7 +49,7 @@ jobs:
     name: Linter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with:
           # we need to pin the go-version because we also pin the golangci-lint version 
@@ -106,7 +106,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Choose Docker image tag
         id: tag
@@ -180,7 +180,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.publish_init.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build image
         uses: home-assistant/builder/actions/build-image@2026.03.2

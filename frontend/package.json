@@ -10,11 +10,11 @@
     "postinstall": "./yarn_postinstall.sh"
   },
   "dependencies": {
-    "datatables.net-buttons-dt": "^3.2.3",
-    "datatables.net-dt": "^2.3.0",
-    "datatables.net-plugins": "^2.3.0",
-    "datatables.net-responsive-dt": "^3.0.4",
-    "datatables.net-select-dt": "^3.0.0",
+    "datatables.net-buttons-dt": "^4.0.0",
+    "datatables.net-dt": "^3.0.0",
+    "datatables.net-plugins": "^3.0.0",
+    "datatables.net-responsive-dt": "^4.0.0",
+    "datatables.net-select-dt": "^4.0.0",
     "jquery": "^4.0.0",
     "jszip": "^3.10.1"
   }

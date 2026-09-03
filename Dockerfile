@@ -34,7 +34,7 @@ RUN apk add yarn bash && \
 
 # --- Actual ADDON layer
 
-FROM ghcr.io/home-assistant/base:3.23
+FROM ghcr.io/home-assistant/base:3.24
 
 # Add env
 ENV LANG=C.UTF-8

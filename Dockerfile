@@ -48,7 +48,7 @@ RUN apk add --no-cache nginx-debug sqlite socat && mv /etc/nginx /etc/nginx-orig
 #  docker run -ti --entrypoint=/bin/sh   ghcr.io/home-assistant/base:3.22
 #  apk search dnsmasq
 # See also https://thekelleys.org.uk/dnsmasq/CHANGELOG
-RUN apk add --no-cache dnsmasq=2.91-r1
+RUN apk add --no-cache dnsmasq=2.92_p2-r0
 
 # Copy data
 COPY rootfs /

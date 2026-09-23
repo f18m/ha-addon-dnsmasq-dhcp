@@ -45,10 +45,10 @@ RUN apk add --no-cache nginx-debug sqlite socat && mv /etc/nginx /etc/nginx-orig
 # Install dnsmasq
 # A specific version is installed so it's clear what we ship in this HomeAssistant App.
 # Check which version is available using:
-#  docker run -ti --entrypoint=/bin/sh   ghcr.io/home-assistant/base:3.22
-#  apk search dnsmasq
+#  docker run -ti --entrypoint=/bin/sh   ghcr.io/home-assistant/base:3.24
+#  apk update && apk search dnsmasq
 # See also https://thekelleys.org.uk/dnsmasq/CHANGELOG
-RUN apk add --no-cache dnsmasq=2.91-r1
+RUN apk add --no-cache dnsmasq=2.92_p2-r0
 
 # Copy data
 COPY rootfs /

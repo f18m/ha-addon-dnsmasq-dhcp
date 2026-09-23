@@ -480,9 +480,14 @@ func (b *UIBackend) processLeaseUpdates() {
 			}
 		}
 
+		b.dhcpClientDataLock.Lock()
+		previousCount := len(b.dhcpClientData)
+		b.dhcpClientDataLock.Unlock()
+		updatedLeases = b.recoverUnexpectedEmptyLeaseUpdate(updatedLeases, previousCount)
+
 		if b.options.LogWebUI {
 			b.logger.Infof("INotify detected a change (#%d) to the DHCP client lease file... list size before=%d, after=%d clients\n",
-				i, len(b.dhcpClientData), len(updatedLeases))
+				i, previousCount, len(updatedLeases))
 		}
 		b.processLeaseUpdatesFromArray(updatedLeases)
 
@@ -490,6 +495,48 @@ func (b *UIBackend) processLeaseUpdates() {
 		b.broadcastCh <- struct{}{}
 		i += 1
 	}
+}
+
+func (b *UIBackend) recoverUnexpectedEmptyLeaseUpdate(updatedLeases []*dnsmasq.Lease, previousCount int) []*dnsmasq.Lease {
+	if len(updatedLeases) > 0 || previousCount == 0 {
+		return updatedLeases
+	}
+
+	leaseInfo, errStat := os.Stat(defaultDnsmasqLeasesFile)
+	if errStat != nil {
+		b.logger.Warnf("lease watcher returned 0 clients after previously tracking %d clients, but failed to stat lease file %s: %s",
+			previousCount, defaultDnsmasqLeasesFile, errStat.Error())
+		return updatedLeases
+	}
+	if leaseInfo.Size() == 0 {
+		// nothing to recover, likely a valid empty state
+		return updatedLeases
+	}
+
+	leaseFile, errOpen := os.Open(defaultDnsmasqLeasesFile)
+	if errOpen != nil {
+		b.logger.Warnf("lease watcher returned 0 clients after previously tracking %d clients, but failed to open lease file %s: %s",
+			previousCount, defaultDnsmasqLeasesFile, errOpen.Error())
+		return updatedLeases
+	}
+	defer func() {
+		_ = leaseFile.Close()
+	}()
+
+	reloadedLeases, errRead := dnsmasq.ReadLeases(leaseFile)
+	if errRead != nil {
+		b.logger.Warnf("lease watcher returned 0 clients after previously tracking %d clients, but failed to parse lease file %s: %s",
+			previousCount, defaultDnsmasqLeasesFile, errRead.Error())
+		return updatedLeases
+	}
+	if len(reloadedLeases) == 0 {
+		return updatedLeases
+	}
+
+	b.logger.Warnf("Recovered DHCP lease data after unexpected empty watcher update: in-memory clients before=%d, lease file=%s (%d bytes), recovered clients=%d",
+		previousCount, defaultDnsmasqLeasesFile, leaseInfo.Size(), len(reloadedLeases))
+
+	return reloadedLeases
 }
 
 func (b *UIBackend) getFriendlyNameFor(mac net.HardwareAddr) string {

@@ -147,36 +147,36 @@ test-current-dhcp-leases:
 	printf "%s aa:bb:cc:dd:ee:02 192.168.1.56 hostname3 *\n" "$$expiry" >> test-leases.leases; \
 	printf "%s aa:bb:cc:dd:ee:03 192.168.1.57 hostname4 *\n" "$$expiry" >> test-leases.leases
 
-test-database-show:
+test-past-leases-show:
 	sqlite3 test-db.sqlite3 'select * from dhcp_clients;' | column -t -s'|'
 
-test-database-describe:
+test-past-leases-describe:
 	sqlite3 test-db.sqlite3 'PRAGMA table_info([dhcp_clients])'
 
-test-database-drop:
+test-past-leases-drop:
 	sqlite3 test-db.sqlite3 'drop table dhcp_clients;'
 
 # this target assumes that you launched 'test-docker-image-live' previously
-test-database-add-entry1:
+test-past-leases-add-entry1:
 	docker exec -ti $(TEST_CONTAINER_NAME) /opt/bin/dnsmasq-dhcp-script.sh add "dd:ee:aa:dd:00:01" "192.168.1.250" "test-entry1"
 
-test-database-add-entry2:
+test-past-leases-add-entry2:
 	docker exec -ti $(TEST_CONTAINER_NAME) /opt/bin/dnsmasq-dhcp-script.sh add "dd:ee:aa:dd:00:02" "192.168.1.251" "test-entry2"
 
-test-database-add-entry3:
+test-past-leases-add-entry3:
 	docker exec -ti $(TEST_CONTAINER_NAME) /opt/bin/dnsmasq-dhcp-script.sh add "dd:ee:aa:dd:00:03" "192.168.1.252" "test-entry3"
 
-test-database-add-entry4:
+test-past-leases-add-entry4:
 	docker exec -ti $(TEST_CONTAINER_NAME) /opt/bin/dnsmasq-dhcp-script.sh add "dd:ee:aa:dd:00:04" "192.168.1.253" ""
 
 # NOTE:
 #    docker exec -ti $(TEST_CONTAINER_NAME) /opt/bin/dnsmasq-dhcp-script.sh del "dd:ee:aa:dd:00:01" "192.168.1.250" "test-entry"
 # won't work: there is no 'del' support... the only way to delete entries is to go via SQL:
-test-database-del-entry:
+test-past-leases-del-entry:
 
 # by making the entry2 7 days older, it should be pruned by the backend from the trackerDB
 # because forget_past_clients_after=1w
-test-database-make-entry2-very-old:
+test-past-leases-make-entry2-very-old:
 	sqlite3 test-db.sqlite3 "UPDATE dhcp_clients SET last_seen = strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-7 days') WHERE mac_addr = 'dd:ee:aa:dd:00:02';"
 
 

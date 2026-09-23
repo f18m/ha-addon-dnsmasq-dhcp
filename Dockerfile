@@ -9,7 +9,7 @@
 # About base image: we need to use a musl-based docker image since the actual HomeAssistant addon
 # base image will be musl-based as well. This is required since we depend from "github.com/mattn/go-sqlite3"
 # which is a CGO library; so that's why we select the -alpine variant
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-alpine AS builder
 
 # build go backend
 WORKDIR /app/backend

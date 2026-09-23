@@ -462,8 +462,28 @@ func (b *UIBackend) processLeaseUpdates() {
 	i := 0
 	for {
 		updatedLeases := <-b.leasesCh
-		b.logger.Infof("INotify detected a change (#%d) to the DHCP client lease file... list size before=%d, after=%d clients\n",
-			i, len(b.dhcpClientData), len(updatedLeases))
+
+		debounceTimer := time.NewTimer(leaseUpdatesDebounceInterval)
+		debounceDone := false
+		for !debounceDone {
+			select {
+			case updatedLeases = <-b.leasesCh:
+				if !debounceTimer.Stop() {
+					select {
+					case <-debounceTimer.C:
+					default:
+					}
+				}
+				debounceTimer.Reset(leaseUpdatesDebounceInterval)
+			case <-debounceTimer.C:
+				debounceDone = true
+			}
+		}
+
+		if b.options.LogWebUI {
+			b.logger.Infof("INotify detected a change (#%d) to the DHCP client lease file... list size before=%d, after=%d clients\n",
+				i, len(b.dhcpClientData), len(updatedLeases))
+		}
 		b.processLeaseUpdatesFromArray(updatedLeases)
 
 		// once the new list of DHCP client data entries is ready, notify the broadcast channel

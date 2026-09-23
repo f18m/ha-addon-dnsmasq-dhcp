@@ -9,6 +9,7 @@ import (
 	"net/netip"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/b0ch3nski/go-dnsmasq-utils/dnsmasq"
 	"github.com/google/go-cmp/cmp"
@@ -395,5 +396,102 @@ func TestGetDnsNamesFor(t *testing.T) {
 				t.Errorf("getDnsNamesFor() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestProcessLeaseUpdatesDebouncesBursts(t *testing.T) {
+	backend := getMockUIBackend()
+	backend.broadcastCh = make(chan struct{}, 8)
+	backend.leasesCh = make(chan []*dnsmasq.Lease, 8)
+	backend.options.LogWebUI = false
+
+	oldDebounce := leaseUpdatesDebounceInterval
+	leaseUpdatesDebounceInterval = 15 * time.Millisecond
+	defer func() {
+		leaseUpdatesDebounceInterval = oldDebounce
+	}()
+
+	go backend.processLeaseUpdates()
+
+	first := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:55"),
+			IPAddr:   netip.MustParseAddr("192.168.0.2"),
+			Hostname: "client1",
+		},
+	}
+	second := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:55"),
+			IPAddr:   netip.MustParseAddr("192.168.0.2"),
+			Hostname: "client1",
+		},
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:56"),
+			IPAddr:   netip.MustParseAddr("192.168.0.3"),
+			Hostname: "client2",
+		},
+	}
+
+	backend.leasesCh <- first
+	backend.leasesCh <- second
+
+	select {
+	case <-backend.broadcastCh:
+	case <-time.After(300 * time.Millisecond):
+		t.Fatalf("timed out waiting for debounced update")
+	}
+
+	select {
+	case <-backend.broadcastCh:
+		t.Fatalf("expected burst events to be coalesced into one update")
+	case <-time.After(60 * time.Millisecond):
+	}
+
+	if got := len(backend.dhcpClientData); got != len(second) {
+		t.Fatalf("expected latest lease snapshot to win after debounce: got %d, want %d", got, len(second))
+	}
+}
+
+func TestProcessLeaseUpdatesProcessesSeparatedEvents(t *testing.T) {
+	backend := getMockUIBackend()
+	backend.broadcastCh = make(chan struct{}, 8)
+	backend.leasesCh = make(chan []*dnsmasq.Lease, 8)
+
+	oldDebounce := leaseUpdatesDebounceInterval
+	leaseUpdatesDebounceInterval = 15 * time.Millisecond
+	defer func() {
+		leaseUpdatesDebounceInterval = oldDebounce
+	}()
+
+	go backend.processLeaseUpdates()
+
+	first := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:55"),
+			IPAddr:   netip.MustParseAddr("192.168.0.2"),
+			Hostname: "client1",
+		},
+	}
+	second := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:56"),
+			IPAddr:   netip.MustParseAddr("192.168.0.3"),
+			Hostname: "client2",
+		},
+	}
+
+	backend.leasesCh <- first
+	select {
+	case <-backend.broadcastCh:
+	case <-time.After(300 * time.Millisecond):
+		t.Fatalf("timed out waiting for first update")
+	}
+
+	backend.leasesCh <- second
+	select {
+	case <-backend.broadcastCh:
+	case <-time.After(300 * time.Millisecond):
+		t.Fatalf("timed out waiting for second update")
 	}
 }

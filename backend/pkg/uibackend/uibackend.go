@@ -461,8 +461,11 @@ func (b *UIBackend) renderPage(w http.ResponseWriter, r *http.Request) {
 func (b *UIBackend) processLeaseUpdates() {
 	i := 0
 	for {
+		// get the update from the channel written by dnsmasq.WatchLeases()
 		updatedLeases := <-b.leasesCh
 
+		// debounce rapid successive lease updates to avoid excessive processing;
+		// in other words we process lease updates only after a short period of inactivity
 		debounceTimer := time.NewTimer(leaseUpdatesDebounceInterval)
 		debounceDone := false
 		for !debounceDone {
@@ -483,6 +486,8 @@ func (b *UIBackend) processLeaseUpdates() {
 		b.dhcpClientDataLock.Lock()
 		previousCount := len(b.dhcpClientData)
 		b.dhcpClientDataLock.Unlock()
+
+		// check if the lease update is unexpectedly empty and attempt to recover from the lease file
 		updatedLeases = b.recoverUnexpectedEmptyLeaseUpdate(updatedLeases, previousCount)
 
 		if b.options.LogWebUI {

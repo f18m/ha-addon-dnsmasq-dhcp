@@ -8,68 +8,68 @@ core-util-is@~1.0.0:
   integrity sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==
 
 datatables.net-buttons-dt@^4.0.0:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/datatables.net-buttons-dt/-/datatables.net-buttons-dt-4.1.1.tgz#4792b8cbff943c8233e74f8d93eab46e80e07200"
-  integrity sha512-YhUFQ4mKj0iywP2LI7XS+3B3t6RBWJT1eonrtLXgx5F/O8fYw8NB35Y38LB7m7sxnhfNDppktRL/Opo22pTpFA==
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/datatables.net-buttons-dt/-/datatables.net-buttons-dt-4.1.2.tgz#66a1a5c36c026e6bc147ba00d494a5ad3878972f"
+  integrity sha512-kVvjVo+vBQKSGXThxAiV2XGiAgSrW5ZGKZJZO8y/CugIhe8KPE5FdXM6tYLJnavoEJd5opm+LszMNXUZRWAe8w==
   dependencies:
-    datatables.net-buttons "4.1.1"
+    datatables.net-buttons "4.1.2"
     datatables.net-dt "^3.1"
 
-datatables.net-buttons@4.1.1:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/datatables.net-buttons/-/datatables.net-buttons-4.1.1.tgz#e8922db1f3e9a2228feab279188d5fee49173330"
-  integrity sha512-KH8SewpQJTUq5M8YsY7aXUkhbhjUsxsoxXsXMUqMcU6daa7f+vtQDUp3yYTMTnPofzBkS9m2vxRrqxWEMtP+Ew==
+datatables.net-buttons@4.1.2:
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/datatables.net-buttons/-/datatables.net-buttons-4.1.2.tgz#d16352507ed2a3720d5f55c1f57cdd72ca45f84b"
+  integrity sha512-VigN0751S8r/brSZNRSPXgfUHZciujQ2zXkZifOuWYbgMaX/I68YyGmiuQTTrI7DMl0fXHgM4nA3lmJcdtKD2A==
   dependencies:
     datatables.net "^3.1"
 
 datatables.net-dt@^3.0.0, datatables.net-dt@^3.1:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/datatables.net-dt/-/datatables.net-dt-3.1.1.tgz#4007530b440fd0c2ab5c17ba1da483379939d4b1"
-  integrity sha512-CeooC2ByHWu4fUpVxBvgimCseR1/1gr8IjO34BjYmZ4pUp6cNEkCzx49uzK0AnFqDR3v32Hue9BDAf9BnFMxxA==
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/datatables.net-dt/-/datatables.net-dt-3.1.2.tgz#038a290a55f9d92efc677451146bcd16d3d0ed33"
+  integrity sha512-2nxvoJCXjOdXMQO4QkwH1MUnYusC2BkilVMVpi1L7kGQG4OVu4NgPuW20RfXmxfdgSNCUI6R42Yk0v8ohFoe5A==
   dependencies:
-    datatables.net "3.1.1"
+    datatables.net "3.1.2"
 
 datatables.net-plugins@^3.0.0:
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/datatables.net-plugins/-/datatables.net-plugins-3.0.2.tgz#dce825ae1b66cc95ae0e665a0e0d7704282bfaf4"
-  integrity sha512-dAwLqGRJ5+CapiaLVL0NPD6adZ3cR+3uRGeDOqGQn7TEy7uKRd3zDnNiWrohuDaSkC06yfz/a7eKmNd8i9BBmA==
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/datatables.net-plugins/-/datatables.net-plugins-3.1.2.tgz#e7181a01a9220177e9af99444bf64b08767bf34d"
+  integrity sha512-O36PhHBGVj4T8Kh3bLXapZv9FrnoWKdSB5scChsQZoVbsYjTtQOyY+NEfal+l0Y/WpzJhiB5l6M1xauVW7xoKA==
   dependencies:
     datatables.net "^3"
 
 datatables.net-responsive-dt@^4.0.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/datatables.net-responsive-dt/-/datatables.net-responsive-dt-4.1.0.tgz#1457a1b1638d445e3534611689bf33fcf6fd8cdd"
-  integrity sha512-iFcYMI+NG6TvPBIUlJr3403wDeNygst6TVcdOWeAO9tyDk01GWLmTY2pp9N1Kup9u+onb9YoGOsH5VRjM8T3rQ==
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/datatables.net-responsive-dt/-/datatables.net-responsive-dt-4.1.1.tgz#6fca83029e7197aea47d2baf5ee6877b72810d8c"
+  integrity sha512-5kdhC+MVp5URZXjH09cucAa/bCOCkWatAzR0Y3r/6DCH8SHbWxzgmhfbCgYlXI//h6IH/YYzy+B2BNdn7/u9PA==
   dependencies:
     datatables.net-dt "^3.1"
-    datatables.net-responsive "4.1.0"
+    datatables.net-responsive "4.1.1"
 
-datatables.net-responsive@4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/datatables.net-responsive/-/datatables.net-responsive-4.1.0.tgz#6fbaf1f4850353dc48e4453cccc2737f39c1a8ef"
-  integrity sha512-xX26xHuXLZkbAT3kgeK7pAEAXsHu74chrEsU9MR+8bY4Xs5872/wZls+fxACrRMPaFHUZDzroTQ8LJbp5Wz1Dw==
+datatables.net-responsive@4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/datatables.net-responsive/-/datatables.net-responsive-4.1.1.tgz#50d93c147ea33abbe7c42d59f7c3a3edf9abdadd"
+  integrity sha512-FTo6k/Ov9ULpprImyupEB/3qr4W+7Ia14l1+dfk9voG4X0J6YaNrxftvumzZamZYcs9PZKDV1LXpDUBT8jnmYQ==
   dependencies:
     datatables.net "^3.1"
 
 datatables.net-select-dt@^4.0.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/datatables.net-select-dt/-/datatables.net-select-dt-4.1.0.tgz#becdf8e6855428f594acbabd8ebd3286eb5069f8"
-  integrity sha512-ZIVCrKg8QVGJkInyhQ9VVHY2mBulFan0kOf6ToKwSEcDNOChctJueITh7N/rMqLwTxF7iNZQwdcGW2hCXo7/Wg==
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/datatables.net-select-dt/-/datatables.net-select-dt-4.1.1.tgz#0fa4c78eedc1c9f62d125d48321af9b027d51c57"
+  integrity sha512-av0y/XXO74p7AtTzejX1gFR8zLWlXRDWBJcIXyhDJu3JP6IWf7vmc1b8q7ND39PQUrz5yQg3b7U2pBBpKrSIKw==
   dependencies:
     datatables.net-dt "^3.1"
-    datatables.net-select "4.1.0"
+    datatables.net-select "4.1.1"
 
-datatables.net-select@4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/datatables.net-select/-/datatables.net-select-4.1.0.tgz#701d232e45cbda3542852f23f641f09874573a88"
-  integrity sha512-ndDZUr67NvSKerRU592yQYryMtUYkyY4LCNgU5DFiZ6Fq2TD/+wvgBcpOqV18oXBbZDvKsfhMRZbjUYjh3ig/g==
+datatables.net-select@4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/datatables.net-select/-/datatables.net-select-4.1.1.tgz#33f749b5c232f56c02f39b1a973b9e3e0577690f"
+  integrity sha512-B5NNGXpJjKYXb8rlLwwSF/x/mRdgFYMS4el715sBYyn2Ovz00CBw5mwjB1NXeaR4DDl0D2dCg7UBh5uvHrXYuw==
   dependencies:
     datatables.net "^3.1"
 
-datatables.net@3.1.1, datatables.net@^3, datatables.net@^3.1:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/datatables.net/-/datatables.net-3.1.1.tgz#dfbf94f14e5d5e04ce6dfe05aaa458d45e3e09b8"
-  integrity sha512-dETxh14+KkQrFTZFIVtnKuIcNuglSLnraITbvrkztA+2yM6AeNtEAiMVucZ5o6vkJnJrtoApSALggSmc0czs0w==
+datatables.net@3.1.2, datatables.net@^3, datatables.net@^3.1:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/datatables.net/-/datatables.net-3.1.2.tgz#a5a50257bf87b0f70eca710f6ef0feeb763c5556"
+  integrity sha512-6PnhPw9lrPASP2n1t13zW595aKB41j3Qt6iykFVV6aohGtSF3CTjwQ+RsdlrGUQTj/Ji0or8+9Q7mMpf4YY1cQ==
 
 immediate@~3.0.5:
   version "3.0.6"

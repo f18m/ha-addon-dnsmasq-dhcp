@@ -218,7 +218,7 @@ adjust-config-for-beta-branch:
 adjust-config-for-main-branch:
 	@echo
 	@echo "Editing the config.yaml to match MAIN branch settings..."
-	yq -i '.version = "4.0.1"' config.yaml
+	yq -i '.version = "5.1.1"' config.yaml
 	yq -i '.slug = "dnsmasq-dhcp"' config.yaml
 	yq -i '.name = "Dnsmasq-DHCP"' config.yaml
 	yq -i '.stage = "stable"' config.yaml

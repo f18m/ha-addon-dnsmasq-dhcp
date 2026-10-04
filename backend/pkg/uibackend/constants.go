@@ -22,6 +22,9 @@ var defaultStartEpoch = "/data/startepoch"
 // interval for checking past DHCP clients that need to be removed from the tracker DB
 var pastClientsCheckInterval = 5 * time.Minute
 
+// interval used to coalesce bursts of lease file update events
+var leaseUpdatesDebounceInterval = 250 * time.Millisecond
+
 // These absolute paths must be in sync with the Dockerfile
 var (
 	staticWebFilesDir = "/opt/web/static"

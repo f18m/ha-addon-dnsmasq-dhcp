@@ -498,7 +498,7 @@ DHCP clients, their lease times and the list of the old DHCP clients, just use:
 
 ```sh
 docker pull ghcr.io/f18m/addon-dnsmasq-dhcp:beta
-cd /usr/share/hassio/addons/data/79957c2e_dnsmasq-dhcp && sudo cp -av * ../79957c2e_dnsmasq-dhcp-beta/
+cd /usr/share/hassio/apps/data/79957c2e_dnsmasq-dhcp && sudo cp -av * ../79957c2e_dnsmasq-dhcp-beta/
 ```
 
 Then stop the _stable_ version of the addon from HomeAssistant UI and start the _beta_ version.

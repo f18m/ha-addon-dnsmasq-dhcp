@@ -7,8 +7,10 @@ import (
 	"dnsmasq-dhcp-backend/pkg/trackerdb"
 	"net"
 	"net/netip"
+	"os"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/b0ch3nski/go-dnsmasq-utils/dnsmasq"
 	"github.com/google/go-cmp/cmp"
@@ -395,5 +397,150 @@ func TestGetDnsNamesFor(t *testing.T) {
 				t.Errorf("getDnsNamesFor() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestProcessLeaseUpdatesDebouncesBursts(t *testing.T) {
+	backend := getMockUIBackend()
+	backend.broadcastCh = make(chan struct{}, 8)
+	backend.leasesCh = make(chan []*dnsmasq.Lease, 8)
+	backend.options.LogWebUI = false
+
+	oldDebounce := leaseUpdatesDebounceInterval
+	leaseUpdatesDebounceInterval = 15 * time.Millisecond
+	defer func() {
+		leaseUpdatesDebounceInterval = oldDebounce
+	}()
+
+	go backend.processLeaseUpdates()
+
+	first := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:55"),
+			IPAddr:   netip.MustParseAddr("192.168.0.2"),
+			Hostname: "client1",
+		},
+	}
+	second := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:55"),
+			IPAddr:   netip.MustParseAddr("192.168.0.2"),
+			Hostname: "client1",
+		},
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:56"),
+			IPAddr:   netip.MustParseAddr("192.168.0.3"),
+			Hostname: "client2",
+		},
+	}
+
+	backend.leasesCh <- first
+	backend.leasesCh <- second
+
+	select {
+	case <-backend.broadcastCh:
+	case <-time.After(300 * time.Millisecond):
+		t.Fatalf("timed out waiting for debounced update")
+	}
+
+	select {
+	case <-backend.broadcastCh:
+		t.Fatalf("expected burst events to be coalesced into one update")
+	case <-time.After(60 * time.Millisecond):
+	}
+
+	if got := len(backend.dhcpClientData); got != len(second) {
+		t.Fatalf("expected latest lease snapshot to win after debounce: got %d, want %d", got, len(second))
+	}
+}
+
+func TestProcessLeaseUpdatesProcessesSeparatedEvents(t *testing.T) {
+	backend := getMockUIBackend()
+	backend.broadcastCh = make(chan struct{}, 8)
+	backend.leasesCh = make(chan []*dnsmasq.Lease, 8)
+
+	oldDebounce := leaseUpdatesDebounceInterval
+	leaseUpdatesDebounceInterval = 15 * time.Millisecond
+	defer func() {
+		leaseUpdatesDebounceInterval = oldDebounce
+	}()
+
+	go backend.processLeaseUpdates()
+
+	first := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:55"),
+			IPAddr:   netip.MustParseAddr("192.168.0.2"),
+			Hostname: "client1",
+		},
+	}
+	second := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:56"),
+			IPAddr:   netip.MustParseAddr("192.168.0.3"),
+			Hostname: "client2",
+		},
+	}
+
+	backend.leasesCh <- first
+	select {
+	case <-backend.broadcastCh:
+	case <-time.After(300 * time.Millisecond):
+		t.Fatalf("timed out waiting for first update")
+	}
+
+	backend.leasesCh <- second
+	select {
+	case <-backend.broadcastCh:
+	case <-time.After(300 * time.Millisecond):
+		t.Fatalf("timed out waiting for second update")
+	}
+}
+
+func TestRecoverUnexpectedEmptyLeaseUpdate(t *testing.T) {
+	backend := getMockUIBackend()
+	tmpFile, err := os.CreateTemp("", "leases-*.leases")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer func() {
+		_ = os.Remove(tmpFile.Name())
+	}()
+
+	content := "1790195704 aa:bb:cc:dd:ee:03 192.168.1.57 hostname4 *\n1790195704 aa:bb:cc:dd:ee:02 192.168.1.56 dynamic1 *\n"
+	if err := os.WriteFile(tmpFile.Name(), []byte(content), 0o600); err != nil {
+		t.Fatalf("failed to write temp lease file: %v", err)
+	}
+
+	oldLeaseFile := defaultDnsmasqLeasesFile
+	defaultDnsmasqLeasesFile = tmpFile.Name()
+	defer func() {
+		defaultDnsmasqLeasesFile = oldLeaseFile
+	}()
+
+	recovered := backend.recoverUnexpectedEmptyLeaseUpdate([]*dnsmasq.Lease{}, 1)
+	if len(recovered) != 2 {
+		t.Fatalf("expected to recover 2 leases, got %d", len(recovered))
+	}
+}
+
+func TestRecoverUnexpectedEmptyLeaseUpdateNoRecoveryWhenNotNeeded(t *testing.T) {
+	backend := getMockUIBackend()
+	nonEmpty := []*dnsmasq.Lease{
+		{
+			MacAddr:  MustParseMAC("00:11:22:33:44:55"),
+			IPAddr:   netip.MustParseAddr("192.168.0.2"),
+			Hostname: "client1",
+		},
+	}
+
+	got := backend.recoverUnexpectedEmptyLeaseUpdate(nonEmpty, 3)
+	if len(got) != 1 {
+		t.Fatalf("expected non-empty updates to pass through unchanged, got len=%d", len(got))
+	}
+
+	got = backend.recoverUnexpectedEmptyLeaseUpdate([]*dnsmasq.Lease{}, 0)
+	if len(got) != 0 {
+		t.Fatalf("expected no recovery when previous count is zero, got len=%d", len(got))
 	}
 }

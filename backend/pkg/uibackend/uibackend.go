@@ -253,10 +253,15 @@ func (b *UIBackend) generateWebSocketMessage() WebSocketMessage {
 
 	// this code is meant to be executed on the same machine/container where dnsmasq is running, so
 	// that's why we pass "localhost" as DNS server host:
-	dnsStats, err := b.dnsmasq.GetDnsStats("localhost", b.options.DnsPort)
-	if err != nil {
-		b.logger.Warnf("failed to get updated DNS stats: %s", err.Error())
-		// keep going
+	// (skipped entirely when the DNS server is disabled)
+	var dnsStats dnsmasqwrapper.DnsServerStats
+	if b.options.DnsEnable {
+		var err error
+		dnsStats, err = b.dnsmasq.GetDnsStats("localhost", b.options.DnsPort)
+		if err != nil {
+			b.logger.Warnf("failed to get updated DNS stats: %s", err.Error())
+			// keep going
+		}
 	}
 
 	// finally build the websocket message

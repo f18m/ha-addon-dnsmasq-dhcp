@@ -1,5 +1,18 @@
 #!/usr/bin/with-contenv bashio
 CONFIG="/etc/dnsmasq.conf"
+CONFIG_RESOLVED="/data/options.resolved.json"
+
+bashio::log.info "Generating dnsmasq config..."
+tempio \
+    -conf "${CONFIG_RESOLVED}" \
+    -template /usr/share/tempio/dnsmasq.config \
+    -out "${CONFIG}"
+
+# make the config file a bit more compact by removing empty lines
+sed -i '/^$/d' "${CONFIG}"
+
+bashio::log.info "Full dnsmasq config:"
+cat -n "${CONFIG}"
 
 # Run dnsmasq
 bashio::log.info "Starting dnsmasq..."
@@ -7,7 +20,7 @@ bashio::log.info "Starting dnsmasq..."
 # Set max open file limit to speed up startup
 ulimit -n 1024
 
-exec dnsmasq --conf-file="${CONFIG}" --bind-interfaces  < /dev/null
+exec dnsmasq --conf-file="${CONFIG}" < /dev/null
 
 # useful for debug, to launch a container doing nothing to inspect templating results:
 #exec sleep 10000

@@ -59,6 +59,32 @@ function resolve_auto_interfaces() {
     mv ${ADDON_CONFIG_RESOLVED}.tmp ${ADDON_CONFIG_RESOLVED}
 }
 
+function drop_missing_interfaces() {
+    # dnsmasq (without bind-dynamic) refuses to start if a listed interface does not exist:
+    # wait a bit for them, then drop the ones still missing
+    local wait_secs=30 iface missing present=()
+    local ifaces
+    ifaces="$(jq --raw-output '.interfaces[]?' ${ADDON_CONFIG_RESOLVED})"
+    for ((i = 0; i < wait_secs; i++)); do
+        missing=""
+        for iface in ${ifaces}; do
+            [[ -e "/sys/class/net/${iface}" ]] || missing+="${iface} "
+        done
+        [[ -z "${missing}" ]] && break
+        sleep 1
+    done
+    for iface in ${ifaces}; do
+        if [[ -e "/sys/class/net/${iface}" ]]; then
+            present+=("${iface}")
+        else
+            bashio::log.warning "dnsmasq-init.sh: interface '${iface}' does not exist; ignoring it. Restart the addon once it is available"
+        fi
+    done
+    jq --argjson ifaces "$(printf '%s\n' "${present[@]}" | jq --raw-input . | jq --slurp --compact-output .)" \
+        '.interfaces = $ifaces' ${ADDON_CONFIG_RESOLVED} >${ADDON_CONFIG_RESOLVED}.tmp
+    mv ${ADDON_CONFIG_RESOLVED}.tmp ${ADDON_CONFIG_RESOLVED}
+}
+
 function resolve_ntp_servers() {
     NTP_SERVERS="$(jq --raw-output '.dhcp_server.ntp_servers[]' ${ADDON_CONFIG_RESOLVED} 2>/dev/null)"
     if [[ ! -z "${NTP_SERVERS}" ]]; then
@@ -174,6 +200,8 @@ cp ${ADDON_CONFIG} ${ADDON_CONFIG_RESOLVED}
 # do some processing:
 log_info "Resolving 'auto' interface names..."
 resolve_auto_interfaces
+log_info "Dropping interfaces that do not exist..."
+drop_missing_interfaces
 log_info "Resolving NTP hostnames eventually provided..."
 resolve_ntp_servers
 log_info "Processing DHCP DNS server list..."

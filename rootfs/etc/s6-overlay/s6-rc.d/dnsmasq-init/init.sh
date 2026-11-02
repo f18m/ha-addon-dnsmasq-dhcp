@@ -60,8 +60,12 @@ function resolve_auto_interfaces() {
 }
 
 function drop_missing_interfaces() {
-    # dnsmasq (without bind-dynamic) refuses to start if a listed interface does not exist:
-    # wait a bit for them, then drop the ones still missing
+    # dnsmasq runs with --bind-interfaces and refuses to start if a listed interface does not exist:
+    # wait a bit for them, then drop the ones still missing.
+    # We deliberately do NOT use "bind-dynamic": on hosts with many docker containers dnsmasq
+    # rebinds very often and sometimes loses the binding to the system NICs, breaking DNS
+    # and taking the whole network down. See the reverted commit:
+    # https://github.com/f18m/ha-addon-dnsmasq-dhcp/commit/259fec9a314f87355e3753560fd2f94dd75dcbfe
     local wait_secs=30 iface missing present=()
     local ifaces
     ifaces="$(jq --raw-output '.interfaces[]?' ${ADDON_CONFIG_RESOLVED})"
@@ -83,6 +87,11 @@ function drop_missing_interfaces() {
     jq --argjson ifaces "$(printf '%s\n' "${present[@]}" | jq --raw-input . | jq --slurp --compact-output .)" \
         '.interfaces = $ifaces' ${ADDON_CONFIG_RESOLVED} >${ADDON_CONFIG_RESOLVED}.tmp
     mv ${ADDON_CONFIG_RESOLVED}.tmp ${ADDON_CONFIG_RESOLVED}
+
+    if [[ ${#present[@]} -eq 0 ]]; then
+        bashio::log.warning "dnsmasq-init.sh: no valid interface left to provide to dnsmasq"
+    fi
+    log_info "Interfaces that will be provided to dnsmasq: ${present[*]:-<none>}"
 }
 
 function resolve_ntp_servers() {

@@ -7,6 +7,7 @@
 ADDON_DHCP_SERVER_START_EPOCH="/data/startepoch"
 ADDON_CONFIG="/data/options.json"
 ADDON_CONFIG_RESOLVED="/data/options.resolved.json"
+DNSMASQ_CONFIG="/etc/dnsmasq.conf"
 DNSMASQ_LEASE_DATABASE="/data/dnsmasq.leases"
 
 # 5min is a reasonable threshold
@@ -56,6 +57,41 @@ function resolve_auto_interfaces() {
         '(.dhcp_pools[] | select(.interface == "auto") | .interface) |= $iface' \
         ${ADDON_CONFIG_RESOLVED} >${ADDON_CONFIG_RESOLVED}.tmp
     mv ${ADDON_CONFIG_RESOLVED}.tmp ${ADDON_CONFIG_RESOLVED}
+}
+
+function drop_missing_interfaces() {
+    # dnsmasq runs with --bind-interfaces and refuses to start if a listed interface does not exist:
+    # wait a bit for them, then drop the ones still missing.
+    # We deliberately do NOT use "bind-dynamic": on hosts with many docker containers dnsmasq
+    # rebinds very often and sometimes loses the binding to the system NICs, breaking DNS
+    # and taking the whole network down. See the reverted commit:
+    # https://github.com/f18m/ha-addon-dnsmasq-dhcp/commit/259fec9a314f87355e3753560fd2f94dd75dcbfe
+    local wait_secs=30 iface missing present=()
+    local ifaces
+    ifaces="$(jq --raw-output '.interfaces[]?' ${ADDON_CONFIG_RESOLVED})"
+    for ((i = 0; i < wait_secs; i++)); do
+        missing=""
+        for iface in ${ifaces}; do
+            [[ -e "/sys/class/net/${iface}" ]] || missing+="${iface} "
+        done
+        [[ -z "${missing}" ]] && break
+        sleep 1
+    done
+    for iface in ${ifaces}; do
+        if [[ -e "/sys/class/net/${iface}" ]]; then
+            present+=("${iface}")
+        else
+            bashio::log.warning "dnsmasq-init.sh: interface '${iface}' does not exist; ignoring it. Restart the addon once it is available"
+        fi
+    done
+    jq --argjson ifaces "$(printf '%s\n' "${present[@]}" | jq --raw-input . | jq --slurp --compact-output .)" \
+        '.interfaces = $ifaces' ${ADDON_CONFIG_RESOLVED} >${ADDON_CONFIG_RESOLVED}.tmp
+    mv ${ADDON_CONFIG_RESOLVED}.tmp ${ADDON_CONFIG_RESOLVED}
+
+    if [[ ${#present[@]} -eq 0 ]]; then
+        bashio::log.warning "dnsmasq-init.sh: no valid interface left to provide to dnsmasq"
+    fi
+    log_info "Interfaces that will be provided to dnsmasq: ${present[*]:-<none>}"
 }
 
 function resolve_ntp_servers() {
@@ -173,9 +209,23 @@ cp ${ADDON_CONFIG} ${ADDON_CONFIG_RESOLVED}
 # do some processing:
 log_info "Resolving 'auto' interface names..."
 resolve_auto_interfaces
+log_info "Dropping interfaces that do not exist..."
+drop_missing_interfaces
 log_info "Resolving NTP hostnames eventually provided..."
 resolve_ntp_servers
 log_info "Processing DHCP DNS server list..."
 process_dns_servers
 
-log_info "Successfully completed dnsmasq configuration pre-processing."
+log_info "Configuring dnsmasq..."
+tempio \
+    -conf ${ADDON_CONFIG_RESOLVED} \
+    -template /usr/share/tempio/dnsmasq.config \
+    -out "${DNSMASQ_CONFIG}"
+
+# make the config file a bit more compact by removing empty lines
+sed -i '/^$/d' $DNSMASQ_CONFIG
+
+log_info "Full dnsmasq config:"
+cat -n $DNSMASQ_CONFIG
+
+log_info "Successfully completed dnsmasq configuration."

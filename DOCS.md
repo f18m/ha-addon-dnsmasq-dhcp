@@ -212,22 +212,23 @@ dhcp_server:
     # example3: the entry 0.0.0.0 means "the address of the machine running dnsmasq"
     #- 0.0.0.0
 
-    dnsmasq_customizations:
-      # See https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html as reference for this section.
-      # This option allows you to add ANY custom dnsmasq option that you want.
-      # With such power comes great responsibility, so please be careful, as you might generate
-      # invalid dnsmasq configurations preventing the app from starting.
-      # Remember that all dnsmasq options written here must _not_ start with the leading "--" dash:
-      # e.g. the --dhcp-option mentioned in dnsmasq manpage needs to be written here as "dhcp-option".
-      # In this section you typically want to provide a YAML multiline string so make sure you use
-      # the pipe | character. See e.g.:
-      #    dnsmasq_customizations: |
-      #      dhcp-option=option:vendor-class-identifier,HomeAssistant
-      #      dhcp-option=option:vendor-info,HomeAssistant
-      #      dhcp-option=option:domain-search,lan
-      # The content of this section will just end-up "as is" (without any validation check) in
-      # the dnsmasq config file.
-  
+
+  # See https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html as reference for this section.
+  # This option allows you to add ANY custom dnsmasq option that you want.
+  # With such power comes great responsibility, so please be careful, as you might generate
+  # invalid dnsmasq configurations preventing the app from starting.
+  # Remember that all dnsmasq options written here must _not_ start with the leading "--" dash:
+  # e.g. the --dhcp-option mentioned in dnsmasq manpage needs to be written here as "dhcp-option".
+  # In this section you typically want to provide a YAML multiline string so make sure you use
+  # the pipe | character. See e.g.:
+  #    dnsmasq_customizations: |
+  #      dhcp-option=option:vendor-class-identifier,HomeAssistant
+  #      dhcp-option=option:vendor-info,HomeAssistant
+  #      dhcp-option=option:domain-search,lan
+  # The content of this section will just end-up "as is" (without any validation check) in
+  # the dnsmasq config file.
+  dnsmasq_customizations: ""
+
 # dhcp_pools is the core config for the DHCP server.
 # Each entry in the list represents a network segment. 
 # You can have multiple entries for the same "interface" (with same "gateway" and "netmask") 
